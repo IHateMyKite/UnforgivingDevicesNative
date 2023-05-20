@@ -10,6 +10,9 @@ namespace UD
         vm->RegisterFunction("UpdateMinigameEffectMult", "UD_Native", UD::UpdateMinigameEffectMult);
         vm->RegisterFunction("ToggleMinigameEffect", "UD_Native", UD::ToggleMinigameEffect);
         vm->RegisterFunction("MinigameStatsCheck", "UD_Native", UD::MinigameStatsCheck);
+        vm->RegisterFunction("MinigameEffectUpdateHealth", "UD_Native", UD::MinigameEffectUpdateHealth);
+        vm->RegisterFunction("MinigameEffectUpdateStamina", "UD_Native", UD::MinigameEffectUpdateStamina);
+        vm->RegisterFunction("MinigameEffectUpdateMagicka", "UD_Native", UD::MinigameEffectUpdateMagicka);
         return true;
     }
 }
