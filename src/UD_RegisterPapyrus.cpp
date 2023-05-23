@@ -1,5 +1,6 @@
 #include <UD_RegisterPapyrus.h>
 #include <UD_MinigameEffect.h>
+#include <UD_Utility.h>
 
 namespace UD
 {
@@ -13,6 +14,8 @@ namespace UD
         vm->RegisterFunction("MinigameEffectUpdateHealth", "UD_Native", UD::MinigameEffectUpdateHealth);
         vm->RegisterFunction("MinigameEffectUpdateStamina", "UD_Native", UD::MinigameEffectUpdateStamina);
         vm->RegisterFunction("MinigameEffectUpdateMagicka", "UD_Native", UD::MinigameEffectUpdateMagicka);
+        vm->RegisterFunction("CodeBit", "UD_Native", UD::CodeBit);
+        vm->RegisterFunction("DecodeBit", "UD_Native", UD::DecodeBit);
         return true;
     }
 }

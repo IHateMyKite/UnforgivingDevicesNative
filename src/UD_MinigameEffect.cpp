@@ -1,14 +1,9 @@
 #include <UD_MinigameEffect.h>
 namespace UD
 {
-    std::atomic<float> ActorValueUpdateHook::health     = std::atomic<float>(0.0f);
-    std::atomic<float> ActorValueUpdateHook::stamina    = std::atomic<float>(0.0f);
-    std::atomic<float> ActorValueUpdateHook::magicka    = std::atomic<float>(0.0f);
-    std::atomic<float> ActorValueUpdateHook::mult       = std::atomic<float>(1.0f);
-    RE::Actor* ActorValueUpdateHook::actor              = nullptr;
+    const std::atomic<float> ActorValueUpdateHook::mult       = std::atomic<float>(-0.5f);
     std::atomic<bool> ActorValueUpdateHook::started     = std::atomic<bool>(false);
-    std::atomic<bool> ActorValueUpdateHook::toggle      = std::atomic<bool>(true);
-
+    std::map<RE::Actor*,ActorValueUpdateHook::ActorControl> ActorValueUpdateHook::_actormap = std::map<RE::Actor*,ActorValueUpdateHook::ActorControl>();
 
     bool _DamageAV(RE::ActorValueOwner* a_avowner,const RE::ActorValue& a_av, const float& f_dmg, const float& f_min)
     {
@@ -25,26 +20,21 @@ namespace UD
         //The value in papyrus was not corresponding to real value because of lag. 
         //For that reason, we need to reduce the drain value, otherwise it will be too fast
         //For now, value is reduced by 40%
-        ActorValueUpdateHook::health    = -0.60f*f_health/60.0f;
-        ActorValueUpdateHook::stamina   = -0.60f*f_stamina/60.0f;
-        ActorValueUpdateHook::magicka   = -0.60f*f_magicka/60.0f;
-        ActorValueUpdateHook::mult      = f_mult; 
-        ActorValueUpdateHook::actor     = a_actor;
-        ActorValueUpdateHook::toggle    = b_toggle;
-        SKSE::log::info("::StartMinigameEffect - health={},stamina={},magicka={}",ActorValueUpdateHook::health,ActorValueUpdateHook::stamina,ActorValueUpdateHook::magicka);
-        ActorValueUpdateHook::Patch();
+        float loc_health    = ActorValueUpdateHook::mult*f_health/60.0f;
+        float loc_stamina   = ActorValueUpdateHook::mult*f_stamina/60.0f;
+        float loc_magicka   = ActorValueUpdateHook::mult*f_magicka/60.0f;
+        float loc_mult      = f_mult; 
+        float loc_toggle    = b_toggle;
+
+        ActorValueUpdateHook::RegisterActor(a_actor,loc_mult,loc_stamina,loc_health,loc_magicka,loc_toggle);
+
+        SKSE::log::info("::StartMinigameEffect - health={},stamina={},magicka={}",loc_health,loc_stamina,loc_magicka);
     }
 
     void EndMinigameEffect(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::Actor *a_actor) 
     {
         SKSE::log::info("::EndMinigameEffect called");
-        ActorValueUpdateHook::Restore();
-        ActorValueUpdateHook::health    = 0.0f;
-        ActorValueUpdateHook::stamina   = 0.0f;
-        ActorValueUpdateHook::magicka   = 0.0f;
-        ActorValueUpdateHook::mult      = 1.0; 
-        ActorValueUpdateHook::actor     = nullptr;
-        ActorValueUpdateHook::toggle    = false;
+        ActorValueUpdateHook::RemoveActor(a_actor);
     }
 
     bool IsMinigameEffectOn(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::Actor *a_actor) 
@@ -52,16 +42,21 @@ namespace UD
         return ActorValueUpdateHook::started;
     }
 
-    void UpdateMinigameEffectMult(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::Actor *a_actor, float f_newvalue) 
+    void UpdateMinigameEffectMult(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::Actor *a_actor, float f_mult) 
     {
-        ActorValueUpdateHook::mult = f_newvalue;
+        if (ActorValueUpdateHook::IsRegistered(a_actor))
+        {
+            ActorValueUpdateHook::GetActorControl(a_actor)->mult = f_mult;
+        }
     }
 
     void ToggleMinigameEffect(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::Actor *a_actor, bool b_toggle) 
     {
         SKSE::log::info("::ToggleMinigameEffect called {}",b_toggle);
-        RE::ConsoleLog::GetSingleton()->Print("ActorValueUpdateHook::ToggleMinigameEffect()");
-        ActorValueUpdateHook::toggle = b_toggle;
+        if (ActorValueUpdateHook::IsRegistered(a_actor))
+        {
+            ActorValueUpdateHook::GetActorControl(a_actor)->toggle = b_toggle;
+        }
     }
 
     bool MinigameStatsCheck(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::Actor *a_actor) 
@@ -76,15 +71,27 @@ namespace UD
 
     void MinigameEffectUpdateHealth(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::Actor *a_actor, float f_health)
     {
-        ActorValueUpdateHook::health    = -0.60f*f_health/60.0f;
+        float loc_health    = ActorValueUpdateHook::mult*f_health/60.0f;
+        if (ActorValueUpdateHook::IsRegistered(a_actor))
+        {
+            ActorValueUpdateHook::GetActorControl(a_actor)->health = loc_health;
+        }
     }
     void MinigameEffectUpdateStamina(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::Actor *a_actor, float f_stamina)
     {
-        ActorValueUpdateHook::stamina    = -0.60f*f_stamina/60.0f;
+        float loc_stamina    = ActorValueUpdateHook::mult*f_stamina/60.0f;
+        if (ActorValueUpdateHook::IsRegistered(a_actor))
+        {
+            ActorValueUpdateHook::GetActorControl(a_actor)->stamina = loc_stamina;
+        }
     }
     void MinigameEffectUpdateMagicka(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::Actor *a_actor, float f_magicka)
     {
-        ActorValueUpdateHook::magicka    = -0.60f*f_magicka/60.0f;
+        float loc_magicka    = ActorValueUpdateHook::mult*f_magicka/60.0f;
+        if (ActorValueUpdateHook::IsRegistered(a_actor))
+        {
+            ActorValueUpdateHook::GetActorControl(a_actor)->magicka = loc_magicka;
+        }
     }
 
 	void ActorValueUpdateHook::Patch()
@@ -102,30 +109,85 @@ namespace UD
         }
 	}
 
-	void ActorValueUpdateHook::Restore()
-	{
-        SKSE::log::info("ActorValueUpdateHook::Restore()");
-        if (ActorValueUpdate.address() != 0) 
-        {
-            toggle  = false;
-        }
-	}
 
 	int32_t ActorValueUpdateHook::ActorValueUpdatePatched( RE::Character* a_actor, RE::ActorValue a_av, float a_unk)
 	{
         //RE::ConsoleLog::GetSingleton()->Print(std::format("::ActorValueUpdate health={},stamina={},magicka={},mult={},toggle={}",health,stamina,magicka,mult,toggle).c_str());
-        if ((toggle) && (a_actor != nullptr) && (actor == a_actor))
+        if ((a_actor != nullptr) && (IsRegistered(a_actor)))
         {
             float loc_timemult = RE::GetSecondsSinceLastFrame()/(1.0f/60.0f);  //normalize to 60 fps
             if ( loc_timemult > 0.0 ) 
             {
-                static RE::ActorValueOwner* loc_avholder = nullptr;
-                if (loc_avholder == nullptr) loc_avholder = a_actor->AsActorValueOwner();
-                _DamageAV(loc_avholder,RE::ActorValue::kHealth,health*mult*loc_timemult,5.0f);
-                _DamageAV(loc_avholder,RE::ActorValue::kStamina,stamina*mult*loc_timemult,0.0);
-                _DamageAV(loc_avholder,RE::ActorValue::kMagicka,magicka*mult*loc_timemult,0.0);
+                ActorControl*        loc_ac       = GetActorControl(a_actor);
+                RE::ActorValueOwner* loc_avholder = a_actor->AsActorValueOwner();
+                if (loc_ac->toggle)
+                {
+                    _DamageAV(loc_avholder,RE::ActorValue::kHealth,loc_ac->health*loc_ac->mult*loc_timemult,5.0f);
+                    _DamageAV(loc_avholder,RE::ActorValue::kStamina,loc_ac->stamina*loc_ac->mult*loc_timemult,0.0);
+                    _DamageAV(loc_avholder,RE::ActorValue::kMagicka,loc_ac->magicka*loc_ac->mult*loc_timemult,0.0);
+                }
             }
         }
 		return ActorValueUpdate(a_actor, a_av, a_unk);
 	}
+
+    void ActorValueUpdateHook::RegisterActor(RE::Actor *a_actor, float f_mult, float f_stamina, float f_health, float f_magicka, bool b_toggle)
+    {
+        ActorControl loc_ac = ActorControl{f_stamina,f_health,f_magicka,f_mult,b_toggle};
+        _actormap[a_actor] = loc_ac;
+        ActorValueUpdateHook::Patch();
+    }
+    void ActorValueUpdateHook::RemoveActor(RE::Actor *a_actor)
+    {
+        _actormap.erase(a_actor);
+    }
+
+    bool ActorValueUpdateHook::IsRegistered(RE::Actor *a_actor)
+    {
+          return (_actormap.find(a_actor) != _actormap.end());
+    }
+
+    ActorValueUpdateHook::ActorControl* ActorValueUpdateHook::GetActorControl(RE::Actor *a_actor)
+    {
+        if (IsRegistered(a_actor))
+        {
+            return &_actormap[a_actor];
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    void ActorValueUpdateHook::RemoveAll(void)
+    {
+        _actormap.clear();
+    }
+
+    ActorValueUpdateHook::ActorControl::ActorControl()
+    {
+            stamina =  0.0;
+            health  =  0.0;
+            magicka =  0.0;
+            mult    =  1.0;
+            toggle  =  true;
+    }
+    ActorValueUpdateHook::ActorControl::ActorControl(float f_stamina, float f_health, float f_magicka,float f_mult, bool b_toggle)
+    {
+            stamina =  f_stamina;
+            health  =  f_health;
+            magicka =  f_magicka;
+            mult    =  f_mult;
+            toggle  =  b_toggle;
+    }
+    ActorValueUpdateHook::ActorControl& ActorValueUpdateHook::ActorControl::operator=(const ActorValueUpdateHook::ActorControl& source)
+    {
+        if (this == &source) return *this;
+        this->stamina   = source.stamina.load();
+        this->health    = source.health.load();
+        this->magicka   = source.magicka.load();
+        this->mult      = source.mult.load();
+        this->toggle    = source.toggle.load();
+        return *this;
+    }
 }
