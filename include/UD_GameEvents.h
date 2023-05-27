@@ -2,6 +2,7 @@
 
 namespace UD
 {
-    void _OnGameLoad();
+    inline void _OnPostPostLoad();
+    inline void _OnGameLoad();
     void OnMessageReceived(SKSE::MessagingInterface::Message* a_msg);
 }

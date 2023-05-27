@@ -37,6 +37,7 @@ set(source_files ${source_files}
     src/UD_MinigameEffect.cpp
     src/UD_RegisterPapyrus.cpp
     src/UD_Utility.cpp
+    src/UD_UI.cpp
 )
 
 # Setup your SKSE plugin as an SKSE plugin!

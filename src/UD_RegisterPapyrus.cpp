@@ -1,21 +1,40 @@
 #include <UD_RegisterPapyrus.h>
 #include <UD_MinigameEffect.h>
 #include <UD_Utility.h>
+#include <UD_UI.h>
 
 namespace UD
 {
-    bool RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm) {  
-        vm->RegisterFunction("StartMinigameEffect", "UD_Native", UD::StartMinigameEffect);
-        vm->RegisterFunction("EndMinigameEffect", "UD_Native", UD::EndMinigameEffect);
-        vm->RegisterFunction("IsMinigameEffectOn", "UD_Native", UD::IsMinigameEffectOn);
-        vm->RegisterFunction("UpdateMinigameEffectMult", "UD_Native", UD::UpdateMinigameEffectMult);
-        vm->RegisterFunction("ToggleMinigameEffect", "UD_Native", UD::ToggleMinigameEffect);
-        vm->RegisterFunction("MinigameStatsCheck", "UD_Native", UD::MinigameStatsCheck);
-        vm->RegisterFunction("MinigameEffectUpdateHealth", "UD_Native", UD::MinigameEffectUpdateHealth);
-        vm->RegisterFunction("MinigameEffectUpdateStamina", "UD_Native", UD::MinigameEffectUpdateStamina);
-        vm->RegisterFunction("MinigameEffectUpdateMagicka", "UD_Native", UD::MinigameEffectUpdateMagicka);
-        vm->RegisterFunction("CodeBit", "UD_Native", UD::CodeBit);
-        vm->RegisterFunction("DecodeBit", "UD_Native", UD::DecodeBit);
+    #define REGISTERPAPYRUSFUNC(name) vm->RegisterFunction(#name, "UD_Native", UD::name);
+
+    bool RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm) {
+        REGISTERPAPYRUSFUNC(StartMinigameEffect)
+        REGISTERPAPYRUSFUNC(EndMinigameEffect)
+        REGISTERPAPYRUSFUNC(IsMinigameEffectOn)
+        REGISTERPAPYRUSFUNC(UpdateMinigameEffectMult)
+        REGISTERPAPYRUSFUNC(ToggleMinigameEffect)
+        REGISTERPAPYRUSFUNC(MinigameStatsCheck)
+        REGISTERPAPYRUSFUNC(MinigameEffectUpdateHealth)
+        REGISTERPAPYRUSFUNC(MinigameEffectUpdateStamina)
+        REGISTERPAPYRUSFUNC(MinigameEffectUpdateMagicka)
+
+        //UTILITY
+        REGISTERPAPYRUSFUNC(CodeBit)
+        REGISTERPAPYRUSFUNC(DecodeBit)
+
+        //UI
+        REGISTERPAPYRUSFUNC(AddMeterEntry)
+        REGISTERPAPYRUSFUNC(RemoveMeterEntry)
+        REGISTERPAPYRUSFUNC(ToggleAllMeters)
+        REGISTERPAPYRUSFUNC(ToggleMeter)
+        REGISTERPAPYRUSFUNC(SetMeterRate)
+        REGISTERPAPYRUSFUNC(SetMeterMult)
+        REGISTERPAPYRUSFUNC(SetMeterValue)
+        REGISTERPAPYRUSFUNC(UpdateMeterValue)
+        REGISTERPAPYRUSFUNC(GetMeterValue)
+        REGISTERPAPYRUSFUNC(RemoveAllMeterEntries)
         return true;
     }
+
+    #undef REGISTERPAPYRUSFUNC
 }
