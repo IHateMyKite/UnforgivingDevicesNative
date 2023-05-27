@@ -130,7 +130,6 @@ namespace UD
         }
         inline static void  SetMeterRateIWW(int i_id, float f_newrate)
         {
-            SKSE::log::info("::SetMeterRateIWW - id={},rate={}",i_id,f_newrate);
             PROCESSMETER(_metersIWW, _metersIWW[i]->rate = f_newrate;,id == i_id)
         }
         inline static void  SetMeterMultIWW(int i_id, float f_newmult)
@@ -139,7 +138,6 @@ namespace UD
         }
         inline static void  SetMeterValueIWW(int i_id, float f_newvalue)
         {
-            SKSE::log::info("::SetMeterValueIWW - id={},value={}",i_id,f_newvalue);
             PROCESSMETER(_metersIWW, _metersIWW[i]->value = f_newvalue;,id == i_id)
         }
         inline static float UpdateMeterValueIWW(int i_id, float f_diffvalue)
@@ -207,7 +205,6 @@ namespace UD
         }
         inline static void  SetMeterRateSkyUi(const std::string& s_path, float f_newrate)
         {
-            SKSE::log::info("::SetMeterRateSkyUi - path={},rate={}",s_path,f_newrate);
             PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->rate = f_newrate;,path == s_path)
         }
         inline static void  SetMeterMultSkyUi(const std::string& s_path, float f_newmult)
@@ -216,7 +213,6 @@ namespace UD
         }
         inline static void  SetMeterValueSkyUi(const std::string& s_path, float f_newvalue)
         {
-            SKSE::log::info("::SetMeterValueIWW - path={},value={}",s_path,f_newvalue);
             PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->value = f_newvalue;,path == s_path)
         }
         inline static float UpdateMeterValueSkyUi(const std::string& s_path, float f_diffvalue)
