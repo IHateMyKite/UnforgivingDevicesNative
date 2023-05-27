@@ -3,12 +3,12 @@
 namespace UD 
 {
     //macro to make the code more readable
-    #define PROCESSMETER(x)                     \
+    #define PROCESSMETER(a,x,c)                 \
     {                                           \
     _mutex.lock();                              \
-    for (int i = 0;i< _metersIWW.size();i++)    \
+    for (int i = 0;i< a.size();i++)             \
     {                                           \
-        if (_metersIWW[i]->id == i_id)          \
+        if (a[i]->c)                            \
         {                                       \
             x                                   \
         }                                       \
@@ -16,12 +16,12 @@ namespace UD
     _mutex.unlock();                            \
     }
 
-    #define PROCESSMETERRET(x,y,z)              \
+    #define PROCESSMETERRET(a, x, y, z, c)      \
     {                                           \
     _mutex.lock();                              \
-    for (int i = 0;i< _metersIWW.size();i++)    \
+    for (int i = 0;i< a.size();i++)             \
     {                                           \
-        if (_metersIWW[i]->id == i_id)          \
+        if (a[i]->c)                            \
         {                                       \
             x                                   \
             _mutex.unlock();                    \
@@ -31,8 +31,6 @@ namespace UD
     _mutex.unlock();                            \
     return z;                                   \
     }
-
-    
 
     class MeterEntryIWW 
     {
@@ -44,25 +42,46 @@ namespace UD
         float               rate        = 0.0;
         float               value       = 0.0;
         float               mult        = 1.0;
-
+        const std::string   path;
         MeterEntryIWW& operator=(const MeterEntryIWW& source);
+        void Process(const float& f_timemult);
+    };
 
-        void Process(float f_timemult);
-    private:
-        const std::string _path;
+    class MeterEntrySkyUi : public MeterEntryIWW
+    {
+    public:
+        MeterEntrySkyUi(std::string s_path, std::string s_name,float f_base, float f_rate, bool b_update);
+        void Process(const float& f_timemult);
     };
 
     class MeterManager
     {
     public:
-        inline static void AddEntry(std::string s_path, int i_id, std::string s_name, float f_base, float f_rate, bool b_show)
+        inline static void Update(const float& f_timemult = 1.0f)
+        {   
+            _mutex.lock();
+            for (int i = 0;i< _metersIWW.size();i++)
+            {
+                _metersIWW[i]->Process(f_timemult);
+            }
+ 
+        }
+        inline static int RemoveAll()
+        {
+            int loc_size = _metersIWW.size();
+            _metersIWW.clear();
+            return loc_size; 
+        }
+
+        //iWantWidget
+        inline static void AddEntryIWW(std::string s_path, int i_id, std::string s_name, float f_base, float f_rate, bool b_show)
         {
             _mutex.lock();
             _metersIWW.push_back(std::unique_ptr<MeterEntryIWW>(new MeterEntryIWW(s_path,i_id,s_name,f_base,f_rate,b_show)));
-            SKSE::log::info("::AddEntry - id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
+            SKSE::log::info("::AddEntryIWW - id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
             _mutex.unlock();
         }
-        inline static bool RemoveEntry(int i_id)
+        inline static bool RemoveEntryIWW(int i_id)
         {
             _mutex.lock();
             for (int i = 0;i < _metersIWW.size();i++)
@@ -77,7 +96,7 @@ namespace UD
             _mutex.unlock();
             return false;
         }
-        inline static bool RemoveEntry(std::string s_name)
+        inline static bool RemoveEntryIWW(std::string s_name)
         {
             _mutex.lock();
             for (int i = 0;i< _metersIWW.size();i++)
@@ -92,91 +111,176 @@ namespace UD
             _mutex.unlock();
             return false;
         }
-        inline static void Update(float f_timemult = 1.0f)
-        {   
+        inline static void ToggleMeterIWW(int i_id,bool b_toggle)
+        {
+            PROCESSMETER(_metersIWW, _metersIWW[i]->update = b_toggle;,id == i_id)
+        }
+        inline static void SetMeterRateIWW(int i_id, float f_newrate)
+        {
+            SKSE::log::info("::SetMeterRateIWWIWW - id={},rate={}",i_id,f_newrate);
+            PROCESSMETER(_metersIWW, _metersIWW[i]->rate = f_newrate;,id == i_id)
+        }
+        inline static void SetMeterMultIWW(int i_id, float f_newmult)
+        {
+            PROCESSMETER(_metersIWW, _metersIWW[i]->mult = f_newmult;,id == i_id)
+        }
+        inline static void SetMeterValueIWW(int i_id, float f_newvalue)
+        {
+            SKSE::log::info("::SetMeterValueIWW - id={},value={}",i_id,f_newvalue);
+            PROCESSMETER(_metersIWW, _metersIWW[i]->value = f_newvalue;,id == i_id)
+        }
+        inline static float UpdateMeterValueIWW(int i_id, float f_diffvalue)
+        {
+            PROCESSMETERRET(_metersIWW , 
+                            _metersIWW[i]->value += f_diffvalue;UDTRUNCVALUE(_metersIWW[i]->value,0.0f,100.0f); , 
+                            _metersIWW[i]->value; ,
+                            0.0f; , 
+                            id == i_id)
+        }
+        inline static float GetMeterValueIWW(int i_id)
+        {
+            PROCESSMETERRET(_metersIWW ,
+                             , 
+                            _metersIWW[i]->value; , 
+                            0.0f; , 
+                            id == i_id)
+        }
+        
+        inline static void AddEntrySkyUi(std::string s_path, std::string s_name, float f_base, float f_rate, bool b_show)
+        {
             _mutex.lock();
-            for (int i = 0;i< _metersIWW.size();i++)
-            {
-                _metersIWW[i]->Process(f_timemult);
-            }
+            _metersSkyUi.push_back(std::unique_ptr<MeterEntrySkyUi>(new MeterEntrySkyUi(s_path,s_name,f_base,f_rate,b_show)));
+            SKSE::log::info("::AddEntrySkyUi - id={},update={},rate={},value={}",_metersSkyUi.back()->id,_metersSkyUi.back()->update,_metersSkyUi.back()->rate,_metersSkyUi.back()->value);
             _mutex.unlock();
         }
-        inline static void ToggleMeter(int i_id,bool b_toggle)
+        inline static bool RemoveEntrySkyUi(const std::string& s_path)
         {
-            PROCESSMETER(_metersIWW[i]->update = b_toggle;)
+            _mutex.lock();
+            for (int i = 0;i < _metersIWW.size();i++)
+            {
+                if (_metersSkyUi[i]->path == s_path) 
+                {
+                    _metersSkyUi.erase(_metersSkyUi.begin() + i);
+                    _mutex.unlock();
+                    return true;
+                }
+            }
+            _mutex.unlock();
+            return false;
         }
-        inline static void SetMeterRate(int i_id, float f_newrate)
+        inline static void ToggleMeterSkyUi(const std::string& s_path,bool b_toggle)
         {
-            SKSE::log::info("::SetMeterRate - id={},rate={}",i_id,f_newrate);
-            PROCESSMETER(_metersIWW[i]->rate = f_newrate;)
+            PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->update = b_toggle;,path == s_path)
         }
-        inline static void SetMeterMult(int i_id, float f_newmult)
+        inline static void SetMeterRateSkyUi(const std::string& s_path, float f_newrate)
         {
-            PROCESSMETER(_metersIWW[i]->mult = f_newmult;)
+            SKSE::log::info("::SetMeterRateIWWIWW - path={},rate={}",s_path,f_newrate);
+            PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->rate = f_newrate;,path == s_path)
         }
-        inline static void SetMeterValue(int i_id, float f_newvalue)
+        inline static void SetMeterMultSkyUi(const std::string& s_path, float f_newmult)
         {
-            SKSE::log::info("::SetMeterValue - id={},value={}",i_id,f_newvalue);
-            PROCESSMETER(_metersIWW[i]->value = f_newvalue;)
+            PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->mult = f_newmult;,path == s_path)
         }
-        inline static float UpdateMeterValue(int i_id, float f_diffvalue)
+        inline static void SetMeterValueSkyUi(const std::string& s_path, float f_newvalue)
         {
-            PROCESSMETERRET(_metersIWW[i]->value += f_diffvalue;UDTRUNCVALUE(_metersIWW[i]->value,0.0f,100.0f); , _metersIWW[i]->value; , 0.0f;)
+            SKSE::log::info("::SetMeterValueIWW - path={},value={}",s_path,f_newvalue);
+            PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->value = f_newvalue;,path == s_path)
         }
-        inline static float GetMeterValue(int i_id)
+        inline static float UpdateMeterValueSkyUi(const std::string& s_path, float f_diffvalue)
         {
-            PROCESSMETERRET( , _metersIWW[i]->value; , 0.0f;)
+            PROCESSMETERRET(_metersSkyUi, 
+                            _metersSkyUi[i]->value += f_diffvalue;UDTRUNCVALUE(_metersSkyUi[i]->value,0.0f,100.0f); ,
+                            _metersSkyUi[i]->value; ,
+                            0.0f;,
+                            path == s_path)
         }
-        inline static int RemoveAll()
+        inline static float GetMeterValueSkyUi(const std::string& s_path)
         {
-            int loc_size = _metersIWW.size();
-            _metersIWW.clear();
-            return loc_size; 
+            PROCESSMETERRET(_metersSkyUi, 
+                            , 
+                            _metersSkyUi[i]->value; ,
+                            0.0f;,
+                            path == s_path)
         }
+
     public:
         static bool updateallowed;
     protected:
-        static std::vector<std::unique_ptr<MeterEntryIWW>>  _metersIWW;
+        static std::vector<std::unique_ptr<MeterEntryIWW>>    _metersIWW;
+        static std::vector<std::unique_ptr<MeterEntrySkyUi>>  _metersSkyUi;
         static std::mutex                  _mutex;
     };
 
-
     //Papyrus functions
-    inline void AddMeterEntry(PAPYRUSFUNCHANDLE, std::string s_path, int i_id, std::string s_name, float f_base, float f_rate, bool b_show)
+    inline void AddMeterEntryIWW(PAPYRUSFUNCHANDLE, std::string s_path, int i_id, std::string s_name, float f_base, float f_rate, bool b_show)
     {
-        MeterManager::AddEntry(s_path,i_id,s_name,f_base,f_rate,b_show);
+        MeterManager::AddEntryIWW(s_path,i_id,s_name,f_base,f_rate,b_show);
     }
-    inline void RemoveMeterEntry(PAPYRUSFUNCHANDLE, int i_id)
+    inline void RemoveMeterEntryIWW(PAPYRUSFUNCHANDLE, int i_id)
     {
-        MeterManager::RemoveEntry(i_id);
+        MeterManager::RemoveEntryIWW(i_id);
     }
+    inline void ToggleMeterIWW(PAPYRUSFUNCHANDLE, int i_id, bool b_toggle)
+    {
+        MeterManager::ToggleMeterIWW(i_id,b_toggle);
+    }
+    inline void SetMeterRateIWW(PAPYRUSFUNCHANDLE, int i_id, float f_newrate)
+    {
+        MeterManager::SetMeterRateIWW(i_id,f_newrate);
+    }
+    inline void SetMeterMultIWW(PAPYRUSFUNCHANDLE, int i_id, float f_newmult)
+    {
+        MeterManager::SetMeterMultIWW(i_id,f_newmult);
+    }
+    inline void SetMeterValueIWW(PAPYRUSFUNCHANDLE, int i_id, float f_newvalue)
+    {
+        MeterManager::SetMeterValueIWW(i_id,f_newvalue);
+    }
+    inline float UpdateMeterValueIWW(PAPYRUSFUNCHANDLE, int i_id, float f_diffvalue)
+    {
+        return MeterManager::UpdateMeterValueIWW(i_id,f_diffvalue);
+    }
+    inline float GetMeterValueIWW(PAPYRUSFUNCHANDLE,int i_id)
+    {
+        return MeterManager::GetMeterValueIWW(i_id);
+    }
+    
+    inline void AddMeterEntrySkyUi(PAPYRUSFUNCHANDLE, std::string s_path, std::string s_name, float f_base, float f_rate, bool b_show)
+    {
+        MeterManager::AddEntrySkyUi(s_path,s_name,f_base,f_rate,b_show);
+    }
+    inline void RemoveMeterEntrySkyUi(PAPYRUSFUNCHANDLE, std::string s_path)
+    {
+        MeterManager::RemoveEntrySkyUi(s_path);
+    }
+    inline void ToggleMeterSkyUi(PAPYRUSFUNCHANDLE, std::string s_path, bool b_toggle)
+    {
+        MeterManager::ToggleMeterSkyUi(s_path,b_toggle);
+    }
+    inline void SetMeterRateSkyUi(PAPYRUSFUNCHANDLE, std::string s_path, float f_newrate)
+    {
+        MeterManager::SetMeterRateSkyUi(s_path,f_newrate);
+    }
+    inline void SetMeterMultSkyUi(PAPYRUSFUNCHANDLE, std::string s_path, float f_newmult)
+    {
+        MeterManager::SetMeterMultSkyUi(s_path,f_newmult);
+    }
+    inline void SetMeterValueSkyUi(PAPYRUSFUNCHANDLE, std::string s_path, float f_newvalue)
+    {
+        MeterManager::SetMeterValueSkyUi(s_path,f_newvalue);
+    }
+    inline float UpdateMeterValueSkyUi(PAPYRUSFUNCHANDLE, std::string s_path, float f_diffvalue)
+    {
+        return MeterManager::UpdateMeterValueSkyUi(s_path,f_diffvalue);
+    }
+    inline float GetMeterValueSkyUi(PAPYRUSFUNCHANDLE,std::string s_path)
+    {
+        return MeterManager::GetMeterValueSkyUi(s_path);
+    }
+
     inline void ToggleAllMeters(PAPYRUSFUNCHANDLE, bool b_toggle)
     {
         MeterManager::updateallowed = b_toggle;
-    }
-    inline void ToggleMeter(PAPYRUSFUNCHANDLE, int i_id, bool b_toggle)
-    {
-        MeterManager::ToggleMeter(i_id,b_toggle);
-    }
-    inline void SetMeterRate(PAPYRUSFUNCHANDLE, int i_id, float f_newrate)
-    {
-        MeterManager::SetMeterRate(i_id,f_newrate);
-    }
-    inline void SetMeterMult(PAPYRUSFUNCHANDLE, int i_id, float f_newmult)
-    {
-        MeterManager::SetMeterMult(i_id,f_newmult);
-    }
-    inline void SetMeterValue(PAPYRUSFUNCHANDLE, int i_id, float f_newvalue)
-    {
-        MeterManager::SetMeterValue(i_id,f_newvalue);
-    }
-    inline float UpdateMeterValue(PAPYRUSFUNCHANDLE, int i_id, float f_diffvalue)
-    {
-        return MeterManager::UpdateMeterValue(i_id,f_diffvalue);
-    }
-    inline float GetMeterValue(PAPYRUSFUNCHANDLE,int i_id)
-    {
-        return MeterManager::GetMeterValue(i_id);
     }
     inline int RemoveAllMeterEntries(PAPYRUSFUNCHANDLE)
     {
