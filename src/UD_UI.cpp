@@ -86,7 +86,7 @@ namespace UD
             //set argument
             static RE::GFxValue loc_arg[2];
             loc_arg[0].SetNumber(value/100.0f);
-            loc_arg[1].SetNumber(0.0);
+            loc_arg[1].SetNumber(UDSKYUIFORCE);
 
             //invoke action script function
             loc_uimovie->Invoke(loc_path.c_str(),NULL,loc_arg,2);

@@ -2,6 +2,9 @@
 //as native effects are much faster, we need to reduce its amplitude, otherwise it will be much stronger then papyrus one
 #define UDCONVERTMULT 0.5f
 
+//if skyui meters should force the new value (play the animation)
+#define UDSKYUIFORCE 0.0f
+
 //handle of papyrus functions
 #define PAPYRUSFUNCHANDLE RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*
 

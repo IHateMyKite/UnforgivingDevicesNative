@@ -6,7 +6,7 @@ namespace UD
     #define PROCESSMETER(a,x,c)                 \
     {                                           \
     _mutex.lock();                              \
-    for (int i = 0;i< a.size();i++)             \
+    for (int i = 0;i < a.size();i++)            \
     {                                           \
         if (a[i]->c)                            \
         {                                       \
@@ -19,7 +19,7 @@ namespace UD
     #define PROCESSMETERRET(a, x, y, z, c)      \
     {                                           \
     _mutex.lock();                              \
-    for (int i = 0;i< a.size();i++)             \
+    for (int i = 0;i < a.size();i++)            \
     {                                           \
         if (a[i]->c)                            \
         {                                       \
@@ -60,28 +60,56 @@ namespace UD
         inline static void Update(const float& f_timemult = 1.0f)
         {   
             _mutex.lock();
-            for (int i = 0;i< _metersIWW.size();i++)
+            static int i;
+            for (i = 0;i< _metersIWW.size();i++)
             {
                 _metersIWW[i]->Process(f_timemult);
             }
- 
+            for (i = 0;i< _metersSkyUi.size();i++)
+            {
+                _metersSkyUi[i]->Process(f_timemult);
+            }
+            _mutex.unlock();
         }
         inline static int RemoveAll()
         {
-            int loc_size = _metersIWW.size();
+            _mutex.lock();
+            int loc_size1 = _metersIWW.size();
+            int loc_size2 = _metersSkyUi.size();
             _metersIWW.clear();
-            return loc_size; 
+            _metersSkyUi.clear();
+            _mutex.unlock();
+            return (loc_size1 + loc_size2); 
         }
 
         //iWantWidget
-        inline static void AddEntryIWW(std::string s_path, int i_id, std::string s_name, float f_base, float f_rate, bool b_show)
+        inline static bool  IsRegisteredIWW(int i_id)
         {
-            _mutex.lock();
-            _metersIWW.push_back(std::unique_ptr<MeterEntryIWW>(new MeterEntryIWW(s_path,i_id,s_name,f_base,f_rate,b_show)));
-            SKSE::log::info("::AddEntryIWW - id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
-            _mutex.unlock();
+            PROCESSMETERRET(_metersIWW, 
+                            , 
+                            true ,
+                            false,
+                            id == i_id)
         }
-        inline static bool RemoveEntryIWW(int i_id)
+        inline static void  AddEntryIWW(std::string s_path, int i_id, std::string s_name, float f_base, float f_rate, bool b_show)
+        {
+            SKSE::log::info("::AddEntryIWW called - path={},i_id={},value={},rate={},show={}",s_path,i_id,f_base,f_rate,b_show);
+            if (IsRegisteredIWW(i_id)) 
+            {
+                SetMeterValueIWW(i_id,f_base);
+                SetMeterRateIWW(i_id,f_rate);
+                ToggleMeterIWW(i_id,b_show);
+                SKSE::log::info("::AddEntryIWW - Entry already exist = updating");
+            }
+            else
+            {
+                _mutex.lock();
+                _metersIWW.push_back(std::unique_ptr<MeterEntryIWW>(new MeterEntryIWW(s_path,i_id,s_name,f_base,f_rate,b_show)));
+                SKSE::log::info("::AddEntryIWW - added id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
+                _mutex.unlock();
+            }
+        }
+        inline static bool  RemoveEntryIWW(int i_id)
         {
             _mutex.lock();
             for (int i = 0;i < _metersIWW.size();i++)
@@ -96,35 +124,20 @@ namespace UD
             _mutex.unlock();
             return false;
         }
-        inline static bool RemoveEntryIWW(std::string s_name)
-        {
-            _mutex.lock();
-            for (int i = 0;i< _metersIWW.size();i++)
-            {
-                if (_metersIWW[i]->name == s_name)
-                {
-                    _metersIWW.erase(_metersIWW.begin() + i);
-                    _mutex.unlock();
-                    return true;
-                }
-            }
-            _mutex.unlock();
-            return false;
-        }
-        inline static void ToggleMeterIWW(int i_id,bool b_toggle)
+        inline static void  ToggleMeterIWW(int i_id,bool b_toggle)
         {
             PROCESSMETER(_metersIWW, _metersIWW[i]->update = b_toggle;,id == i_id)
         }
-        inline static void SetMeterRateIWW(int i_id, float f_newrate)
+        inline static void  SetMeterRateIWW(int i_id, float f_newrate)
         {
-            SKSE::log::info("::SetMeterRateIWWIWW - id={},rate={}",i_id,f_newrate);
+            SKSE::log::info("::SetMeterRateIWW - id={},rate={}",i_id,f_newrate);
             PROCESSMETER(_metersIWW, _metersIWW[i]->rate = f_newrate;,id == i_id)
         }
-        inline static void SetMeterMultIWW(int i_id, float f_newmult)
+        inline static void  SetMeterMultIWW(int i_id, float f_newmult)
         {
             PROCESSMETER(_metersIWW, _metersIWW[i]->mult = f_newmult;,id == i_id)
         }
-        inline static void SetMeterValueIWW(int i_id, float f_newvalue)
+        inline static void  SetMeterValueIWW(int i_id, float f_newvalue)
         {
             SKSE::log::info("::SetMeterValueIWW - id={},value={}",i_id,f_newvalue);
             PROCESSMETER(_metersIWW, _metersIWW[i]->value = f_newvalue;,id == i_id)
@@ -133,30 +146,50 @@ namespace UD
         {
             PROCESSMETERRET(_metersIWW , 
                             _metersIWW[i]->value += f_diffvalue;UDTRUNCVALUE(_metersIWW[i]->value,0.0f,100.0f); , 
-                            _metersIWW[i]->value; ,
-                            0.0f; , 
+                            _metersIWW[i]->value ,
+                            0.0f , 
                             id == i_id)
         }
         inline static float GetMeterValueIWW(int i_id)
         {
             PROCESSMETERRET(_metersIWW ,
                              , 
-                            _metersIWW[i]->value; , 
-                            0.0f; , 
+                            _metersIWW[i]->value , 
+                            0.0f , 
                             id == i_id)
         }
-        
-        inline static void AddEntrySkyUi(std::string s_path, std::string s_name, float f_base, float f_rate, bool b_show)
+
+        inline static bool  IsRegisteredSkyUi(const std::string& s_path)  
         {
-            _mutex.lock();
-            _metersSkyUi.push_back(std::unique_ptr<MeterEntrySkyUi>(new MeterEntrySkyUi(s_path,s_name,f_base,f_rate,b_show)));
-            SKSE::log::info("::AddEntrySkyUi - id={},update={},rate={},value={}",_metersSkyUi.back()->id,_metersSkyUi.back()->update,_metersSkyUi.back()->rate,_metersSkyUi.back()->value);
-            _mutex.unlock();
+            PROCESSMETERRET(_metersSkyUi, 
+                            , 
+                            true ,
+                            false,
+                            path == s_path)
         }
-        inline static bool RemoveEntrySkyUi(const std::string& s_path)
+        inline static void  AddEntrySkyUi(std::string s_path, std::string s_name, float f_base, float f_rate, bool b_show)
+        {
+            SKSE::log::info("::AddEntrySkyUi called - path={},value={},rate={},update={}",s_path,f_base,f_rate,b_show);
+            if (IsRegisteredSkyUi(s_path)) 
+            {
+                SKSE::log::info("::AddEntrySkyUi - Entry already exist = updating");
+                SetMeterValueSkyUi(s_path,f_base);
+                SetMeterRateSkyUi(s_path,f_rate);
+                ToggleMeterSkyUi(s_path,b_show);
+                SKSE::log::info("::AddEntrySkyUi - Entry already exist = updated");
+            }
+            else
+            {
+                _mutex.lock();
+                _metersSkyUi.push_back(std::unique_ptr<MeterEntrySkyUi>(new MeterEntrySkyUi(s_path,s_name,f_base,f_rate,b_show)));
+                SKSE::log::info("::AddEntrySkyUi - added = id={},update={},rate={},value={}",_metersSkyUi.back()->id,_metersSkyUi.back()->update,_metersSkyUi.back()->rate,_metersSkyUi.back()->value);
+                _mutex.unlock();
+            }
+        }
+        inline static bool  RemoveEntrySkyUi(const std::string& s_path)
         {
             _mutex.lock();
-            for (int i = 0;i < _metersIWW.size();i++)
+            for (int i = 0;i < _metersSkyUi.size();i++)
             {
                 if (_metersSkyUi[i]->path == s_path) 
                 {
@@ -168,20 +201,20 @@ namespace UD
             _mutex.unlock();
             return false;
         }
-        inline static void ToggleMeterSkyUi(const std::string& s_path,bool b_toggle)
+        inline static void  ToggleMeterSkyUi(const std::string& s_path,bool b_toggle)
         {
             PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->update = b_toggle;,path == s_path)
         }
-        inline static void SetMeterRateSkyUi(const std::string& s_path, float f_newrate)
+        inline static void  SetMeterRateSkyUi(const std::string& s_path, float f_newrate)
         {
-            SKSE::log::info("::SetMeterRateIWWIWW - path={},rate={}",s_path,f_newrate);
+            SKSE::log::info("::SetMeterRateSkyUi - path={},rate={}",s_path,f_newrate);
             PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->rate = f_newrate;,path == s_path)
         }
-        inline static void SetMeterMultSkyUi(const std::string& s_path, float f_newmult)
+        inline static void  SetMeterMultSkyUi(const std::string& s_path, float f_newmult)
         {
             PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->mult = f_newmult;,path == s_path)
         }
-        inline static void SetMeterValueSkyUi(const std::string& s_path, float f_newvalue)
+        inline static void  SetMeterValueSkyUi(const std::string& s_path, float f_newvalue)
         {
             SKSE::log::info("::SetMeterValueIWW - path={},value={}",s_path,f_newvalue);
             PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->value = f_newvalue;,path == s_path)
@@ -198,11 +231,10 @@ namespace UD
         {
             PROCESSMETERRET(_metersSkyUi, 
                             , 
-                            _metersSkyUi[i]->value; ,
-                            0.0f;,
+                            _metersSkyUi[i]->value ,
+                            0.0f,
                             path == s_path)
         }
-
     public:
         static bool updateallowed;
     protected:

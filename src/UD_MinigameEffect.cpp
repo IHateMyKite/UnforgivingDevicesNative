@@ -21,9 +21,9 @@ namespace UD
         //The value in papyrus was not corresponding to real value because of lag. 
         //For that reason, we need to reduce the drain value, otherwise it will be too fast
         //For now, value is reduced by 40%
-        float loc_health    = -1.0*UDCONVERTMULT*f_health/60.0f;
-        float loc_stamina   = -1.0*UDCONVERTMULT*f_stamina/60.0f;
-        float loc_magicka   = -1.0*UDCONVERTMULT*f_magicka/60.0f;
+        float loc_health    = -1.0f*UDCONVERTMULT*f_health/60.0f;
+        float loc_stamina   = -1.0f*UDCONVERTMULT*f_stamina/60.0f;
+        float loc_magicka   = -1.0f*UDCONVERTMULT*f_magicka/60.0f;
         float loc_mult      = f_mult; 
         float loc_toggle    = b_toggle;
 
@@ -72,7 +72,7 @@ namespace UD
 
     void MinigameEffectUpdateHealth(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_health)
     {
-        float loc_health    = UDCONVERTMULT*f_health/60.0f;
+        float loc_health    = -1.0f*UDCONVERTMULT*f_health/60.0f;
         if (ActorValueUpdateHook::IsRegistered(a_actor))
         {
             ActorValueUpdateHook::GetActorControl(a_actor)->health = loc_health;
@@ -80,7 +80,7 @@ namespace UD
     }
     void MinigameEffectUpdateStamina(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_stamina)
     {
-        float loc_stamina    = UDCONVERTMULT*f_stamina/60.0f;
+        float loc_stamina    = -1.0f*UDCONVERTMULT*f_stamina/60.0f;
         if (ActorValueUpdateHook::IsRegistered(a_actor))
         {
             ActorValueUpdateHook::GetActorControl(a_actor)->stamina = loc_stamina;
@@ -88,7 +88,7 @@ namespace UD
     }
     void MinigameEffectUpdateMagicka(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_magicka)
     {
-        float loc_magicka    = UDCONVERTMULT*f_magicka/60.0f;
+        float loc_magicka    = -1.0f*UDCONVERTMULT*f_magicka/60.0f;
         if (ActorValueUpdateHook::IsRegistered(a_actor))
         {
             ActorValueUpdateHook::GetActorControl(a_actor)->magicka = loc_magicka;
