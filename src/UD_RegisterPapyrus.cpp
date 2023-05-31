@@ -2,6 +2,7 @@
 #include <UD_MinigameEffect.h>
 #include <UD_Utility.h>
 #include <UD_UI.h>
+#include <UD_Inventory.h>
 
 namespace UD
 {
@@ -43,6 +44,12 @@ namespace UD
 
         REGISTERPAPYRUSFUNC(ToggleAllMeters)
         REGISTERPAPYRUSFUNC(RemoveAllMeterEntries)
+
+
+        //Inventory
+        REGISTERPAPYRUSFUNC(GetInventoryDevices)
+        REGISTERPAPYRUSFUNC(GetRenderDevices)
+        REGISTERPAPYRUSFUNC(GetSharpestWeapon)
         return true;
     }
 

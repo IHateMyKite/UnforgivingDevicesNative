@@ -5,12 +5,14 @@ namespace UD
     inline void _OnGameLoad()
     {
         SKSE::log::info("::_OnGameLoad called, effect started={}",ActorValueUpdateHook::started);
-        //_CheckUI();
+
         //remove effect in case that user reloaded the game without exit
-        if (ActorValueUpdateHook::started) ActorValueUpdateHook::RemoveAll();
-        else ActorValueUpdateHook::Patch();
+        ActorValueUpdateHook::started ? ActorValueUpdateHook::RemoveAll() : ActorValueUpdateHook::Patch();
 
         MeterManager::RemoveAll();
+
+        KeywordManager::Reload();
+        InventoryHandler::Reload();
     }
 
     inline void _OnPostPostLoad()
@@ -23,6 +25,7 @@ namespace UD
         switch(a_msg->type)
         {
             case SKSE::MessagingInterface::kPostLoadGame:
+            case SKSE::MessagingInterface::kNewGame:
                 _OnGameLoad();
                 break;
             case SKSE::MessagingInterface::kPostPostLoad:

@@ -13,7 +13,7 @@ namespace UD {
     void MinigameEffectUpdateMagicka(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_magicka);
     
     //copied from https://github.com/NoahBoddie/ActorValueGenerator
-    struct ActorValueUpdateHook
+    static struct ActorValueUpdateHook
 	{
         public:
             struct ActorControl {
