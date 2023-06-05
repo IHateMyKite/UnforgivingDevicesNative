@@ -28,8 +28,9 @@ namespace UD {
             };
 
 		    static void Patch();
-		    static int32_t ActorValueUpdatePatched( RE::Character* a_actor, RE::ActorValue a_av, float a_unk);
-            static inline REL::Relocation<decltype(ActorValueUpdatePatched)> ActorValueUpdate;
+		    static void UpdatePatched(RE::Actor* a_this, float a_delta);
+            static inline REL::Relocation<decltype(UpdatePatched)> Update;
+
             //register actor for effect
             inline static void RegisterActor(RE::Actor *a_actor, float f_mult, float f_stamina, float f_health, float f_magicka, bool b_toggle);
             
@@ -40,6 +41,7 @@ namespace UD {
             inline static bool IsRegistered(RE::Actor *a_actor);
 
             static void RemoveAll(void);
+
             //get actor control
             inline static ActorControl* GetActorControl(RE::Actor *a_actor);
         public:
@@ -47,5 +49,8 @@ namespace UD {
 
         private:
             static std::map<RE::Actor*,ActorControl> _actormap;
+
+            inline static void UpdateMinigameEffect(RE::Actor* a_actor, const float& a_delta);
+            inline static void UpdateMeters(RE::Actor* a_actor, const float& a_delta);
 	};
 }

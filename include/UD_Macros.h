@@ -3,7 +3,7 @@
 
 //multiplier used for converting existing papyrus over time effects to native over time effect
 //as native effects are much faster, we need to reduce its amplitude, otherwise it will be much stronger then papyrus one
-#define UDCONVERTMULT 0.4f
+#define UDCONVERTMULT 1.0f
 
 //if skyui meters should force the new value (play the animation)
 #define UDSKYUIFORCE 1.0f

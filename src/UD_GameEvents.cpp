@@ -7,7 +7,8 @@ namespace UD
         SKSE::log::info("::_OnGameLoad called, effect started={}",ActorValueUpdateHook::started);
 
         //remove effect in case that user reloaded the game without exit
-        ActorValueUpdateHook::started ? ActorValueUpdateHook::RemoveAll() : ActorValueUpdateHook::Patch();
+        if (!ActorValueUpdateHook::started) ActorValueUpdateHook::Patch(); 
+        else ActorValueUpdateHook::RemoveAll();
 
         MeterManager::RemoveAll();
 

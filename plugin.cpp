@@ -26,5 +26,6 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     SetupLog();
     SKSE::GetPapyrusInterface()->Register(UD::RegisterPapyrusFunctions);
     SKSE::GetMessagingInterface()->RegisterListener(UD::OnMessageReceived);
+    SKSE::AllocTrampoline(64);
     return true;
 }

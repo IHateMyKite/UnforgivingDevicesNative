@@ -100,46 +100,24 @@ namespace UD
         SKSE::log::info("ActorValueUpdateHook::Patch()");
         if (!started)
         {
-			auto& trampoline = SKSE::GetTrampoline();
-            trampoline.create(14);
- 
-			REL::Relocation<uintptr_t> ActorValueUpdateFun{ REL::RelocationID { 37509, 38451 }, 0x19 };
-
-			ActorValueUpdate = trampoline.write_call<5>(ActorValueUpdateFun.address(), ActorValueUpdatePatched);
             started = true;
+            HookVirtualMethod<RE::Actor,decltype(UpdatePatched)>(RE::PlayerCharacter::GetSingleton(),0x0AD,0x0AF,reinterpret_cast<uintptr_t>(UpdatePatched),Update);
         }
 	}
 
-
-	int32_t ActorValueUpdateHook::ActorValueUpdatePatched( RE::Character* a_actor, RE::ActorValue a_av, float a_unk)
+	void ActorValueUpdateHook::UpdatePatched(RE::Actor* a_this, float a_delta)
 	{
-        //SKSE::log::info("::ActorValueUpdatePatched - a_actor={}",a_actor->GetName());
-        //RE::ConsoleLog::GetSingleton()->Print(std::format("::ActorValueUpdate health={},stamina={},magicka={},mult={},toggle={}",health,stamina,magicka,mult,toggle).c_str());
-        if ((a_actor != nullptr) && (IsRegistered(a_actor)))
-        {
-            float loc_timemult = RE::GetSecondsSinceLastFrame()/(1.0f/60.0f);  //normalize to 60 fps
-            if ( loc_timemult > 0.0 ) 
-            {
-                ActorControl*        loc_ac       = GetActorControl(a_actor);
-                RE::ActorValueOwner* loc_avholder = a_actor->AsActorValueOwner();
-                if (loc_ac->toggle)
-                {
-                    _DamageAV(loc_avholder,RE::ActorValue::kHealth,loc_ac->health*loc_ac->mult*loc_timemult,5.0f);
-                    _DamageAV(loc_avholder,RE::ActorValue::kStamina,loc_ac->stamina*loc_ac->mult*loc_timemult,0.0);
-                    _DamageAV(loc_avholder,RE::ActorValue::kMagicka,loc_ac->magicka*loc_ac->mult*loc_timemult,0.0);
-                }
+        if (a_this) {
+
+            static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
+            if (a_this == loc_player)
+            {   
+                UpdateMinigameEffect(a_this,a_delta);
+                UpdateMeters(a_this,a_delta);
             }
-        }
 
-        //check if actor is player
-        static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
-        if (loc_player == a_actor)
-        {   
-            float loc_timemult = RE::GetSecondsSinceLastFrame()/(1.0f/60.0f);
-            if (loc_timemult > 0.0) MeterManager::Update(loc_timemult);
+            Update(a_this,a_delta);
         }
-
-		return ActorValueUpdate(a_actor, a_av, a_unk);
 	}
 
     inline void ActorValueUpdateHook::RegisterActor(RE::Actor *a_actor, float f_mult, float f_stamina, float f_health, float f_magicka, bool b_toggle)
@@ -203,5 +181,29 @@ namespace UD
         this->mult      = source.mult.load();
         this->toggle    = source.toggle.load();
         return *this;
+    }
+
+    inline void ActorValueUpdateHook::UpdateMinigameEffect(RE::Actor* a_actor, const float& a_delta)
+    {
+        if (IsRegistered(a_actor)){
+            float loc_timemult = a_delta/(1.0f/60.0f);  //normalize to 60 fps
+            if ( loc_timemult > 0.0 ) 
+            {
+                ActorValueUpdateHook::ActorControl*        loc_ac       = ActorValueUpdateHook::GetActorControl(a_actor);
+                RE::ActorValueOwner* loc_avholder                       = a_actor->AsActorValueOwner();
+                if (loc_ac->toggle)
+                {
+                    _DamageAV(loc_avholder,RE::ActorValue::kHealth,loc_ac->health*loc_ac->mult*loc_timemult,5.0f);
+                    _DamageAV(loc_avholder,RE::ActorValue::kStamina,loc_ac->stamina*loc_ac->mult*loc_timemult,0.0);
+                    _DamageAV(loc_avholder,RE::ActorValue::kMagicka,loc_ac->magicka*loc_ac->mult*loc_timemult,0.0);
+                }
+            }
+        }
+    }
+
+    inline void ActorValueUpdateHook::UpdateMeters(RE::Actor* a_actor, const float& a_delta)
+    {
+        float loc_timemult = a_delta/(1.0f/60.0f);
+        if (loc_timemult > 0.0) MeterManager::Update(loc_timemult);
     }
 }
