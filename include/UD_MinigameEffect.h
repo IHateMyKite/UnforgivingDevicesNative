@@ -1,4 +1,5 @@
 #pragma once
+#include <Windows.h>
 
 namespace UD {
     inline bool _DamageAV(RE::ActorValueOwner* a_avowner,const RE::ActorValue& a_av, const float& f_dmg, const float& f_min);
@@ -46,10 +47,8 @@ namespace UD {
             inline static ActorControl* GetActorControl(RE::Actor *a_actor);
         public:
             static std::atomic<bool>            started;
-
         private:
             static std::map<RE::Actor*,ActorControl> _actormap;
-
             inline static void UpdateMinigameEffect(RE::Actor* a_actor, const float& a_delta);
             inline static void UpdateMeters(RE::Actor* a_actor, const float& a_delta);
 	};

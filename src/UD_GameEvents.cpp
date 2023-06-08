@@ -4,21 +4,20 @@ namespace UD
 {
     inline void _OnGameLoad()
     {
-        SKSE::log::info("::_OnGameLoad called, effect started={}",ActorValueUpdateHook::started);
+        UDSKSELOG("::_OnGameLoad called, effect started={}",ActorValueUpdateHook::started);
 
         //remove effect in case that user reloaded the game without exit
         if (!ActorValueUpdateHook::started) ActorValueUpdateHook::Patch(); 
         else ActorValueUpdateHook::RemoveAll();
 
         MeterManager::RemoveAll();
-
         KeywordManager::Reload();
         InventoryHandler::Reload();
     }
 
     inline void _OnPostPostLoad()
     {
-        SKSE::log::info("::_OnPostPostLoad called");
+        UDSKSELOG("::_OnPostPostLoad called");
     }
 
     void OnMessageReceived(SKSE::MessagingInterface::Message* a_msg)

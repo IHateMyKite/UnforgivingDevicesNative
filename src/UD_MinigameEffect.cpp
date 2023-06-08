@@ -1,10 +1,10 @@
 #include <UD_MinigameEffect.h>
+#include <Windows.h>
 
 namespace UD
 {
     std::atomic<bool> ActorValueUpdateHook::started                                         = std::atomic<bool>(false);
     std::map<RE::Actor*,ActorValueUpdateHook::ActorControl> ActorValueUpdateHook::_actormap = std::map<RE::Actor*,ActorValueUpdateHook::ActorControl>();
-    //RE::PlayerCharacter* ActorValueUpdateHook::player = RE::PlayerCharacter::GetSingleton();
 
     inline bool _DamageAV(RE::ActorValueOwner* a_avowner,const RE::ActorValue& a_av, const float& f_dmg, const float& f_min)
     {
@@ -97,7 +97,7 @@ namespace UD
 
 	void ActorValueUpdateHook::Patch()
 	{
-        SKSE::log::info("ActorValueUpdateHook::Patch()");
+        UDSKSELOG("ActorValueUpdateHook::Patch()");
         if (!started)
         {
             started = true;
@@ -107,25 +107,20 @@ namespace UD
 
 	void ActorValueUpdateHook::UpdatePatched(RE::Actor* a_this, float a_delta)
 	{
-        if (a_this) {
-
-            static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
-            if (a_this == loc_player)
-            {   
-                UpdateMinigameEffect(a_this,a_delta);
-                UpdateMeters(a_this,a_delta);
-            }
-
-            Update(a_this,a_delta);
+        static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
+        if (a_this == loc_player)
+        {   
+            UpdateMinigameEffect(a_this,a_delta);
+            UpdateMeters(a_this,a_delta);
         }
+        Update(a_this,a_delta);
 	}
 
     inline void ActorValueUpdateHook::RegisterActor(RE::Actor *a_actor, float f_mult, float f_stamina, float f_health, float f_magicka, bool b_toggle)
     {
         ActorControl loc_ac = ActorControl{f_stamina,f_health,f_magicka,f_mult,b_toggle};
         _actormap[a_actor] = loc_ac;
-        SKSE::log::info("::RegisterActor - actor={},new size={}",a_actor->GetName(),_actormap.size());
-        //ActorValueUpdateHook::Patch();
+        UDSKSELOG("::RegisterActor - actor={},new size={}",a_actor->GetName(),_actormap.size());
     }
 
     inline void ActorValueUpdateHook::RemoveActor(RE::Actor *a_actor)
@@ -187,7 +182,7 @@ namespace UD
     {
         if (IsRegistered(a_actor)){
             float loc_timemult = a_delta/(1.0f/60.0f);  //normalize to 60 fps
-            if ( loc_timemult > 0.0 ) 
+            if ( loc_timemult > 0.0 )
             {
                 ActorValueUpdateHook::ActorControl*        loc_ac       = ActorValueUpdateHook::GetActorControl(a_actor);
                 RE::ActorValueOwner* loc_avholder                       = a_actor->AsActorValueOwner();

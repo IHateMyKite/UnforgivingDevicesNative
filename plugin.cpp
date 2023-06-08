@@ -6,8 +6,10 @@
 
 #include <UD_H.h>
 
+
 namespace logger = SKSE::log;
 
+#if(UDDEBUG > 1U)
 void SetupLog() {
     auto logsFolder = SKSE::log::log_directory();
     if (!logsFolder) SKSE::stl::report_and_fail("SKSE log_directory not provided, logs disabled.");
@@ -19,11 +21,13 @@ void SetupLog() {
     spdlog::set_level(spdlog::level::trace);
     spdlog::flush_on(spdlog::level::trace);
 }
-
+#endif
 
 SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     SKSE::Init(skse);
-    SetupLog();
+    #if(UDDEBUG > 1U)
+        SetupLog();
+    #endif
     SKSE::GetPapyrusInterface()->Register(UD::RegisterPapyrusFunctions);
     SKSE::GetMessagingInterface()->RegisterListener(UD::OnMessageReceived);
     SKSE::AllocTrampoline(64);

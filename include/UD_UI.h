@@ -61,11 +61,11 @@ namespace UD
         {   
             _mutex.lock();
             static int i;
-            for (i = 0;i< _metersIWW.size();i++)
+            for (i = 0;i < _metersIWW.size();i++)
             {
                 _metersIWW[i]->Process(f_timemult);
             }
-            for (i = 0;i< _metersSkyUi.size();i++)
+            for (i = 0;i < _metersSkyUi.size();i++)
             {
                 _metersSkyUi[i]->Process(f_timemult);
             }
@@ -93,19 +93,19 @@ namespace UD
         }
         inline static void  AddEntryIWW(std::string s_path, int i_id, std::string s_name, float f_base, float f_rate, bool b_show)
         {
-            SKSE::log::info("::AddEntryIWW called - path={},i_id={},value={},rate={},show={}",s_path,i_id,f_base,f_rate,b_show);
+            UDSKSELOG("::AddEntryIWW called - path={},i_id={},value={},rate={},show={}",s_path,i_id,f_base,f_rate,b_show);
             if (IsRegisteredIWW(i_id)) 
             {
                 SetMeterValueIWW(i_id,f_base);
                 SetMeterRateIWW(i_id,f_rate);
                 ToggleMeterIWW(i_id,b_show);
-                SKSE::log::info("::AddEntryIWW - Entry already exist = updating");
+                UDSKSELOG("::AddEntryIWW - Entry already exist = updating");
             }
             else
             {
                 _mutex.lock();
                 _metersIWW.push_back(std::unique_ptr<MeterEntryIWW>(new MeterEntryIWW(s_path,i_id,s_name,f_base,f_rate,b_show)));
-                SKSE::log::info("::AddEntryIWW - added id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
+                UDSKSELOG("::AddEntryIWW - added id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
                 _mutex.unlock();
             }
         }
@@ -167,20 +167,20 @@ namespace UD
         }
         inline static void  AddEntrySkyUi(std::string s_path, std::string s_name, float f_base, float f_rate, bool b_show)
         {
-            SKSE::log::info("::AddEntrySkyUi called - path={},value={},rate={},update={}",s_path,f_base,f_rate,b_show);
+            UDSKSELOG("::AddEntrySkyUi called - path={},value={},rate={},update={}",s_path,f_base,f_rate,b_show);
             if (IsRegisteredSkyUi(s_path)) 
             {
-                SKSE::log::info("::AddEntrySkyUi - Entry already exist = updating");
+                UDSKSELOG("::AddEntrySkyUi - Entry already exist = updating");
                 SetMeterValueSkyUi(s_path,f_base);
                 SetMeterRateSkyUi(s_path,f_rate);
                 ToggleMeterSkyUi(s_path,b_show);
-                SKSE::log::info("::AddEntrySkyUi - Entry already exist = updated");
+                UDSKSELOG("::AddEntrySkyUi - Entry already exist = updated");
             }
             else
             {
                 _mutex.lock();
                 _metersSkyUi.push_back(std::unique_ptr<MeterEntrySkyUi>(new MeterEntrySkyUi(s_path,s_name,f_base,f_rate,b_show)));
-                SKSE::log::info("::AddEntrySkyUi - added = id={},update={},rate={},value={}",_metersSkyUi.back()->id,_metersSkyUi.back()->update,_metersSkyUi.back()->rate,_metersSkyUi.back()->value);
+                UDSKSELOG("::AddEntrySkyUi - added = id={},update={},rate={},value={}",_metersSkyUi.back()->id,_metersSkyUi.back()->update,_metersSkyUi.back()->rate,_metersSkyUi.back()->value);
                 _mutex.unlock();
             }
         }

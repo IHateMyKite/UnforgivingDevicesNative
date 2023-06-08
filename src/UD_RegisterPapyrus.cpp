@@ -50,6 +50,9 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetInventoryDevices)
         REGISTERPAPYRUSFUNC(GetRenderDevices)
         REGISTERPAPYRUSFUNC(GetSharpestWeapon)
+
+        //animation
+        REGISTERPAPYRUSFUNC(GetActorConstrains)
         return true;
     }
 

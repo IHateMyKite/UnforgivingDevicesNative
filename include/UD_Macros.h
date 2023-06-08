@@ -17,10 +17,14 @@
     else if (val < min) val = min;      \
 }
 
-#if(UDDEBUG == 1U)
+#if(UDDEBUG > 1U)
     #define UDCONSOLELOG(...) {RE::ConsoleLog::GetSingleton()->Print(std::format(__VA_ARGS__).c_str());}
 #else
     #define UDCONSOLELOG(...) {}
 #endif
 
-#define UDSKSELOG(...) {SKSE::log::info(__VA_ARGS__);}
+#if(UDDEBUG > 0U)
+    #define UDSKSELOG(...) {SKSE::log::info(__VA_ARGS__);}
+#else
+    #define UDSKSELOG(...) {}
+#endif

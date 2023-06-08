@@ -41,13 +41,13 @@ namespace UD
             //get hud view
             static auto loc_hudmenu = loc_ui->menuMap.find("HUD Menu")->second.menu;
             if (loc_hudmenu == nullptr) return;
-        
+
             //get hud movie
             static auto loc_uimovie = loc_hudmenu->uiMovie;
             if (loc_uimovie == nullptr) return;
 
             //set path
-            static std::string loc_path =  path + ".setMeterPercent";
+            std::string loc_path =  path + ".setMeterPercent";
 
             //set argument
             std::string loc_argstr = std::string(std::to_string(id) + "|" + std::to_string(value));
@@ -56,9 +56,6 @@ namespace UD
 
             //invoke action script function
             loc_uimovie->Invoke(loc_path.c_str(),NULL,&loc_arg,1);
-
-            //log
-            //SKSE::log::info("::ChangeiWWValue - {}({})",loc_path.c_str(),loc_arg.GetString());
         }
     }
 
