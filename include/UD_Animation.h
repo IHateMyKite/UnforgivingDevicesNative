@@ -2,6 +2,8 @@
 
 namespace UD 
 {
+    inline int GetActorHBConstrains(RE::Actor* a_actor,RE::TESForm* a_device);
+
     inline int GetActorConstrains(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
     {
         auto loc_devices    = InventoryHandler::GetRenderDevices(a_actor, true);
@@ -23,15 +25,7 @@ namespace UD
             static std::vector<RE::BGSKeyword*> loc_hb = std::vector<RE::BGSKeyword*>({KeywordManager::ddhb});
             if (it->HasKeywordInArray(loc_hb,true))
             {
-                for (auto& it2 : KeywordManager::ddhbkwds)
-                {
-                    std::vector<RE::BGSKeyword*> loc_hbkw = std::vector<RE::BGSKeyword*>({it2.first});
-                    if (it->HasKeywordInArray(loc_hbkw,true))
-                    {
-                        loc_res += it2.second;
-                        continue;
-                    }
-                }
+                loc_res += GetActorHBConstrains(a_actor,it);
             }
 
             //check mittens
@@ -51,5 +45,18 @@ namespace UD
             }
         }
         return loc_res;
+    }
+
+    inline int GetActorHBConstrains(RE::Actor* a_actor,RE::TESForm* a_device)
+    {
+        for (auto& it2 : KeywordManager::ddhbkwds)
+        {
+            std::vector<RE::BGSKeyword*> loc_hbkw = std::vector<RE::BGSKeyword*>({it2.first});
+            if (a_device->HasKeywordInArray(loc_hbkw,true))
+            {
+                return it2.second;
+            }
+        }
+        return 0x00000000;
     }
 }

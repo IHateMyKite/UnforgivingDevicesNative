@@ -17,6 +17,9 @@ namespace UD
 
                     ddhb = static_cast<RE::BGSKeyword*>(loc_datahandler->LookupForm(0x05226C,"Devious Devices - Integration.esm"));
 
+                    //clear keywords
+                    ddhbkwds.clear();
+
                     //elbowtie
                     ddhbkwds.push_back({static_cast<RE::BGSKeyword*>(loc_datahandler->LookupForm(0x08A76C,"Devious Devices - Integration.esm")),0x00000080});
                     //yoke
