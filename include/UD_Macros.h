@@ -1,5 +1,5 @@
 //debug build
-#define UDDEBUG 1U
+#define UDDEBUG 0U
 
 //multiplier used for converting existing papyrus over time effects to native over time effect
 //as native effects are much faster, we need to reduce its amplitude, otherwise it will be much stronger then papyrus one

@@ -1,15 +1,36 @@
 #pragma once
 
+#include <UD_H.h>
+
 namespace UD 
 {
     inline int GetActorHBConstrains(RE::Actor* a_actor,RE::TESForm* a_device);
+    inline int ProccessDeviceArray(RE::Actor* a_actor,const std::vector<RE::TESForm*> &a_array);
+    inline int GetActorConstrainsInter(RE::Actor* a_actor);
 
     inline int GetActorConstrains(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
     {
-        auto loc_devices    = InventoryHandler::GetRenderDevices(a_actor, true);
-        int loc_res         = 0x00000000;
+/*        if (a_actor->IsPlayer()) return UpdateManager::PLAYERCONSTRAINS;
+        else*/ return GetActorConstrainsInter(a_actor);
+    }
 
-        for(auto& it : loc_devices)
+    inline int GetActorConstrainsInter(RE::Actor* a_actor)
+    {
+        auto loc_devices                = InventoryHandler::GetRenderDevices(a_actor, true);
+        auto loc_invisibledevices       = InventoryHandler::GetInvisibleDevices(a_actor, true);
+        
+        int loc_res         = 0x00000000;
+        
+        loc_res |= ProccessDeviceArray(a_actor,loc_devices);
+        loc_res |= ProccessDeviceArray(a_actor,loc_invisibledevices);
+
+        return loc_res;
+    }
+
+    inline int ProccessDeviceArray(RE::Actor* a_actor,const std::vector<RE::TESForm*> &a_array)
+    {
+        int loc_res = 0x00000000;
+        for(auto& it : a_array)
         {
             //check hobble skirt
             static std::vector<RE::BGSKeyword*> loc_hobble = std::vector<RE::BGSKeyword*>({KeywordManager::ddhobbleskirt});

@@ -10,4 +10,6 @@ namespace UD
     std::vector<std::pair<RE::BGSKeyword*,int>> KeywordManager::ddhbkwds = std::vector<std::pair<RE::BGSKeyword*,int>>();
     RE::BGSKeyword* KeywordManager::ddmittens           = nullptr;
     RE::BGSKeyword* KeywordManager::ddgag               = nullptr;
+    RE::BGSKeyword* KeywordManager::udinvhb             = nullptr;
+    RE::BGSKeyword* KeywordManager::udinvhs             = nullptr;
 }

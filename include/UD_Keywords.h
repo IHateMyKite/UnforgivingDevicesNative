@@ -40,6 +40,10 @@ namespace UD
                     ddmittens = static_cast<RE::BGSKeyword*>(loc_datahandler->LookupForm(0x05FF81,"Devious Devices - Integration.esm"));
 
                     ddgag = static_cast<RE::BGSKeyword*>(loc_datahandler->LookupForm(0x007EB8,"Devious Devices - Assets.esm"));
+
+                    //invisible devices
+                    udinvhb = static_cast<RE::BGSKeyword*>(loc_datahandler->LookupForm(0x156EEE,"UnforgivingDevices.esp"));
+                    udinvhs = static_cast<RE::BGSKeyword*>(loc_datahandler->LookupForm(0x156EEF,"UnforgivingDevices.esp"));
             }
         public:
             static RE::BGSKeyword* udinvdevice;
@@ -54,5 +58,8 @@ namespace UD
 
             static RE::BGSKeyword* ddmittens;
             static RE::BGSKeyword* ddgag;
+
+            static RE::BGSKeyword* udinvhb;
+            static RE::BGSKeyword* udinvhs;
     };
 }

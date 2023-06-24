@@ -13,6 +13,8 @@ namespace UD
         MeterManager::RemoveAll();
         KeywordManager::Reload();
         InventoryHandler::Reload();
+
+        UD::ReloadLib();
     }
 
     inline void _OnPostPostLoad()

@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 # Set your project name. This will be the name of your SKSE .dll file.
-project(UDNative VERSION 0.0.5 LANGUAGES CXX)
+project(UDNative VERSION 0.0.6 LANGUAGES CXX)
 
 # #
 # YOU DO NOT NEED TO EDIT ANYTHING BELOW HERE
@@ -41,6 +41,8 @@ set(source_files ${source_files}
     src/UD_Inventory.cpp
     src/UD_Keywords.cpp
     src/UD_Animation.cpp
+    src/UD_Updater.cpp
+    src/UD_Lib.cpp
 )
 
 # Setup your SKSE plugin as an SKSE plugin!

@@ -17,6 +17,11 @@ namespace UD
                 renfilter.first.push_back(KeywordManager::udrendevice);
                 renfilter.second = true;
 
+                invisiblefilter.first.clear();
+                invisiblefilter.first.push_back(KeywordManager::udinvhb);
+                invisiblefilter.first.push_back(KeywordManager::udinvhs);
+                invisiblefilter.second = false;
+
                 UDSKSELOG("InventoryHandler::Reload called")
             }
 
@@ -40,6 +45,22 @@ namespace UD
             inline static std::vector<RE::TESForm*> GetRenderDevices(RE::Actor* a_actor, bool b_worn)
             {
                 RE::Actor::InventoryItemMap     loc_inv = a_actor->GetInventory(FilterRenDevices);
+
+                std::vector<RE::TESForm*> loc_res;
+
+                for(auto&& it : loc_inv)
+                {
+                    if ((!b_worn) || (it.second.second->IsWorn())) 
+                    {
+                        loc_res.push_back(it.first);
+                    }
+                }
+                return loc_res;
+            }
+
+            inline static std::vector<RE::TESForm*> GetInvisibleDevices(RE::Actor* a_actor, bool b_worn)
+            {
+                RE::Actor::InventoryItemMap     loc_inv = a_actor->GetInventory(FilterInvisibleDevices);
 
                 std::vector<RE::TESForm*> loc_res;
 
@@ -103,10 +124,16 @@ namespace UD
             {
                 return a_obj.IsWeapon();
             }
+            inline static bool FilterInvisibleDevices(RE::TESBoundObject& a_obj)
+            {
+                return a_obj.HasKeywordInArray(invisiblefilter.first,invisiblefilter.second);
+            }
+
             static RE::TESDataHandler* datahandler;
 
             static std::pair<std::vector<RE::BGSKeyword*>,bool> invfilter;
             static std::pair<std::vector<RE::BGSKeyword*>,bool> renfilter;
+            static std::pair<std::vector<RE::BGSKeyword*>,bool> invisiblefilter;
     };
 
 

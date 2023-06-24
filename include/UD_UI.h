@@ -143,7 +143,7 @@ namespace UD
         inline static float UpdateMeterValueIWW(int i_id, float f_diffvalue)
         {
             PROCESSMETERRET(_metersIWW , 
-                            _metersIWW[i]->value += f_diffvalue;UDTRUNCVALUE(_metersIWW[i]->value,0.0f,100.0f); , 
+                            _metersIWW[i]->value += f_diffvalue*_metersIWW[i]->mult;UDTRUNCVALUE(_metersIWW[i]->value,0.0f,100.0f); , 
                             _metersIWW[i]->value ,
                             0.0f , 
                             id == i_id)
@@ -218,7 +218,7 @@ namespace UD
         inline static float UpdateMeterValueSkyUi(const std::string& s_path, float f_diffvalue)
         {
             PROCESSMETERRET(_metersSkyUi, 
-                            _metersSkyUi[i]->value += f_diffvalue;UDTRUNCVALUE(_metersSkyUi[i]->value,0.0f,100.0f); ,
+                            _metersSkyUi[i]->value += f_diffvalue*_metersSkyUi[i]->mult;UDTRUNCVALUE(_metersSkyUi[i]->value,0.0f,100.0f); ,
                             _metersSkyUi[i]->value; ,
                             0.0f;,
                             path == s_path)
