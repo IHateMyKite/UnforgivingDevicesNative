@@ -35,7 +35,6 @@ namespace UD
         //get function bassed on version of game  (SEAE/VR)
         uintptr_t   loc_funadress   =  reinterpret_cast<uintptr_t>(loc_vtable[REL::Module::IsVR() ? a_indxVR : a_indxSEAE]);
 
-
         //writte data  to vtable
         REL::safe_write(reinterpret_cast<uintptr_t>(&loc_vtable[REL::Module::IsVR() ? a_indxVR : a_indxSEAE]), &a_funptr, sizeof(uintptr_t));
     }

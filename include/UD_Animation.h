@@ -37,8 +37,8 @@ namespace UD
             if (it->HasKeywordInArray(loc_hobble,true))
             {
                 static std::vector<RE::BGSKeyword*> loc_hobblerelaxed = std::vector<RE::BGSKeyword*>({KeywordManager::ddhobbleskirtrelax,KeywordManager::ddankleshacles});
-                if (it->HasKeywordInArray(loc_hobblerelaxed,false)) loc_res += 0x00000002;
-                else loc_res += 0x00000001;
+                if (it->HasKeywordInArray(loc_hobblerelaxed,false)) loc_res |= 0x00000002;
+                else loc_res |= 0x00000001;
                 continue;
             }
 
@@ -46,14 +46,14 @@ namespace UD
             static std::vector<RE::BGSKeyword*> loc_hb = std::vector<RE::BGSKeyword*>({KeywordManager::ddhb});
             if (it->HasKeywordInArray(loc_hb,true))
             {
-                loc_res += GetActorHBConstrains(a_actor,it);
+                loc_res |= GetActorHBConstrains(a_actor,it);
             }
 
             //check mittens
             static std::vector<RE::BGSKeyword*> loc_mittens = std::vector<RE::BGSKeyword*>({KeywordManager::ddmittens});
             if (it->HasKeywordInArray(loc_mittens,true))
             {
-                loc_res += 0x00000100;
+                loc_res |= 0x00000100;
                 continue;
             }
 
@@ -61,7 +61,7 @@ namespace UD
             static std::vector<RE::BGSKeyword*> loc_gag = std::vector<RE::BGSKeyword*>({KeywordManager::ddgag});
             if (it->HasKeywordInArray(loc_gag,true))
             {
-                loc_res += 0x00000800;
+                loc_res |= 0x00000800;
                 continue;
             }
         }
