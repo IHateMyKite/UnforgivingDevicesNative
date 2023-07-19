@@ -53,6 +53,10 @@ namespace UD
 
         //animation
         REGISTERPAPYRUSFUNC(GetActorConstrains)
+
+        //skill
+        REGISTERPAPYRUSFUNC(CalculateSkillFromPerks)
+        
         return true;
     }
 

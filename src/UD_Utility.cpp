@@ -1,20 +1,22 @@
 #include <UD_Utility.h>
 namespace UD 
 {
-    #define UDBITERRORVALUE 0xFFFFFFFF
-    int CodeBit(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*,int i_codedmap,int i_value,int i_size,int i_index)
+    
+    int CodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_value,int a_size,int a_index)
     {
-        if (i_value + i_size > 32) return UDBITERRORVALUE;
-        int loc_clearmap = (0x1 << i_size) - 1;
-        i_value     &=  loc_clearmap;
-        i_value     <<= i_index;
-        i_codedmap  &=  loc_clearmap;
-        return i_codedmap | i_value;
+        if (a_index + a_size > 32) return UDBITERRORVALUE;
+        int loc_clearmap = (((0x1 << a_size) - 1) << a_index);
+        int loc_result = a_codedmap;
+        a_value     =  (a_value << a_index) & loc_clearmap;
+        loc_result  &= (~loc_clearmap);
+        loc_result  |= a_value;
+        return loc_result;
     }
-    int DecodeBit(RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*,int i_codedmap,int i_size,int i_index)
+
+    int DecodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_size,int a_index)
     {
-        i_codedmap >>= i_index;
-        i_codedmap &= (0x1 << i_size) - 1;
-        return i_codedmap;
+        a_codedmap >>= a_index;
+        a_codedmap &= ((0x00000001 << a_size) - 1);
+        return a_codedmap;
     }
 }
