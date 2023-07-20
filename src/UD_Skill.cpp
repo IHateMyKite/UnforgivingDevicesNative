@@ -25,7 +25,7 @@ namespace UD
         {
             auto loc_forms = *a_formlist->scriptAddedTempForms;
             UDSKSELOG("Checking temp forms")
-            for (int i = 0; i < a_formlist->scriptAddedFormCount; i++)
+            for (uint32_t i = 0; i < a_formlist->scriptAddedFormCount; i++)
             {
                 
                 RE::TESForm* loc_form = RE::TESForm::LookupByID(loc_forms[i]);

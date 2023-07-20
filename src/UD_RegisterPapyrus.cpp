@@ -45,7 +45,6 @@ namespace UD
         REGISTERPAPYRUSFUNC(ToggleAllMeters)
         REGISTERPAPYRUSFUNC(RemoveAllMeterEntries)
 
-
         //Inventory
         REGISTERPAPYRUSFUNC(GetInventoryDevices)
         REGISTERPAPYRUSFUNC(GetRenderDevices)
@@ -56,7 +55,14 @@ namespace UD
 
         //skill
         REGISTERPAPYRUSFUNC(CalculateSkillFromPerks)
-        
+
+        //modifiers
+        REGISTERPAPYRUSFUNC(HasModifier)
+        REGISTERPAPYRUSFUNC(GetModifierIndex)
+        REGISTERPAPYRUSFUNC(ModifierHaveParams)
+        REGISTERPAPYRUSFUNC(getModifierAllParam)
+        REGISTERPAPYRUSFUNC(GetModifierParamNum)
+
         return true;
     }
 
