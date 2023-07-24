@@ -6,62 +6,62 @@
 
 namespace UD
 {
-    #define REGISTERPAPYRUSFUNC(name) vm->RegisterFunction(#name, "UD_Native", UD::name);
+    #define REGISTERPAPYRUSFUNC(name,unhook) vm->RegisterFunction(#name, "UD_Native", UD::name,unhook);
 
     bool RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm) {
-        REGISTERPAPYRUSFUNC(StartMinigameEffect)
-        REGISTERPAPYRUSFUNC(EndMinigameEffect)
-        REGISTERPAPYRUSFUNC(IsMinigameEffectOn)
-        REGISTERPAPYRUSFUNC(UpdateMinigameEffectMult)
-        REGISTERPAPYRUSFUNC(ToggleMinigameEffect)
-        REGISTERPAPYRUSFUNC(MinigameStatsCheck)
-        REGISTERPAPYRUSFUNC(MinigameEffectUpdateHealth)
-        REGISTERPAPYRUSFUNC(MinigameEffectUpdateStamina)
-        REGISTERPAPYRUSFUNC(MinigameEffectUpdateMagicka)
+        REGISTERPAPYRUSFUNC(StartMinigameEffect,true)
+        REGISTERPAPYRUSFUNC(EndMinigameEffect,true)
+        REGISTERPAPYRUSFUNC(IsMinigameEffectOn,true)
+        REGISTERPAPYRUSFUNC(UpdateMinigameEffectMult,true)
+        REGISTERPAPYRUSFUNC(ToggleMinigameEffect,true)
+        REGISTERPAPYRUSFUNC(MinigameStatsCheck,true)
+        REGISTERPAPYRUSFUNC(MinigameEffectUpdateHealth,true)
+        REGISTERPAPYRUSFUNC(MinigameEffectUpdateStamina,true)
+        REGISTERPAPYRUSFUNC(MinigameEffectUpdateMagicka,true)
 
         //UTILITY
-        REGISTERPAPYRUSFUNC(CodeBit)
-        REGISTERPAPYRUSFUNC(DecodeBit)
+        REGISTERPAPYRUSFUNC(CodeBit,true)
+        REGISTERPAPYRUSFUNC(DecodeBit,true)
 
         //UI
-        REGISTERPAPYRUSFUNC(AddMeterEntryIWW)
-        REGISTERPAPYRUSFUNC(RemoveMeterEntryIWW)
-        REGISTERPAPYRUSFUNC(ToggleMeterIWW)
-        REGISTERPAPYRUSFUNC(SetMeterRateIWW)
-        REGISTERPAPYRUSFUNC(SetMeterMultIWW)
-        REGISTERPAPYRUSFUNC(SetMeterValueIWW)
-        REGISTERPAPYRUSFUNC(UpdateMeterValueIWW)
-        REGISTERPAPYRUSFUNC(GetMeterValueIWW)
+        REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
+        REGISTERPAPYRUSFUNC(RemoveMeterEntryIWW,true)
+        REGISTERPAPYRUSFUNC(ToggleMeterIWW,true)
+        REGISTERPAPYRUSFUNC(SetMeterRateIWW,true)
+        REGISTERPAPYRUSFUNC(SetMeterMultIWW,true)
+        REGISTERPAPYRUSFUNC(SetMeterValueIWW,true)
+        REGISTERPAPYRUSFUNC(UpdateMeterValueIWW,true)
+        REGISTERPAPYRUSFUNC(GetMeterValueIWW,true)
 
-        REGISTERPAPYRUSFUNC(AddMeterEntrySkyUi)
-        REGISTERPAPYRUSFUNC(RemoveMeterEntrySkyUi)
-        REGISTERPAPYRUSFUNC(ToggleMeterSkyUi)
-        REGISTERPAPYRUSFUNC(SetMeterRateSkyUi)
-        REGISTERPAPYRUSFUNC(SetMeterMultSkyUi)
-        REGISTERPAPYRUSFUNC(SetMeterValueSkyUi)
-        REGISTERPAPYRUSFUNC(UpdateMeterValueSkyUi)
-        REGISTERPAPYRUSFUNC(GetMeterValueSkyUi)
+        REGISTERPAPYRUSFUNC(AddMeterEntrySkyUi,true)
+        REGISTERPAPYRUSFUNC(RemoveMeterEntrySkyUi,true)
+        REGISTERPAPYRUSFUNC(ToggleMeterSkyUi,true)
+        REGISTERPAPYRUSFUNC(SetMeterRateSkyUi,true)
+        REGISTERPAPYRUSFUNC(SetMeterMultSkyUi,true)
+        REGISTERPAPYRUSFUNC(SetMeterValueSkyUi,true)
+        REGISTERPAPYRUSFUNC(UpdateMeterValueSkyUi,true)
+        REGISTERPAPYRUSFUNC(GetMeterValueSkyUi,true)
 
-        REGISTERPAPYRUSFUNC(ToggleAllMeters)
-        REGISTERPAPYRUSFUNC(RemoveAllMeterEntries)
+        REGISTERPAPYRUSFUNC(ToggleAllMeters,true)
+        REGISTERPAPYRUSFUNC(RemoveAllMeterEntries,true)
 
         //Inventory
-        REGISTERPAPYRUSFUNC(GetInventoryDevices)
-        REGISTERPAPYRUSFUNC(GetRenderDevices)
-        REGISTERPAPYRUSFUNC(GetSharpestWeapon)
+        REGISTERPAPYRUSFUNC(GetInventoryDevices,true)
+        REGISTERPAPYRUSFUNC(GetRenderDevices,true)
+        REGISTERPAPYRUSFUNC(GetSharpestWeapon,true)
 
         //animation
-        REGISTERPAPYRUSFUNC(GetActorConstrains)
+        REGISTERPAPYRUSFUNC(GetActorConstrains,true)
 
         //skill
-        REGISTERPAPYRUSFUNC(CalculateSkillFromPerks)
+        REGISTERPAPYRUSFUNC(CalculateSkillFromPerks,true)
 
         //modifiers
-        REGISTERPAPYRUSFUNC(HasModifier)
-        REGISTERPAPYRUSFUNC(GetModifierIndex)
-        REGISTERPAPYRUSFUNC(ModifierHaveParams)
-        REGISTERPAPYRUSFUNC(getModifierAllParam)
-        REGISTERPAPYRUSFUNC(GetModifierParamNum)
+        REGISTERPAPYRUSFUNC(HasModifier,true)
+        REGISTERPAPYRUSFUNC(GetModifierIndex,true)
+        REGISTERPAPYRUSFUNC(ModifierHaveParams,true)
+        REGISTERPAPYRUSFUNC(getModifierAllParam,true)
+        REGISTERPAPYRUSFUNC(GetModifierParamNum,true)
 
         return true;
     }
