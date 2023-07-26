@@ -27,6 +27,7 @@ namespace UD
 
             inline static std::vector<RE::TESForm*> GetInventoryDevices(RE::Actor* a_actor, bool b_worn)
             {
+                if (a_actor == nullptr) return std::vector<RE::TESForm*>();
 
                 RE::Actor::InventoryItemMap     loc_inv = a_actor->GetInventory(FilterInvDevices);
 
@@ -44,6 +45,8 @@ namespace UD
 
             inline static std::vector<RE::TESForm*> GetRenderDevices(RE::Actor* a_actor, bool b_worn)
             {
+                if (a_actor == nullptr) return std::vector<RE::TESForm*>();
+                
                 RE::Actor::InventoryItemMap     loc_inv = a_actor->GetInventory(FilterRenDevices);
 
                 std::vector<RE::TESForm*> loc_res;
@@ -60,6 +63,8 @@ namespace UD
 
             inline static std::vector<RE::TESForm*> GetInvisibleDevices(RE::Actor* a_actor, bool b_worn)
             {
+                if (a_actor == nullptr) return std::vector<RE::TESForm*>();
+
                 RE::Actor::InventoryItemMap     loc_inv = a_actor->GetInventory(FilterInvisibleDevices);
 
                 std::vector<RE::TESForm*> loc_res;
@@ -76,6 +81,8 @@ namespace UD
 
             inline static RE::TESObjectWEAP* GetSharpestWeapon(RE::Actor* a_actor)
             {
+                if (a_actor == nullptr) return nullptr;
+
                 RE::Actor::InventoryItemMap loc_weapons = a_actor->GetInventory(FilterWeapons);
                 RE::TESObjectWEAP* loc_result = nullptr;
 
@@ -97,6 +104,8 @@ namespace UD
 
             static bool IsSharp(RE::TESObjectWEAP* a_weapon)
             {
+                if (a_weapon == nullptr) return false;
+                
                 RE::WEAPON_TYPE loc_type = a_weapon->GetWeaponType();
                 switch (loc_type)
                 {

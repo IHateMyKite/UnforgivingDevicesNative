@@ -8,7 +8,7 @@ namespace UD
 
     inline bool _DamageAV(RE::ActorValueOwner* a_avowner,const RE::ActorValue& a_av, const float& f_dmg, const float& f_min)
     {
-        if ((f_dmg != 0.0) && ((a_avowner->GetActorValue(a_av) - f_dmg) > f_min))
+        if ((f_dmg != 0.0f) && ((a_avowner->GetActorValue(a_av) - f_dmg) > f_min))
         {
             a_avowner->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kDamage,a_av,f_dmg);
         }
@@ -60,14 +60,18 @@ namespace UD
         }
     }
 
-    bool MinigameStatsCheck(PAPYRUSFUNCHANDLE, RE::Actor *a_actor) 
+    bool MinigameStatsCheck(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, bool a_stamina, bool a_health, bool a_magicka) 
     {
-        RE::ActorValueOwner* a_avowner   = a_actor->AsActorValueOwner();
-        bool loc_res = true;
-        loc_res &= a_avowner->GetActorValue(RE::ActorValue::kStamina) > 0.1;
-        loc_res &= a_avowner->GetActorValue(RE::ActorValue::kHealth)  > 5.1;
-        loc_res &= a_avowner->GetActorValue(RE::ActorValue::kMagicka) > 0.1;
-        return loc_res;
+        if (a_actor != nullptr)
+        {
+            RE::ActorValueOwner* a_avowner   = a_actor->AsActorValueOwner();
+            bool loc_res = true;
+            loc_res &= (!a_stamina || (a_avowner->GetActorValue(RE::ActorValue::kStamina) > 0.1));
+            loc_res &= (!a_health  || (a_avowner->GetActorValue(RE::ActorValue::kHealth)  > 5.1));
+            loc_res &= (!a_magicka || (a_avowner->GetActorValue(RE::ActorValue::kMagicka) > 0.1));
+            return loc_res;
+        }
+        else return false;
     }
 
     void MinigameEffectUpdateHealth(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_health)

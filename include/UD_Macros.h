@@ -9,7 +9,7 @@
 #define UDSKYUIFORCE 1.0f
 
 //handle of papyrus functions
-#define PAPYRUSFUNCHANDLE RE::BSScript::Internal::VirtualMachine* a_vm, const RE::VMStackID a_stackID, RE::StaticFunctionTag*
+#define PAPYRUSFUNCHANDLE RE::StaticFunctionTag*
 
 #define UDTRUNCVALUE(val,min,max)       \
 {                                       \
