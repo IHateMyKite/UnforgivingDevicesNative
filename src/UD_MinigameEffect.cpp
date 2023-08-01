@@ -74,7 +74,7 @@ namespace UD
         else return false;
     }
 
-    void MinigameEffectUpdateHealth(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_health)
+    void MinigameEffectSetHealth(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_health)
     {
         float loc_health    = -1.0f*UDCONVERTMULT*f_health/60.0f;
         if (ActorValueUpdateHook::IsRegistered(a_actor))
@@ -82,7 +82,7 @@ namespace UD
             ActorValueUpdateHook::GetActorControl(a_actor)->health = loc_health;
         }
     }
-    void MinigameEffectUpdateStamina(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_stamina)
+    void MinigameEffectSetStamina(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_stamina)
     {
         float loc_stamina    = -1.0f*UDCONVERTMULT*f_stamina/60.0f;
         if (ActorValueUpdateHook::IsRegistered(a_actor))
@@ -90,12 +90,37 @@ namespace UD
             ActorValueUpdateHook::GetActorControl(a_actor)->stamina = loc_stamina;
         }
     }
-    void MinigameEffectUpdateMagicka(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_magicka)
+    void MinigameEffectSetMagicka(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_magicka)
     {
         float loc_magicka    = -1.0f*UDCONVERTMULT*f_magicka/60.0f;
         if (ActorValueUpdateHook::IsRegistered(a_actor))
         {
             ActorValueUpdateHook::GetActorControl(a_actor)->magicka = loc_magicka;
+        }
+    }
+
+     void MinigameEffectUpdateHealth(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_health)
+    {
+        float loc_health    = -1.0f*UDCONVERTMULT*f_health/60.0f;
+        if (ActorValueUpdateHook::IsRegistered(a_actor))
+        {
+            ActorValueUpdateHook::GetActorControl(a_actor)->health += loc_health;
+        }
+    }
+    void MinigameEffectUpdateStamina(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_stamina)
+    {
+        float loc_stamina    = -1.0f*UDCONVERTMULT*f_stamina/60.0f;
+        if (ActorValueUpdateHook::IsRegistered(a_actor))
+        {
+            ActorValueUpdateHook::GetActorControl(a_actor)->stamina += loc_stamina;
+        }
+    }
+    void MinigameEffectUpdateMagicka(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_magicka)
+    {
+        float loc_magicka    = -1.0f*UDCONVERTMULT*f_magicka/60.0f;
+        if (ActorValueUpdateHook::IsRegistered(a_actor))
+        {
+            ActorValueUpdateHook::GetActorControl(a_actor)->magicka += loc_magicka;
         }
     }
 
