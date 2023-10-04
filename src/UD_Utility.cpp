@@ -19,4 +19,56 @@ namespace UD
         a_codedmap &= ((0x00000001 << a_size) - 1);
         return a_codedmap;
     }
+
+    int Round(PAPYRUSFUNCHANDLE, float a_value)
+    {
+        return static_cast<int32_t>(a_value + 0.5f);
+    }
+
+    int iRange(PAPYRUSFUNCHANDLE, int a_value,int a_min,int a_max)
+    {
+        if (a_min > a_value) return a_min;
+        if (a_max < a_value) return a_max;
+        return a_value;
+    }
+
+    float fRange(PAPYRUSFUNCHANDLE, float a_value,float a_min,float a_max)
+    {
+        if (a_min > a_value) return a_min;
+        if (a_max < a_value) return a_max;
+        return a_value;
+    }
+
+    bool IsPlayer(PAPYRUSFUNCHANDLE, RE::Actor* a_actor)
+    {
+        if (a_actor == nullptr) return false;
+        return a_actor->IsPlayer();
+    }
+
+    std::string GetActorName(PAPYRUSFUNCHANDLE, RE::Actor* a_actor)
+    {
+        if (a_actor == nullptr) return "ERROR";
+        const auto loc_base = a_actor->GetActorBase();
+        std::string loc_res = loc_base->GetName();
+
+        if (loc_res == "")
+        {
+            switch(loc_base->GetSex())
+            {
+                case RE::SEX::kMale:
+                    loc_res = "Unnamed male";
+                    break;
+                case RE::SEX::kFemale:
+                    loc_res = "Unnamed female";
+                    break;
+                case RE::SEX::kNone:
+                    loc_res = "Unnamed person";
+                    break;
+                default:
+                    loc_res = "ERROR";
+            }
+        }
+
+        return loc_res;
+    }
 }

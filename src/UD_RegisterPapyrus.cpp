@@ -25,6 +25,12 @@ namespace UD
         //UTILITY
         REGISTERPAPYRUSFUNC(CodeBit,true)
         REGISTERPAPYRUSFUNC(DecodeBit,true)
+        REGISTERPAPYRUSFUNC(iRange,true)
+        REGISTERPAPYRUSFUNC(fRange,true)
+        REGISTERPAPYRUSFUNC(Round,true)
+        REGISTERPAPYRUSFUNC(IsPlayer,true)
+        REGISTERPAPYRUSFUNC(GetActorName,true)
+
 
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)

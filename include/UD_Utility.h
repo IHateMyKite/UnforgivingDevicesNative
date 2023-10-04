@@ -3,9 +3,14 @@
 namespace UD 
 {
     #define UDBITERRORVALUE 0xFFFFFFFF
-    int CodeBit(PAPYRUSFUNCHANDLE,int i_codedmap,int i_value,int i_size,int i_index);
-    int DecodeBit(PAPYRUSFUNCHANDLE,int i_codedMap,int i_size,int i_index);
+    int     CodeBit(PAPYRUSFUNCHANDLE,int i_codedmap,int i_value,int i_size,int i_index);
+    int     DecodeBit(PAPYRUSFUNCHANDLE,int i_codedMap,int i_size,int i_index);
+    int     Round(PAPYRUSFUNCHANDLE,float a_value);
+    int     iRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max);
+    float   fRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max);
 
+    bool IsPlayer(PAPYRUSFUNCHANDLE,RE::Actor* a_actor);
+    std::string GetActorName(PAPYRUSFUNCHANDLE,RE::Actor* a_actor);
     //screw trampolines, we ball
     //should be hopefully compatible with all versions
 
