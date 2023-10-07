@@ -42,7 +42,7 @@ namespace UD
     bool IsPlayer(PAPYRUSFUNCHANDLE, RE::Actor* a_actor)
     {
         if (a_actor == nullptr) return false;
-        return a_actor->IsPlayer();
+        return a_actor->IsPlayerRef();
     }
 
     std::string GetActorName(PAPYRUSFUNCHANDLE, RE::Actor* a_actor)
