@@ -31,7 +31,6 @@ namespace UD
         REGISTERPAPYRUSFUNC(IsPlayer,true)
         REGISTERPAPYRUSFUNC(GetActorName,true)
 
-
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
         REGISTERPAPYRUSFUNC(RemoveMeterEntryIWW,true)
@@ -71,6 +70,8 @@ namespace UD
         REGISTERPAPYRUSFUNC(ModifierHaveParams,true)
         REGISTERPAPYRUSFUNC(getModifierAllParam,true)
         REGISTERPAPYRUSFUNC(GetModifierParamNum,true)
+
+        ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 
         return true;
     }

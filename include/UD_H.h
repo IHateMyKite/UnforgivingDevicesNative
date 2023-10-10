@@ -10,6 +10,7 @@
 #include "windows.h"
 #include <UD_Lib.h>
 #include <UD_Keywords.h>
+#include <UD_ActorSlotManager.h>
 #include <UD_Updater.h>
 #include <UD_MinigameEffect.h>
 #include <UD_RegisterPapyrus.h>
@@ -20,3 +21,6 @@
 #include <UD_Animation.h>
 #include <UD_Skill.h>
 #include <UD_Modifiers.h>
+#include <UD_Serialization.h>
+#include <OrgasmSystem/OrgasmData.h>
+#include <OrgasmSystem/OrgasmManager.h>

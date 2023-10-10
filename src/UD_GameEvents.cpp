@@ -13,8 +13,13 @@ namespace UD
         MeterManager::RemoveAll();
         KeywordManager::Reload();
         InventoryHandler::Reload();
+        ActorSlotManager::GetSingleton()->Setup();
 
         UD::ReloadLib();
+
+        ORS::OrgasmManager::GetSingleton()->Setup();
+
+        UpdateManager::GetSingleton()->CreateUpdateThreads();
     }
 
     inline void _OnPostPostLoad()

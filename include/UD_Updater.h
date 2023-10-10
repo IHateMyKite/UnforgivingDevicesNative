@@ -2,21 +2,18 @@
 
 namespace UD 
 {
-    //class UpdateManager;
-
-    DWORD WINAPI ThreadUpdate(LPVOID lpParameter);
-
     class UpdateManager
     {
+    SINGLETONHEADER(UpdateManager)
     public:
-
-        static int CreateUpdateThread(void);
+        void CreateUpdateThreads(void);
     public:
-        static bool BREAK;
-
-        static int PLAYERCONSTRAINS;
-
+        //bool BREAK;
+        std::atomic<int> PLAYERCONSTRAINS;
+        
     private:
-        static HANDLE _threadhandle;
+        int _installed = false;
+        void UpdateThread1();
+        void UpdateThread2();
     };
 };

@@ -1,5 +1,5 @@
 //debug build
-#define UDDEBUG 0U
+#define UDDEBUG 1U
 
 //multiplier used for converting existing papyrus over time effects to native over time effect
 //as native effects are much faster, we need to reduce its amplitude, otherwise it will be much stronger then papyrus one
@@ -28,3 +28,20 @@
 #else
     #define UDSKSELOG(...) {}
 #endif
+
+#define SINGLETONHEADER(cname)                          \
+        public:                                         \
+            cname(cname &) = delete;                    \
+            void operator=(const cname &) = delete;     \
+            static cname* GetSingleton();               \
+        protected:                                      \
+            cname(){}                                   \
+            ~cname(){}                                  \
+            static cname* _this;
+
+#define SINGLETONBODY(cname)                            \
+        cname * cname::_this = new cname;               \
+        cname * cname::GetSingleton(){return _this;}
+
+
+#define PLAYER RE::PlayerCharacter::GetSingleton()

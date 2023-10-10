@@ -10,6 +10,6 @@ namespace UD
 
     inline int GetActorConstrains(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
     {
-        return GetActorConstrainsInter(a_actor);
+        return ActorSlotManager::GetSingleton()->GetActorStorage(a_actor).Constrains; //GetActorConstrainsInter(a_actor);
     }
 }

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <boost/algorithm/clamp.hpp>
+#include <boost/math/special_functions/round.hpp>
+
 namespace UD 
 {
     #define UDBITERRORVALUE 0xFFFFFFFF

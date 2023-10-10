@@ -22,21 +22,17 @@ namespace UD
 
     int Round(PAPYRUSFUNCHANDLE, float a_value)
     {
-        return static_cast<int32_t>(a_value + 0.5f);
+        return boost::math::lround(a_value);
     }
 
     int iRange(PAPYRUSFUNCHANDLE, int a_value,int a_min,int a_max)
     {
-        if (a_min > a_value) return a_min;
-        if (a_max < a_value) return a_max;
-        return a_value;
+        return boost::algorithm::clamp(a_value,a_min,a_max);
     }
 
     float fRange(PAPYRUSFUNCHANDLE, float a_value,float a_min,float a_max)
     {
-        if (a_min > a_value) return a_min;
-        if (a_max < a_value) return a_max;
-        return a_value;
+        return boost::algorithm::clamp(a_value,a_min,a_max);
     }
 
     bool IsPlayer(PAPYRUSFUNCHANDLE, RE::Actor* a_actor)

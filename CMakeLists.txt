@@ -45,6 +45,11 @@ set(source_files ${source_files}
     src/UD_Lib.cpp
     src/UD_Skill.cpp
     src/UD_Modifiers.cpp
+    src/UD_ActorSlotManager.cpp
+    src/UD_Serialization.cpp
+    src/OrgasmSystem/OrgasmManager.cpp
+    src/OrgasmSystem/OrgasmData.cpp
+
 )
 
 # Setup your SKSE plugin as an SKSE plugin!

@@ -23,6 +23,16 @@ namespace logger = SKSE::log;
     }
 #endif
 
+void InitializeSerialization() {
+    UDSKSELOG("Initializing cosave serialization...");
+    auto* serde = SKSE::GetSerializationInterface();
+    serde->SetUniqueID(_byteswap_ulong('UDNP'));
+    serde->SetSaveCallback(UD::OnGameSaved);
+    serde->SetRevertCallback(UD::OnRevert);
+    serde->SetLoadCallback(UD::OnGameLoaded);
+    UDSKSELOG("Cosave serialization initialized.");
+}
+
 SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     SKSE::Init(skse);
     #if(UDDEBUG > 0U)
@@ -30,6 +40,7 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     #endif
     SKSE::GetPapyrusInterface()->Register(UD::RegisterPapyrusFunctions);
     SKSE::GetMessagingInterface()->RegisterListener(UD::OnMessageReceived);
+    InitializeSerialization();
     SKSE::AllocTrampoline(64);
     return true;
 }
