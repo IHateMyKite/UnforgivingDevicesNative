@@ -6,18 +6,17 @@ namespace UD
     {
         UDSKSELOG("::_OnGameLoad called, effect started={}",ActorValueUpdateHook::started);
 
-        //remove effect in case that user reloaded the game without exit
-        if (!ActorValueUpdateHook::started) ActorValueUpdateHook::Patch(); 
-        else ActorValueUpdateHook::RemoveAll();
+        UD::ReloadLib();
 
         MeterManager::RemoveAll();
         KeywordManager::Reload();
         InventoryHandler::Reload();
+        ORS::OrgasmManager::GetSingleton()->Setup();
         ActorSlotManager::GetSingleton()->Setup();
 
-        UD::ReloadLib();
-
-        ORS::OrgasmManager::GetSingleton()->Setup();
+        //remove effect in case that user reloaded the game without exit
+        if (!ActorValueUpdateHook::started) ActorValueUpdateHook::Patch(); 
+        else ActorValueUpdateHook::RemoveAll();
 
         UpdateManager::GetSingleton()->CreateUpdateThreads();
     }

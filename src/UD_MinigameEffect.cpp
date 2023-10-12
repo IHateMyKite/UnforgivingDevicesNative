@@ -1,5 +1,6 @@
 #include <UD_MinigameEffect.h>
 #include <Windows.h>
+#include <UD_Updater.h>
 
 namespace UD
 {
@@ -139,6 +140,8 @@ namespace UD
         static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
         if (a_this == loc_player)
         {   
+            std::thread loc_thrd(&UpdateManager::UpdateThread2,UpdateManager::GetSingleton(),a_delta);
+            loc_thrd.detach();
             UpdateMinigameEffect(a_this,a_delta);
             UpdateMeters(a_this,a_delta);
         }

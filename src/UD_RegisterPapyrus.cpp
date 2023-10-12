@@ -65,11 +65,14 @@ namespace UD
         REGISTERPAPYRUSFUNC(CalculateSkillFromPerks,true)
 
         //modifiers
-        REGISTERPAPYRUSFUNC(HasModifier,true)
-        REGISTERPAPYRUSFUNC(GetModifierIndex,true)
-        REGISTERPAPYRUSFUNC(ModifierHaveParams,true)
-        REGISTERPAPYRUSFUNC(getModifierAllParam,true)
-        REGISTERPAPYRUSFUNC(GetModifierParamNum,true)
+        REGISTERPAPYRUSFUNC(GetModifierAllParam,true)
+        REGISTERPAPYRUSFUNC(GetStringParamInt,true)
+        REGISTERPAPYRUSFUNC(GetStringParamFloat,true)
+        REGISTERPAPYRUSFUNC(GetStringParamString,true)
+
+        //actor slot manager
+        REGISTERPAPYRUSFUNC(RegisterSlotQuest,true)
+        REGISTERPAPYRUSFUNC(GetRegisteredActors,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

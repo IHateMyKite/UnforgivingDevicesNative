@@ -1,5 +1,7 @@
 #pragma once
 
+#include <OrgasmSystem/OrgasmData.h>
+
 namespace UD 
 {
     //macro to make the code more readable
@@ -45,6 +47,9 @@ namespace UD
         const std::string   path;
         MeterEntryIWW& operator=(const MeterEntryIWW& source);
         void Process(const float& f_timemult);
+
+        ORS::OrgasmActorData* extclass;
+        std::function<float(const ORS::OrgasmActorData&)> extcalc = nullptr; 
     };
 
     class MeterEntrySkyUi : public MeterEntryIWW
@@ -56,6 +61,7 @@ namespace UD
 
     class MeterManager
     {
+    SINGLETONHEADER(MeterManager)
     public:
         inline static void Update(const float& f_timemult = 1.0f)
         {   
@@ -157,6 +163,14 @@ namespace UD
                             id == i_id)
         }
 
+        inline static void  SetExtCalcIWW(int i_id,ORS::OrgasmActorData* a_class,std::function<float(const ORS::OrgasmActorData&)> a_fun)
+        {
+            PROCESSMETER(_metersIWW, _metersIWW[i]->extcalc = a_fun;_metersIWW[i]->extclass = a_class;,id == i_id)
+        }
+        inline static void  UnsetExtCalcIWW(int i_id)
+        {
+            PROCESSMETER(_metersIWW, _metersIWW[i]->extcalc = nullptr;_metersIWW[i]->extclass = nullptr;,id == i_id)
+        }
         inline static bool  IsRegisteredSkyUi(const std::string& s_path)  
         {
             PROCESSMETERRET(_metersSkyUi, 
@@ -231,12 +245,24 @@ namespace UD
                             0.0f,
                             path == s_path)
         }
+    
+        inline static void  SetExtCalcSkyUi(const std::string& s_path,ORS::OrgasmActorData* a_class,std::function<float(const ORS::OrgasmActorData&)> a_fun)
+        {
+            PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->extcalc = a_fun;_metersSkyUi[i]->extclass = a_class;,path == s_path)
+        }
+        inline static void  UnsetExtCalcSkyUi(const std::string& s_path)
+        {
+            PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->extcalc = nullptr;_metersSkyUi[i]->extclass = nullptr;,path == s_path)
+        }
     public:
         static bool updateallowed;
     protected:
         static std::vector<std::unique_ptr<MeterEntryIWW>>    _metersIWW;
         static std::vector<std::unique_ptr<MeterEntrySkyUi>>  _metersSkyUi;
         static std::mutex                  _mutex;
+
+
+
     };
 
     //Papyrus functions

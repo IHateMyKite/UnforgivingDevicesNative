@@ -37,8 +37,16 @@ namespace ORS
         bool    RemoveOrgasmChange(RE::Actor* a_actor, std::string a_key);
         bool    UpdateOrgasmChangeVar(RE::Actor* a_actor, std::string a_key, OrgasmVariable a_variable, float a_value, OrgasmUpdateType a_mod);
         float   GetOrgasmChangeVar(RE::Actor* a_actor, std::string a_key, OrgasmVariable a_variable);
+        bool    HaveOrgasmChange(RE::Actor* a_actor, std::string a_key);
 
-        float   GetOrgasmProgress(RE::Actor* a_actor);
+        float   GetOrgasmProgress(RE::Actor* a_actor, int a_mod);
+        void    ResetOrgasmProgress(RE::Actor* a_actor);
+        float   GetOrgasmVariable(RE::Actor* a_actor, OrgasmVariable a_variable);
+        float   GetAntiOrgasmRate(RE::Actor* a_actor);
+
+        void    LinkActorToMeter(RE::Actor* a_actor,std::string a_path, MeterWidgetType a_type, int a_id);
+        void    UnlinkActorFromMeter(RE::Actor* a_actor);
+
         void    RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm);
 
         void    OnGameLoaded(SKSE::SerializationInterface*);
@@ -80,9 +88,38 @@ namespace ORS
         return OrgasmManager::GetSingleton()->GetOrgasmChangeVar(a_actor,a_key,(OrgasmVariable)a_variable);
     }
 
-    inline float   GetOrgasmProgress(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    inline bool   HaveOrgasmChange(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,std::string a_key)
     {
-        return OrgasmManager::GetSingleton()->GetOrgasmProgress(a_actor);
+        return OrgasmManager::GetSingleton()->HaveOrgasmChange(a_actor,a_key);
     }
 
+    inline float   GetOrgasmProgress(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,int a_mod)
+    {
+        return OrgasmManager::GetSingleton()->GetOrgasmProgress(a_actor,a_mod);
+    }
+
+    inline void    ResetOrgasmProgress(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        OrgasmManager::GetSingleton()->ResetOrgasmProgress(a_actor);
+    }
+
+    inline float   GetOrgasmVariable(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, int a_variable)
+    {
+        return OrgasmManager::GetSingleton()->GetOrgasmVariable(a_actor,(OrgasmVariable)a_variable);
+    }
+
+    inline float   GetAntiOrgasmRate(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        return OrgasmManager::GetSingleton()->GetAntiOrgasmRate(a_actor);
+    }
+
+    inline void   LinkActorToMeter(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,std::string a_path, int a_type, int a_id)
+    {
+        OrgasmManager::GetSingleton()->LinkActorToMeter(a_actor,a_path, (MeterWidgetType)a_type,a_id);
+    }
+
+    inline void   UnlinkActorFromMeter(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        OrgasmManager::GetSingleton()->UnlinkActorFromMeter(a_actor);
+    }
 }

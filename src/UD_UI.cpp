@@ -1,5 +1,7 @@
 #include <UD_UI.h>
 
+SINGLETONBODY(UD::MeterManager)
+
 namespace UD
 {
     //static variables define
@@ -32,10 +34,16 @@ namespace UD
     {
         if (update)
         {
-            value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
-            if      (value > 100.0f)    value = 100.0f;
-            else if (value < 0.0f)      value = 0.0f;
-
+            if (extcalc == nullptr)
+            {
+                value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
+                if      (value > 100.0f)    value = 100.0f;
+                else if (value < 0.0f)      value = 0.0f;
+            }
+            else
+            {
+                value = extcalc(*extclass);
+            }
             static RE::UI* loc_ui = RE::UI::GetSingleton();
 
             //get hud view
@@ -56,6 +64,8 @@ namespace UD
 
             //invoke action script function
             loc_uimovie->Invoke(loc_path.c_str(),NULL,&loc_arg,1);
+
+            loc_uimovie->Advance(0.0f);
         }
     }
 
@@ -87,6 +97,8 @@ namespace UD
 
             //invoke action script function
             loc_uimovie->Invoke(loc_path.c_str(),NULL,loc_arg,2);
+
+            loc_uimovie->Advance(0.0f);
         }
     }
 
