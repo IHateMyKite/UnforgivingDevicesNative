@@ -9,7 +9,21 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
 {
     if (_actor == nullptr) return;
 
-    _Arousal                = static_cast<int8_t>(_actor->GetFactionRank(g_ArousalFaction,_actor->IsPlayerRef()));
+    _Arousal                = static_cast<int8_t>(clamp(_actor->GetFactionRank(g_ArousalFaction,_actor->IsPlayerRef()),0,100));
+
+    _ArousalRate            = CalculateArousalRate();
+    _ArousalRateMult        = CalculateArousalRateMult();
+
+    _ArousalReal           += _ArousalRate*_ArousalRateMult*a_delta;
+
+    if (_ArousalReal >= 1.0f)
+    {
+        _ArousalReal     = 0.0f;
+        _Arousal        += 1;
+        _actor->AddToFaction(g_ArousalFaction,clamp(_Arousal,0,100));
+    }
+
+
     _OrgasmRate             = CalculateOrgasmRate();
     _OrgasmRateMult         = CalculateOrgasmRateMult();
     _OrgasmForcing          = CalculateOrgasmForcing();
@@ -147,6 +161,11 @@ bool ORS::OrgasmActorData::UpdateOrgasmChangeVar(std::string a_key, OrgasmVariab
             break;
         case vElapsedTime:
             loc_var = &_Sources[a_key].ElapsedDuration;
+        case vArousalRate:
+            loc_var = &_Sources[a_key].ArousalRate;
+            break;
+        case vArousalRateMult:
+            loc_var = &_Sources[a_key].ArousalRateMult;
             break;
         default:
             return false;
@@ -190,6 +209,10 @@ float ORS::OrgasmActorData::GetOrgasmChangeVar(std::string a_key, OrgasmVariable
             return _Sources[a_key].OrgasmForcing;
         case vElapsedTime:
             return _Sources[a_key].ElapsedDuration;
+        case vArousalRate:
+            return _Sources[a_key].ArousalRate;
+        case vArousalRateMult:
+            return _Sources[a_key].ArousalRateMult;
         default:
             return 0.0f;
     };
@@ -216,6 +239,12 @@ float ORS::OrgasmActorData::GetOrgasmVariable(OrgasmVariable a_variable)
             return CalculateOrgasmCapacity();
         case vOrgasmForcing:
             return CalculateOrgasmForcing();
+        case vArousal:
+            return (_Arousal + _ArousalReal);
+        case vArousalRate:
+            return CalculateArousalRate();
+        case vArousalRateMult:
+            return CalculateArousalRateMult();
         default:
             return 0.0f;
     };
@@ -329,8 +358,16 @@ float ORS::OrgasmActorData::CalculateOrgasmRate()
                 if (it2.EroZoneSlot & loc_erozones) loc_mult += it2.Multiplier;
             }
         }
+
         //only if no edging is active
-        if (!(it1.second.Mod & 0x01) || (GetOrgasmProgress(1) < 0.9f)) loc_res += (it1.second.OrgasmRate*loc_mult);
+        if ((!(it1.second.Mod & 0x01) || (GetOrgasmProgress(1) < EDGETHRESHOLD)) && it1.second.EdgeDuration == 0.0f) 
+        {
+            loc_res += (it1.second.OrgasmRate*loc_mult);
+        }
+        else if (it1.second.EdgeDuration <= 0.0f) 
+        {
+            it1.second.EdgeDuration = EDGEDURATION; //set edge timeout
+        }
     }
     return clamp(loc_res,-5000.0f,5000.0f);
 }
@@ -370,24 +407,72 @@ float ORS::OrgasmActorData::CalculateOrgasmResistenceMult()
     return clamp(loc_res,0.0f,100.0f);
 }
 
+inline float ORS::OrgasmActorData::CalculateArousalRate()
+{
+    float loc_res = 0.0f;
+    for (auto&& it1 : _Sources) 
+    {  
+        if (it1.second.ArousalRate > 0.0f)
+        {
+            float       loc_mult        = 0.0f;
+            uint32_t    loc_erozones    = it1.second.EroZones;
+
+            for (auto && it2 : _EroZones)
+            {
+                if (it2.EroZoneSlot & loc_erozones) loc_mult += it2.Multiplier;
+            }
+
+            //only if no edging is active
+            if ((!(it1.second.Mod & 0x01) || (GetOrgasmProgress(1) < EDGETHRESHOLD)) && it1.second.EdgeDuration == 0.0f) 
+            {
+                loc_res += (it1.second.ArousalRate*loc_mult);
+            }
+            else if (it1.second.EdgeDuration <= 0.0f) 
+            {
+                it1.second.EdgeDuration = EDGEDURATION; //set edge timeout
+            }
+        }
+    }
+    return clamp(loc_res,-100.0f,100.0f);
+}
+
+inline float ORS::OrgasmActorData::CalculateArousalRateMult()
+{
+    float loc_res = 1.0f;
+    for (auto&& it : _Sources) loc_res += it.second.ArousalRateMult;
+    return clamp(loc_res,0.0f,100.0f);
+}
+
 void ORS::OrgasmActorData::ElapseChanges(const float& a_delta)
 {
     for (auto&& it : _Sources) 
     {   
-        if (it.second.Mod & mTimed)
+        OrgasmChangeData& loc_oc = it.second;
+
+        //edge mod timeout
+        if ((loc_oc.Mod & mEdgeOnly) && (loc_oc.EdgeDuration > 0.0f))
         {
-            it.second.ElapsedDuration += a_delta;
-            if (it.second.ElapsedDuration > it.second.Duration)
+            
+            loc_oc.EdgeElapsedDuration += a_delta;
+
+            if (loc_oc.EdgeElapsedDuration >= loc_oc.EdgeDuration)
             {
-                UDSKSELOG("OrgasmActorData::ElapseChanges({}) - Change {} removed because time elapsed",a_delta,it.first)
+                loc_oc.EdgeDuration = 0.0f;
+                loc_oc.EdgeElapsedDuration = 0.0f;
+            }
+        }
+
+        if (loc_oc.Mod & mTimed)
+        {
+            loc_oc.ElapsedDuration += a_delta;
+            if (loc_oc.ElapsedDuration > loc_oc.Duration)
+            {
                 _Sources.erase(it.first);
             }
             else
             {
-                if (it.second.Mod & mTimeMod_Lin) it.second.OrgasmRate -= (it.second.OrgasmRateOriginal/it.second.Duration)*a_delta;
-                else if (it.second.Mod & mTimeMod_Exp) it.second.OrgasmRate -= (it.second.OrgasmRateOriginal/it.second.Duration)*a_delta; //TODO - implement it properly
-
-                //if (it.second.OrgasmRate < 0.0f) it.second.OrgasmRate = 0.0f;
+                if      (loc_oc.Mod & mTimeMod_Lin) loc_oc.OrgasmRate -= (loc_oc.OrgasmRateOriginal/loc_oc.Duration)*a_delta;
+                else if (loc_oc.Mod & mTimeMod_Exp) loc_oc.OrgasmRate -= (loc_oc.OrgasmRateOriginal/loc_oc.Duration)*a_delta; //TODO - implement it properly
             }
         }
     }

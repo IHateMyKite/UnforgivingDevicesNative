@@ -6,15 +6,25 @@ using boost::algorithm::clamp;
 
 namespace ORS
 {
+
+    #define EDGEDURATION 2.0f
+    #define EDGETHRESHOLD 0.9f
+
     enum OrgasmVariable : uint8_t
     {
-        vOrgasmRate                 = 1,
-        vOrgasmRateMult             = 2,
-        vOrgasmResistence           = 3,
-        vOrgasmResistenceMult       = 4,
-        vOrgasmCapacity             = 5,
-        vOrgasmForcing              = 6,
-        vElapsedTime                = 7
+        vNone                       =  0,
+        vOrgasmRate                 =  1,
+        vOrgasmRateMult             =  2,
+        vOrgasmResistence           =  3,
+        vOrgasmResistenceMult       =  4,
+        vOrgasmCapacity             =  5,
+        vOrgasmForcing              =  6,
+        vElapsedTime                =  7,
+        vArousal                    =  8,
+        vArousalRate                =  9,
+        vArousalRateMult            = 10,
+
+        vLast
     };
 
     enum OrgasmUpdateType : uint8_t
@@ -28,11 +38,13 @@ namespace ORS
     {
         //default modes
         mNone                       = 0x00,
+
         mEdgeOnly                   = 0x01,
         mEdgeRandom                 = 0x02,
         //timer setting
         mTimed                      = 0x04, //orgasm change will be removed once time elapses. Duration is saved in last 16 bites of OrgasmMod passed to AddOrgasmChange function
         mTimeMod_Lin                = 0x08, //orgasm rate will decrease over time lineary
+
         mTimeMod_Exp                = 0x10, //orgasm rate will decrease over time exponencialy. Use this in combination with mTimed to make multiple timed changes
         //other
         mMakeKey                    = 0x20  //create new key if passed key is already used
@@ -61,6 +73,13 @@ namespace ORS
         float       ElapsedDuration         = 0.0f;
         uint8_t     Mod                     = 0x00;
         uint32_t    EroZones                = 0x00000000; //up to 32 ero zones. Should be more than enought
+        float       EdgeDuration            = 0.0f;
+        float       EdgeElapsedDuration     = 0.0f;
+
+        //arousal
+        float       ArousalRate             = 0.0f;
+        float       ArousalRateMult         = 1.0f;
+
         uint8_t     _reserved[16];
     };
 
@@ -130,6 +149,8 @@ namespace ORS
         inline float CalculateOrgasmCapacity();
         inline float CalculateOrgasmResistence();
         inline float CalculateOrgasmResistenceMult();
+        inline float CalculateArousalRate();
+        inline float CalculateArousalRateMult();
         inline void  ElapseChanges(const float& a_delta);
         inline void  UpdateWidget();
     private:
@@ -148,21 +169,26 @@ namespace ORS
             {"ANAL2","Anal 2"   ,eAnal2},
             {"SPECL","Special"  ,eSpecial},
         };
-        float   _OrgasmRate                = 0.0f;
-        float   _AntiOrgasmRate            = 0.0f;
-        float   _OrgasmRateMult            = 1.0f;
-        float   _OrgasmRateTotal           = 0.0f;
+        float   _OrgasmRate             = 0.0f;
+        float   _AntiOrgasmRate         = 0.0f;
+        float   _OrgasmRateMult         = 1.0f;
+        float   _OrgasmRateTotal        = 0.0f;
 
-        float   _OrgasmForcing             = 0.0f;
+        float   _OrgasmForcing          = 0.0f;
 
-        float   _OrgasmCapacity            = 100.0f;
+        float   _OrgasmCapacity         = 100.0f;
 
-        float   _OrgasmResistence          = 3.5f;
-        float   _OrgasmResistenceMult      = 1.0;
+        float   _OrgasmResistence       = 3.5f;
+        float   _OrgasmResistenceMult   = 1.0;
 
-        float   _OrgasmProgress            = 0.0f;
+        float   _OrgasmProgress         = 0.0f;
 
-        int8_t  _Arousal                   = 0;
+
+        float   _ArousalReal            = 0.0f;
+        float   _ArousalRate            = 0.0f;
+        float   _ArousalRateMult        = 1.0f;
+
+        int8_t  _Arousal                = 0;
 
         std::string         _LinkedWidgetPath       = "";
         MeterWidgetType     _LinkedWidgetType       = tSkyUi;
