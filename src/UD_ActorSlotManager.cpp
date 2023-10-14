@@ -76,7 +76,7 @@ void UD::ActorSlotManager::ValidateAliases()
             RE::Actor* loc_actor = reinterpret_cast<RE::Actor*>(it2.second.get().get());
             if (loc_actor == nullptr) continue;  //skip empty slot
 
-            UDSKSELOG("ActorSlotManager::ValidateAliases() - Checking actor {}",loc_actor->GetName())
+            //UDSKSELOG("ActorSlotManager::ValidateAliases() - Checking actor {}",loc_actor->GetName())
 
             if (_slots && (_slots->find(loc_actor) == _slots->end()))
             {

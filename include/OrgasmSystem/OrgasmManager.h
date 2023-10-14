@@ -3,10 +3,16 @@
 
 namespace ORS
 {
-    //update time in ms
-    #define ORSUPTIME 100
-
     class OrgasmActorData;
+
+    typedef float(* ModifyArousal)(RE::Actor* actorRef, float value);
+
+    extern ModifyArousal OSLAModifyArousal;
+
+
+    #define GETORGCHANGEANDVALIDATE(var,arg)        \
+    OrgasmActorData& var = _actors[arg];            \
+    var.SetActor(arg);
 
     class OrgasmManager
     {
@@ -47,11 +53,14 @@ namespace ORS
         void    LinkActorToMeter(RE::Actor* a_actor,std::string a_path, MeterWidgetType a_type, int a_id);
         void    UnlinkActorFromMeter(RE::Actor* a_actor);
 
+        std::string MakeUniqueKey(RE::Actor* a_actor,std::string a_base);
+
         void    RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm);
 
         void    OnGameLoaded(SKSE::SerializationInterface*);
         void    OnGameSaved(SKSE::SerializationInterface*);
         void    OnRevert(SKSE::SerializationInterface*);
+
     private:
         bool                _installed = false;
         mutable std::mutex  _lock;
@@ -121,5 +130,10 @@ namespace ORS
     inline void   UnlinkActorFromMeter(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
     {
         OrgasmManager::GetSingleton()->UnlinkActorFromMeter(a_actor);
+    }
+
+    inline std::string MakeUniqueKey(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,std::string a_base)
+    {
+        return OrgasmManager::GetSingleton()->MakeUniqueKey(a_actor,a_base);
     }
 }

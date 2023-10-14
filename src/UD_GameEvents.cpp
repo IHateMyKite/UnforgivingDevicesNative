@@ -4,7 +4,6 @@ namespace UD
 {
     inline void _OnGameLoad()
     {
-        UDSKSELOG("::_OnGameLoad called, effect started={}",ActorValueUpdateHook::started);
 
         UD::ReloadLib();
 
@@ -15,8 +14,7 @@ namespace UD
         ActorSlotManager::GetSingleton()->Setup();
 
         //remove effect in case that user reloaded the game without exit
-        if (!ActorValueUpdateHook::started) ActorValueUpdateHook::Patch(); 
-        else ActorValueUpdateHook::RemoveAll();
+        if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
 
         UpdateManager::GetSingleton()->CreateUpdateThreads();
     }

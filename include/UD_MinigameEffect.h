@@ -16,9 +16,9 @@ namespace UD {
     void MinigameEffectUpdateStamina(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_stamina);
     void MinigameEffectUpdateMagicka(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_magicka);
 
-    //copied from https://github.com/NoahBoddie/ActorValueGenerator
-    static struct ActorValueUpdateHook
+    struct MinigameEffectManager
 	{
+        SINGLETONHEADER(MinigameEffectManager)
         public:
             struct ActorControl {
                 inline ActorControl();
@@ -31,28 +31,26 @@ namespace UD {
                 std::atomic<bool>    toggle;
             };
 
-		    static void Patch();
-		    static void UpdatePatched(RE::Actor* a_this, float a_delta);
-            static inline REL::Relocation<decltype(UpdatePatched)> Update;
-
             //register actor for effect
-            inline static void RegisterActor(RE::Actor *a_actor, float f_mult, float f_stamina, float f_health, float f_magicka, bool b_toggle);
+            void RegisterActor(RE::Actor *a_actor, float f_mult, float f_stamina, float f_health, float f_magicka, bool b_toggle);
             
             //unregister actor for effect
-            inline static void RemoveActor(RE::Actor *a_actor);
+            inline void RemoveActor(RE::Actor *a_actor);
             
             //returns true if actor is registered
-            inline static bool IsRegistered(RE::Actor *a_actor);
+            inline bool IsRegistered(RE::Actor *a_actor);
 
-            static void RemoveAll(void);
+            void RemoveAll(void);
 
             //get actor control
-            inline static ActorControl* GetActorControl(RE::Actor *a_actor);
+            inline ActorControl* GetActorControl(RE::Actor *a_actor);
+
+            void UpdateMinigameEffect(RE::Actor* a_actor, const float& a_delta);
+            void UpdateMeters(RE::Actor* a_actor, const float& a_delta);
+
         public:
-            static std::atomic<bool>            started;
+            std::atomic<bool>            started;
         private:
-            static std::map<RE::Actor*,ActorControl> _actormap;
-            inline static void UpdateMinigameEffect(RE::Actor* a_actor, const float& a_delta);
-            inline static void UpdateMeters(RE::Actor* a_actor, const float& a_delta);
+            std::map<RE::Actor*,ActorControl> _actormap;
 	};
 }

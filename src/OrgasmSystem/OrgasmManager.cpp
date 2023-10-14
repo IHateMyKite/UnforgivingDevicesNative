@@ -5,13 +5,26 @@ SINGLETONBODY(ORS::OrgasmManager)
 namespace ORS
 {
     inline const auto OrgasmSerData = _byteswap_ulong('ORSD');
+    ModifyArousal OSLAModifyArousal;
 }
 
 void ORS::OrgasmManager::Setup()
 {
     if (!_installed)
     {
-        g_ArousalFaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x1579C0,"UnforgivingDevices.esp"));
+        //g_ArousalFaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x1579C0,"UnforgivingDevices.esp"));
+        HINSTANCE dllHandle = LoadLibrary(TEXT("OSLAroused_SKSE.dll"));
+        if (dllHandle != NULL)
+        {
+            FARPROC pModifyArousal = GetProcAddress(HMODULE (dllHandle),"ModifyArousalExt");
+            OSLAModifyArousal = ModifyArousal(pModifyArousal);
+            UDSKSELOG("OrgasmManager::Setup() - Modify arousal imported")
+            //FreeLibrary(dllHandle);
+        }
+        else
+        {
+            UDSKSELOG("OrgasmManager::Setup() - ERROR: Cant find OSLAroused_SKSE.dll!!")
+        }
         _installed = true;
     }
     if(_installed) Update(0.0f);
@@ -47,6 +60,7 @@ void ORS::OrgasmManager::Update(float a_delta)
 bool ORS::OrgasmManager::AddOrgasmChange(RE::Actor* a_actor, std::string a_key, OrgasmMod a_mod, EroZone a_erozones, float a_orgasmRate, float a_orgasmRateMult, float a_orgasmForcing, float a_orgasmCapacity, float a_orgasmResisten, float a_orgasmResistenceMult)
 {
     if (a_actor == nullptr) return false;
+    //UDSKSELOG("OrgasmManager::AddOrgasmChange({},{},{},{},{})",a_actor->GetName(),a_key,a_mod,a_erozones,a_orgasmRate)
     std::unique_lock lock(_lock);
     return _actors[a_actor].AddOrgasmChange(a_key,a_mod,a_erozones,a_orgasmRate,a_orgasmRateMult,a_orgasmForcing,a_orgasmCapacity,a_orgasmResisten,a_orgasmResistenceMult);
 }
@@ -54,80 +68,132 @@ bool ORS::OrgasmManager::AddOrgasmChange(RE::Actor* a_actor, std::string a_key, 
 bool ORS::OrgasmManager::AddOrgasmChange(RE::Actor* a_actor, std::string a_key, OrgasmMod a_mod, uint32_t a_erozones, float a_orgasmRate, float a_orgasmRateMult, float a_orgasmForcing, float a_orgasmCapacity, float a_orgasmResisten, float a_orgasmResistenceMult)
 {
     if (a_actor == nullptr) return false;
+    //UDSKSELOG("OrgasmManager::AddOrgasmChange({},{},{},{},{})",a_actor->GetName(),a_key,a_mod,a_erozones,a_orgasmRate)
     std::unique_lock lock(_lock);
-    return _actors[a_actor].AddOrgasmChange(a_key,a_mod,(EroZone)a_erozones,a_orgasmRate,a_orgasmRateMult,a_orgasmForcing,a_orgasmCapacity,a_orgasmResisten,a_orgasmResistenceMult);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.AddOrgasmChange(a_key,a_mod,(EroZone)a_erozones,a_orgasmRate,a_orgasmRateMult,a_orgasmForcing,a_orgasmCapacity,a_orgasmResisten,a_orgasmResistenceMult);
 }
 
 bool ORS::OrgasmManager::RemoveOrgasmChange(RE::Actor* a_actor, std::string a_key)
 {
     if (a_actor == nullptr) return false;
+    //UDSKSELOG("OrgasmManager::RemoveOrgasmChange({},{})",a_actor->GetName(),a_key)
     std::unique_lock lock(_lock);
-    return _actors[a_actor].RemoveOrgasmChange(a_key);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.RemoveOrgasmChange(a_key);
 }
 
 bool ORS::OrgasmManager::UpdateOrgasmChangeVar(RE::Actor* a_actor, std::string a_key, OrgasmVariable a_variable, float a_value, OrgasmUpdateType a_mod)
 {
     if (a_actor == nullptr) return false;
+    //UDSKSELOG("OrgasmManager::UpdateOrgasmChangeVar({},{},{},{},{})",a_actor->GetName(),a_key,a_variable,a_value,a_mod)
     std::unique_lock lock(_lock);
-    return _actors[a_actor].UpdateOrgasmChangeVar(a_key,a_variable,a_value,a_mod);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.UpdateOrgasmChangeVar(a_key,a_variable,a_value,a_mod);
 }
 
 float ORS::OrgasmManager::GetOrgasmChangeVar(RE::Actor* a_actor, std::string a_key, OrgasmVariable a_variable)
 {
     if (a_actor == nullptr) return 0.0f;
-    std::unique_lock lock(_lock);
     //UDSKSELOG("OrgasmManager::GetOrgasmChangeVar({},{},{})",a_actor->GetName(),a_key,a_variable)
-    return _actors[a_actor].GetOrgasmChangeVar(a_key,a_variable);
+    std::unique_lock lock(_lock);
+    
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.GetOrgasmChangeVar(a_key,a_variable);
 }
 
 bool ORS::OrgasmManager::HaveOrgasmChange(RE::Actor* a_actor, std::string a_key)
 {
     if (a_actor == nullptr) return false;
+    //UDSKSELOG("OrgasmManager::HaveOrgasmChange({},{})",a_actor->GetName(),a_key)
     std::unique_lock lock(_lock);
-    return _actors[a_actor].HaveOrgasmChange(a_key);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.HaveOrgasmChange(a_key);
 }
 
 float ORS::OrgasmManager::GetOrgasmProgress(RE::Actor* a_actor, int a_mod)
 {
     if (a_actor == nullptr) return 0.0f;
+    //UDSKSELOG("OrgasmManager::GetOrgasmProgress({},{})",a_actor->GetName(),a_mod)
     std::unique_lock lock(_lock);
-    return _actors[a_actor].GetOrgasmProgress(a_mod);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.GetOrgasmProgress(a_mod);
 }
 
 void ORS::OrgasmManager::ResetOrgasmProgress(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return;
     std::unique_lock lock(_lock);
-    _actors[a_actor].ResetOrgasmProgress();
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    loc_oc.ResetOrgasmProgress();
 }
 
 float ORS::OrgasmManager::GetOrgasmVariable(RE::Actor* a_actor, OrgasmVariable a_variable)
 {
     if (a_actor == nullptr) return 0.0f;
-    std::unique_lock lock(_lock);
     //UDSKSELOG("OrgasmManager::GetOrgasmVariable({},{})",a_actor->GetName(),a_variable)
-    return _actors[a_actor].GetOrgasmVariable(a_variable);
+    std::unique_lock lock(_lock);
+    
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.GetOrgasmVariable(a_variable);
 }
 
 float ORS::OrgasmManager::GetAntiOrgasmRate(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return 0.0f;
+    //UDSKSELOG("OrgasmManager::GetAntiOrgasmRate({})",a_actor->GetName())
     std::unique_lock lock(_lock);
-    return _actors[a_actor].GetAntiOrgasmRate();
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.GetAntiOrgasmRate();
 }
 
 void ORS::OrgasmManager::LinkActorToMeter(RE::Actor* a_actor, std::string a_path, MeterWidgetType a_type, int a_id)
 {
     if (a_actor == nullptr) return;
+    //UDSKSELOG("OrgasmManager::LinkActorToMeter({})",a_actor->GetName(),a_path,a_type,a_id)
     std::unique_lock lock(_lock);
-    return _actors[a_actor].LinkActorToMeter(a_path,a_type,a_id);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.LinkActorToMeter(a_path,a_type,a_id);
 }
 
 void ORS::OrgasmManager::UnlinkActorFromMeter(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return;
+    //UDSKSELOG("OrgasmManager::UnlinkActorFromMeter({})",a_actor->GetName())
     std::unique_lock lock(_lock);
-    return _actors[a_actor].UnlinkActorFromMeter();
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.UnlinkActorFromMeter();
+}
+
+std::string ORS::OrgasmManager::MakeUniqueKey(RE::Actor* a_actor,std::string a_base)
+{
+    if (a_actor == nullptr) return "ERROR";
+    //UDSKSELOG("OrgasmManager::MakeUniqueKey({},{})",a_actor->GetName(),a_base)
+    std::unique_lock lock(_lock);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.MakeUniqueKey(a_base);
 }
 
 void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm)
@@ -136,6 +202,7 @@ void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine 
     // ----
     REGISTERPAPYRUSFUNC(AddOrgasmChange,true)
     REGISTERPAPYRUSFUNC(RemoveOrgasmChange,true)
+    REGISTERPAPYRUSFUNC(UpdateOrgasmChangeVar,true)
     REGISTERPAPYRUSFUNC(GetOrgasmChangeVar,true)
     REGISTERPAPYRUSFUNC(HaveOrgasmChange,true)
     REGISTERPAPYRUSFUNC(GetOrgasmProgress,true)
@@ -144,6 +211,7 @@ void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine 
     REGISTERPAPYRUSFUNC(ResetOrgasmProgress,true)
     REGISTERPAPYRUSFUNC(LinkActorToMeter,true)
     REGISTERPAPYRUSFUNC(UnlinkActorFromMeter,true)
+    REGISTERPAPYRUSFUNC(MakeUniqueKey,true)
     // ----
     #undef REGISTERPAPYRUSFUNC
 }

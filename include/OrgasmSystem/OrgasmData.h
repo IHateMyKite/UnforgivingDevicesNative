@@ -6,23 +6,26 @@ using boost::algorithm::clamp;
 
 namespace ORS
 {
-
-    #define EDGEDURATION 2.0f
-    #define EDGETHRESHOLD 0.9f
-
     enum OrgasmVariable : uint8_t
     {
         vNone                       =  0,
+
         vOrgasmRate                 =  1,
         vOrgasmRateMult             =  2,
         vOrgasmResistence           =  3,
         vOrgasmResistenceMult       =  4,
         vOrgasmCapacity             =  5,
         vOrgasmForcing              =  6,
-        vElapsedTime                =  7,
+
+        vElapsedDuration            =  7,
+
         vArousal                    =  8,
         vArousalRate                =  9,
         vArousalRateMult            = 10,
+
+        vEdgeDuration               = 11,
+        vEdgeRemDuration            = 12,
+        vEdgeThreshold              = 13,
 
         vLast
     };
@@ -40,7 +43,7 @@ namespace ORS
         mNone                       = 0x00,
 
         mEdgeOnly                   = 0x01,
-        mEdgeRandom                 = 0x02,
+        mEdgeRandom                 = 0x02, //currently works same as mEdgeOnly
         //timer setting
         mTimed                      = 0x04, //orgasm change will be removed once time elapses. Duration is saved in last 16 bites of OrgasmMod passed to AddOrgasmChange function
         mTimeMod_Lin                = 0x08, //orgasm rate will decrease over time lineary
@@ -61,24 +64,25 @@ namespace ORS
     class OrgasmChangeData
     {
     public:
-        char        Key[32]                 = "";
+        char        Key[64]                 = "";
         float       OrgasmRateOriginal      = 0.0f;
         float       OrgasmRate              = 0.0f;
-        float       OrgasmRateMult          = 1.0f;
+        float       OrgasmRateMult          = 0.0f;
         float       OrgasmForcing           = 0.0f;
-        float       OrgasmCapacity          = 100.0f;
-        float       OrgasmResistence        = 3.5f;
-        float       OrgasmResistenceMult    = 1.0f;
+        float       OrgasmCapacity          = 0.0f;
+        float       OrgasmResistence        = 0.0f;
+        float       OrgasmResistenceMult    = 0.0f;
         uint16_t    Duration                = -1;
         float       ElapsedDuration         = 0.0f;
         uint8_t     Mod                     = 0x00;
         uint32_t    EroZones                = 0x00000000; //up to 32 ero zones. Should be more than enought
         float       EdgeDuration            = 0.0f;
-        float       EdgeElapsedDuration     = 0.0f;
+        float       EdgeRemDuration         = 0.0f;
+        float       EdgeThreshold           = 0.9f;
 
         //arousal
         float       ArousalRate             = 0.0f;
-        float       ArousalRateMult         = 1.0f;
+        float       ArousalRateMult         = 0.0f;
 
         uint8_t     _reserved[16];
     };
@@ -95,9 +99,8 @@ namespace ORS
         eNipples                = 0x00000040,
         eAnal1                  = 0x00000080,
         eAnal2                  = 0x00000100,
-        eSpecial                = 0x00000200    //only for orgasm resist minigame
+        eDefault                = 0x00000200    //when you dont care about ero zones
     };
-
     class OrgasmEroZone
     {
     public:
@@ -110,10 +113,11 @@ namespace ORS
     class OrgasmActorData
     {
     public:
+        //OrgasmActorData(RE::Actor* a_actor) : _actor(a_actor){};
         void    Update(const float& a_delta);
         float   GetOrgasmProgress(int a_mod) const;
         float   GetOrgasmProgressLink() const { return clamp(100.0f*_OrgasmProgress/_OrgasmCapacity,0.0f,100.0f);}
-        void    ResetOrgasmProgress() { _OrgasmProgress = 0.0f; }
+        void    ResetOrgasmProgress();
         bool    OrgasmChangeExist(std::string a_key) const;
         bool    AddOrgasmChange(std::string a_key,  OrgasmMod a_mod,
                                                     EroZone a_erozones,
@@ -135,9 +139,14 @@ namespace ORS
         void    LinkActorToMeter(std::string a_path,MeterWidgetType a_type,int a_id);
         void    UnlinkActorFromMeter();
 
+        std::string MakeUniqueKey(std::string a_base);
+
+        void    Orgasm(void);
+
         RE::Actor*  GetActor();
         void        SetActor(RE::Actor* a_actor);
 
+        //serde
         void    OnGameLoaded(SKSE::SerializationInterface*);
         void    OnGameSaved(SKSE::SerializationInterface*);
         void    OnRevert(SKSE::SerializationInterface*);
@@ -153,6 +162,8 @@ namespace ORS
         inline float CalculateArousalRateMult();
         inline void  ElapseChanges(const float& a_delta);
         inline void  UpdateWidget();
+
+        inline void SendOrgasmEvent();
     private:
         RE::Actor*  _actor;
         std::map<std::string,OrgasmChangeData>  _Sources;
@@ -167,7 +178,7 @@ namespace ORS
             {"NIPPL","Nipples"  ,eNipples},
             {"ANAL1","Anal 1"   ,eAnal1},
             {"ANAL2","Anal 2"   ,eAnal2},
-            {"SPECL","Special"  ,eSpecial},
+            {"DEFAU","Default"  ,eDefault},
         };
         float   _OrgasmRate             = 0.0f;
         float   _AntiOrgasmRate         = 0.0f;
@@ -183,19 +194,32 @@ namespace ORS
 
         float   _OrgasmProgress         = 0.0f;
 
-
-        float   _ArousalReal            = 0.0f;
+        float   _Arousal                = 0.0f;
         float   _ArousalRate            = 0.0f;
         float   _ArousalRateMult        = 1.0f;
-
-        int8_t  _Arousal                = 0;
 
         std::string         _LinkedWidgetPath       = "";
         MeterWidgetType     _LinkedWidgetType       = tSkyUi;
         int32_t             _LinkedWidgetId         = 0;
-    private:
 
+        //mutable std::mutex _lock;
     };
 
-   extern RE::TESFaction* g_ArousalFaction;
+    //serial tasks
+    inline void SendOrgasmEventTask(void* a_arg)
+    {
+        if (a_arg == nullptr) return;
+        RE::Actor* loc_actor = reinterpret_cast<RE::Actor*>(a_arg);
+	    SKSE::ModCallbackEvent modEvent{
+		    "ORS_ActorOrgasm",
+		    "",
+		    0.0f,
+		    loc_actor
+	    };
+
+        UDSKSELOG("Sending orgasm event for {}",loc_actor->GetName())
+
+	    auto modCallback = SKSE::GetModCallbackEventSource();
+	    modCallback->SendEvent(&modEvent);
+    }
 }
