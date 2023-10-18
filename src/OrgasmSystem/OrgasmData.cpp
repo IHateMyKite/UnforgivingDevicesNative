@@ -10,7 +10,7 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
     _ArousalRate            = CalculateArousalRate();
     _ArousalRateMult        = CalculateArousalRateMult();
 
-    const float loc_da = _ArousalRate*_ArousalRateMult*a_delta;
+    const float loc_da      = _ArousalRate*_ArousalRateMult*a_delta;
 
     //UDSKSELOG("OrgasmActorData::Update({},{}) _Arousal before = {}, rate = {}",_actor->GetName(),a_delta,_Arousal,loc_da)
     if (OSLAModifyArousal != nullptr) _Arousal = OSLAModifyArousal(_actor,loc_da);
@@ -26,7 +26,7 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
     _OrgasmProgress        += CalculateOrgasmProgress()*a_delta;
 
     
-    float loc_ArousalMult      = clamp(std::pow(10.0f,clamp(100.0f/clamp(_Arousal,1.0,100.0),1.0f,2.0f) - 1.0f),1.0,100.0);;
+    float loc_ArousalMult   = clamp(std::pow(10.0f,clamp(100.0f/clamp(_Arousal,1.0,100.0),1.0f,2.0f) - 1.0f),1.0,100.0);;
     _AntiOrgasmRate         = static_cast<float>(loc_ArousalMult*_OrgasmResistenceMult*_OrgasmResistence);
 
     const float loc_OrgasmRateAfterMult = _OrgasmRate > 0.0f ? _OrgasmRate*_OrgasmRateMult : _OrgasmRate;
@@ -399,7 +399,7 @@ float ORS::OrgasmActorData::CalculateOrgasmRate()
         }
     }
     loc_res = clamp(loc_res,-5000.0f,5000.0f);
-    UDSKSELOG("OrgasmActorData::CalculateOrgasmRate({}) - Final orgasm rate = {} ",_actor->GetName(),loc_res)
+    //UDSKSELOG("OrgasmActorData::CalculateOrgasmRate({}) - Final orgasm rate = {} ",_actor->GetName(),loc_res)
 
     return loc_res;
 }

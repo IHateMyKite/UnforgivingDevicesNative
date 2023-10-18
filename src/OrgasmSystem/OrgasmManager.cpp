@@ -222,6 +222,8 @@ void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde)
     uint32_t loc_size;
     uint32_t loc_version;
 
+    if (serde == nullptr) return;
+
     while (serde->GetNextRecordInfo(loc_type, loc_version, loc_size)) 
     {
         if (loc_type == OrgasmSerData) 
@@ -241,6 +243,17 @@ void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde)
                 }
 
                 RE::Actor* loc_actor = RE::TESForm::LookupByID<RE::Actor>(loc_newActorFormID);
+
+                if (loc_actor == nullptr)
+                {
+                    UDSKSELOG("ERROR: Null actor ({:08X} -> {:08X}) found in cosave -> skipping",loc_actorFormID,loc_newActorFormID)
+
+                    //read data in same way even if actor is null, so correct data are rad next time
+                    OrgasmActorData loc_data;
+                    loc_data.OnGameLoaded(serde);
+
+                    continue;
+                }
 
                 UDSKSELOG("Loaded actor {} from save",loc_actor->GetName())
                 _actors[loc_actor] = OrgasmActorData();
