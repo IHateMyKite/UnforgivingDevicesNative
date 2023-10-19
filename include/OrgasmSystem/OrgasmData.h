@@ -6,6 +6,10 @@ using boost::algorithm::clamp;
 
 namespace ORS
 {
+    //how often will be expression updated (if set)
+    #define EXPRUPDATETIME 5.0f
+
+
     enum OrgasmVariable : uint8_t
     {
         vNone                       =  0,
@@ -26,6 +30,8 @@ namespace ORS
         vEdgeDuration               = 11,
         vEdgeRemDuration            = 12,
         vEdgeThreshold              = 13,
+
+        vBaseDistance               = 14,
 
         vLast
     };
@@ -50,7 +56,9 @@ namespace ORS
 
         mTimeMod_Exp                = 0x10, //orgasm rate will decrease over time exponencialy. Use this in combination with mTimed to make multiple timed changes
         //other
-        mMakeKey                    = 0x20  //create new key if passed key is already used
+        mMakeKey                    = 0x20, //create new key if passed key is already used
+
+        mArousingMovement           = 0x40  //scale orgasm and arousal rate based on traveled distance
         //7-15  = reserved
         //16-31 = Duration (seconds)
     };
@@ -59,6 +67,18 @@ namespace ORS
     {
         tSkyUi                        = 0,
         tIWW                          = 1
+    };
+
+    enum ExpressionUpdateType : uint8_t
+    {
+        eSet    = 0,
+        eReset  = 1
+    };
+
+    enum LinkedWidgetUpdateType : uint8_t
+    {
+        wShow   = 0,
+        wHide   = 1
     };
 
     class OrgasmChangeData
@@ -84,7 +104,8 @@ namespace ORS
         float       ArousalRate             = 0.0f;
         float       ArousalRateMult         = 0.0f;
 
-        uint8_t     _reserved[16];
+        float       BaseDistance            = 0.0f;
+        uint8_t     _reserved[12];
     };
 
     enum EroZone : uint32_t
@@ -141,6 +162,9 @@ namespace ORS
 
         std::string MakeUniqueKey(std::string a_base);
 
+        std::vector<std::string> GetAllOrgasmChanges();
+        int     RemoveAllOrgasmChanges();
+
         void    Orgasm(void);
 
         RE::Actor*  GetActor();
@@ -150,20 +174,26 @@ namespace ORS
         void    OnGameLoaded(SKSE::SerializationInterface*);
         void    OnGameSaved(SKSE::SerializationInterface*);
         void    OnRevert(SKSE::SerializationInterface*);
+
+        void    UpdatePosition();
     private:
         inline float CalculateOrgasmProgress();
-        inline float CalculateOrgasmRate();
+        inline float CalculateOrgasmRate(const float& a_delta);
         inline float CalculateOrgasmRateMult();
         inline float CalculateOrgasmForcing();
         inline float CalculateOrgasmCapacity();
         inline float CalculateOrgasmResistence();
         inline float CalculateOrgasmResistenceMult();
-        inline float CalculateArousalRate();
+        inline float CalculateArousalRate(const float& a_delta);
         inline float CalculateArousalRateMult();
         inline void  ElapseChanges(const float& a_delta);
         inline void  UpdateWidget();
 
+        inline void  UpdateExpression(const float& a_delta);
+
         inline void SendOrgasmEvent();
+        inline void SendOrgasmExpressionEvent(ExpressionUpdateType a_type);
+        inline void SendLinkedMeterEvent(LinkedWidgetUpdateType a_type);
     private:
         RE::Actor*  _actor;
         std::map<std::string,OrgasmChangeData>  _Sources;
@@ -194,32 +224,22 @@ namespace ORS
 
         float   _OrgasmProgress         = 0.0f;
 
+        float   _OrgasmTimeout          = 0.0f;
+
         float   _Arousal                = 0.0f;
         float   _ArousalRate            = 0.0f;
         float   _ArousalRateMult        = 1.0f;
 
+        bool                _LinkedWidgetUsed       = false;
         std::string         _LinkedWidgetPath       = "";
         MeterWidgetType     _LinkedWidgetType       = tSkyUi;
         int32_t             _LinkedWidgetId         = 0;
+        bool                _LinkedWidgetShown      = false;
 
+        float               _ExpressionTimer    = EXPRUPDATETIME;
+        bool                _ExpressionSet      = false;
+
+        RE::NiPoint3 _lastpos;
         //mutable std::mutex _lock;
     };
-
-    //serial tasks
-    inline void SendOrgasmEventTask(void* a_arg)
-    {
-        if (a_arg == nullptr) return;
-        RE::Actor* loc_actor = reinterpret_cast<RE::Actor*>(a_arg);
-	    SKSE::ModCallbackEvent modEvent{
-		    "ORS_ActorOrgasm",
-		    "",
-		    0.0f,
-		    loc_actor
-	    };
-
-        UDSKSELOG("Sending orgasm event for {}",loc_actor->GetName())
-
-	    auto modCallback = SKSE::GetModCallbackEventSource();
-	    modCallback->SendEvent(&modEvent);
-    }
 }

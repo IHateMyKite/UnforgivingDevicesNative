@@ -54,7 +54,7 @@ namespace UD
             MinigameEffectManager::GetSingleton()->UpdateMinigameEffect(a_this,a_delta);
             MinigameEffectManager::GetSingleton()->UpdateMeters(a_this,a_delta);
 
-            UpdateManager::GetSingleton()->CallSerTasks();
+            //UpdateManager::GetSingleton()->CallSerTasks();
         }
         UpdateManager::GetSingleton()->ActorUpdate(a_this,a_delta);
     }

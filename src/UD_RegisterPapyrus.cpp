@@ -30,6 +30,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(Round,true)
         REGISTERPAPYRUSFUNC(IsPlayer,true)
         REGISTERPAPYRUSFUNC(GetActorName,true)
+        REGISTERPAPYRUSFUNC(FloatToInt,true)
 
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)

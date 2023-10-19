@@ -13,7 +13,7 @@ void ORS::OrgasmManager::Setup()
     if (!_installed)
     {
         //g_ArousalFaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x1579C0,"UnforgivingDevices.esp"));
-        HINSTANCE dllHandle = LoadLibrary(TEXT("OSLAroused_SKSE.dll"));
+        HINSTANCE dllHandle = LoadLibrary(TEXT("OSLAroused.dll"));
         if (dllHandle != NULL)
         {
             FARPROC pModifyArousal = GetProcAddress(HMODULE (dllHandle),"ModifyArousalExt");
@@ -23,7 +23,7 @@ void ORS::OrgasmManager::Setup()
         }
         else
         {
-            UDSKSELOG("OrgasmManager::Setup() - ERROR: Cant find OSLAroused_SKSE.dll!!")
+            UDSKSELOG("OrgasmManager::Setup() - ERROR: Cant find OSLAroused.dll!!")
         }
         _installed = true;
     }
@@ -196,6 +196,28 @@ std::string ORS::OrgasmManager::MakeUniqueKey(RE::Actor* a_actor,std::string a_b
     return loc_oc.MakeUniqueKey(a_base);
 }
 
+std::vector<std::string> ORS::OrgasmManager::GetAllOrgasmChanges(RE::Actor* a_actor)
+{
+    if (a_actor == nullptr) return std::vector<std::string>();
+    //UDSKSELOG("OrgasmManager::UnlinkActorFromMeter({})",a_actor->GetName())
+    std::unique_lock lock(_lock);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.GetAllOrgasmChanges();
+}
+
+int ORS::OrgasmManager::RemoveAllOrgasmChanges(RE::Actor* a_actor)
+{
+    if (a_actor == nullptr) return 0;
+    //UDSKSELOG("OrgasmManager::UnlinkActorFromMeter({})",a_actor->GetName())
+    std::unique_lock lock(_lock);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.RemoveAllOrgasmChanges();
+}
+
 void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm)
 {
     #define REGISTERPAPYRUSFUNC(name,unhook) vm->RegisterFunction(#name, "OrgasmSystem", ORS::name,unhook);
@@ -212,6 +234,8 @@ void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine 
     REGISTERPAPYRUSFUNC(LinkActorToMeter,true)
     REGISTERPAPYRUSFUNC(UnlinkActorFromMeter,true)
     REGISTERPAPYRUSFUNC(MakeUniqueKey,true)
+    REGISTERPAPYRUSFUNC(GetAllOrgasmChanges,true)
+    REGISTERPAPYRUSFUNC(RemoveAllOrgasmChanges,true)
     // ----
     #undef REGISTERPAPYRUSFUNC
 }
@@ -258,6 +282,7 @@ void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde)
                 UDSKSELOG("Loaded actor {} from save",loc_actor->GetName())
                 _actors[loc_actor] = OrgasmActorData();
                 _actors[loc_actor].SetActor(loc_actor);
+                _actors[loc_actor].UpdatePosition();
                 _actors[loc_actor].OnGameLoaded(serde);
             }
         }

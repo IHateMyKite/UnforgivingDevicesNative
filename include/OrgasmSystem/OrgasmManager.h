@@ -55,6 +55,9 @@ namespace ORS
 
         std::string MakeUniqueKey(RE::Actor* a_actor,std::string a_base);
 
+        std::vector<std::string> GetAllOrgasmChanges(RE::Actor* a_actor);
+        int     RemoveAllOrgasmChanges(RE::Actor* a_actor);
+
         void    RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm);
 
         void    OnGameLoaded(SKSE::SerializationInterface*);
@@ -136,4 +139,15 @@ namespace ORS
     {
         return OrgasmManager::GetSingleton()->MakeUniqueKey(a_actor,a_base);
     }
+
+    inline std::vector<std::string> GetAllOrgasmChanges(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        return OrgasmManager::GetSingleton()->GetAllOrgasmChanges(a_actor);
+    }
+
+    inline int RemoveAllOrgasmChanges(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        return OrgasmManager::GetSingleton()->RemoveAllOrgasmChanges(a_actor);
+    }
+
 }

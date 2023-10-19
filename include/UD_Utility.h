@@ -12,6 +12,8 @@ namespace UD
     int     iRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max);
     float   fRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max);
 
+    int     FloatToInt(PAPYRUSFUNCHANDLE,float a_value);
+
     bool IsPlayer(PAPYRUSFUNCHANDLE,RE::Actor* a_actor);
     std::string GetActorName(PAPYRUSFUNCHANDLE,RE::Actor* a_actor);
     //screw trampolines, we ball

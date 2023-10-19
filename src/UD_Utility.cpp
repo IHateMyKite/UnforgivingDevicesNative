@@ -35,6 +35,12 @@ namespace UD
         return boost::algorithm::clamp(a_value,a_min,a_max);
     }
 
+    int FloatToInt(PAPYRUSFUNCHANDLE, float a_value)
+    {
+        assert (sizeof(int) == sizeof(float));
+        return *((int*)&a_value);
+    }
+
     bool IsPlayer(PAPYRUSFUNCHANDLE, RE::Actor* a_actor)
     {
         if (a_actor == nullptr) return false;

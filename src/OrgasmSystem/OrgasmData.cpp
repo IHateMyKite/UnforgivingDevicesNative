@@ -7,7 +7,13 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
 {
     if (_actor == nullptr) return;
 
-    _ArousalRate            = CalculateArousalRate();
+    if (_OrgasmTimeout > 0.0f)
+    {
+        _OrgasmTimeout -= a_delta;
+        return;
+    }
+
+    _ArousalRate            = CalculateArousalRate(a_delta);
     _ArousalRateMult        = CalculateArousalRateMult();
 
     const float loc_da      = _ArousalRate*_ArousalRateMult*a_delta;
@@ -16,7 +22,7 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
     if (OSLAModifyArousal != nullptr) _Arousal = OSLAModifyArousal(_actor,loc_da);
     //UDSKSELOG("OrgasmActorData::Update({},{}) _Arousal after = {}, rate = {}",_actor->GetName(),a_delta,_Arousal,loc_da)
 
-    _OrgasmRate             = CalculateOrgasmRate();
+    _OrgasmRate             = CalculateOrgasmRate(a_delta);
     _OrgasmRateMult         = CalculateOrgasmRateMult();
     _OrgasmForcing          = CalculateOrgasmForcing();
     _OrgasmCapacity         = CalculateOrgasmCapacity();
@@ -47,20 +53,21 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
 
     ElapseChanges(a_delta);
 
+    UpdateWidget();
+    UpdatePosition();
+    UpdateExpression(a_delta);
+
     if (_OrgasmProgress >= 100.0) 
     {
         Orgasm();
     }
-
-    UpdateWidget();
-
     //UDSKSELOG("ORS::OrgasmActorData::Update({}) - {} = {} - {} --- T= {}",_actor->GetName(),_OrgasmProgress,_OrgasmRate,_AntiOrgasmRate,_OrgasmRateTotal)
 }
 
 float ORS::OrgasmActorData::GetOrgasmProgress(int a_mod) const
 {
     if (a_mod == 0) return _OrgasmProgress;
-    else return _OrgasmProgress/_OrgasmCapacity;
+    else return _OrgasmCapacity > 0.0f ? _OrgasmProgress/_OrgasmCapacity : 0.0f;
 }
 
 void ORS::OrgasmActorData::ResetOrgasmProgress()
@@ -168,6 +175,7 @@ bool ORS::OrgasmActorData::UpdateOrgasmChangeVar(std::string a_key, OrgasmVariab
         UPDORGVAR(EdgeDuration)
         UPDORGVAR(EdgeRemDuration)
         UPDORGVAR(EdgeThreshold)
+        UPDORGVAR(BaseDistance)
         default:
             return false;
     };
@@ -221,6 +229,7 @@ float ORS::OrgasmActorData::GetOrgasmChangeVar(std::string a_key, OrgasmVariable
         GETORGVAR(EdgeDuration)
         GETORGVAR(EdgeRemDuration)
         GETORGVAR(EdgeThreshold)
+        GETORGVAR(BaseDistance)
         default:
             return 0.0f;
     };
@@ -236,14 +245,14 @@ float ORS::OrgasmActorData::GetOrgasmVariable(OrgasmVariable a_variable)
 {
     switch (a_variable)
     {
-        case vOrgasmRate:       return CalculateOrgasmRate();
+        case vOrgasmRate:       return CalculateOrgasmRate(1.0f/60.0f);
         case vOrgasmRateMult:   return CalculateOrgasmRateMult();
         case vOrgasmResistence: return CalculateOrgasmResistence();
         case vOrgasmResistenceMult: return CalculateOrgasmResistenceMult();
         case vOrgasmCapacity:   return CalculateOrgasmCapacity();
         case vOrgasmForcing:    return CalculateOrgasmForcing();
         case vArousal:          return _Arousal;
-        case vArousalRate:      return CalculateArousalRate();
+        case vArousalRate:      return CalculateArousalRate(1.0f/60.0f);
         case vArousalRateMult:  return CalculateArousalRateMult();
         default:                return 0.0f;
     };
@@ -251,22 +260,25 @@ float ORS::OrgasmActorData::GetOrgasmVariable(OrgasmVariable a_variable)
 
 void ORS::OrgasmActorData::LinkActorToMeter(std::string a_path, MeterWidgetType a_type, int a_id)
 {
-    //std::unique_lock lock(_lock);
     _LinkedWidgetPath   = a_path;
     _LinkedWidgetType   = a_type;
     _LinkedWidgetId     = a_id; 
+    _LinkedWidgetUsed   = true;
 
     switch (a_type)
     {
         case tSkyUi : UD::MeterManager::SetExtCalcSkyUi(_LinkedWidgetPath,this,&OrgasmActorData::GetOrgasmProgressLink); break;
         case tIWW   : UD::MeterManager::SetExtCalcIWW(a_id,this,&OrgasmActorData::GetOrgasmProgressLink); break;
     }
+
+    
     
 }
 
 void ORS::OrgasmActorData::UnlinkActorFromMeter()
 {
-    //std::unique_lock lock(_lock);
+     _LinkedWidgetUsed  = false;
+
     switch (_LinkedWidgetType)
     {
         case tSkyUi : UD::MeterManager::UnsetExtCalcSkyUi(_LinkedWidgetPath); break;
@@ -290,13 +302,34 @@ std::string ORS::OrgasmActorData::MakeUniqueKey(std::string a_base)
     return loc_res;
 }
 
+std::vector<std::string> ORS::OrgasmActorData::GetAllOrgasmChanges()
+{
+    std::vector<std::string> loc_res;
+    for (auto&& it : _Sources) loc_res.push_back(it.first);
+    return loc_res;
+}
+
+int ORS::OrgasmActorData::RemoveAllOrgasmChanges()
+{
+    int loc_res = static_cast<int>(_Sources.size());
+    _Sources.clear();
+    return loc_res;
+}
+
 void ORS::OrgasmActorData::Orgasm(void)
 {
+    _OrgasmTimeout += 5.0f;
+
     ResetOrgasmProgress();
+
     std::string loc_key = MakeUniqueKey("PostOrgasm");
-    AddOrgasmChange(loc_key,(OrgasmMod)0xA000C,eDefault,-2.5f,-0.25f,0.0f,0.0f,0.25f,0.25f);
-    UpdateOrgasmChangeVar(loc_key, vArousalRate, -5.0f, mSet);
+
+    AddOrgasmChange(loc_key,(OrgasmMod)0xA000C,eDefault,-5.0f,-0.25f,0.0f,0.0f,0.25f,0.25f);
+    UpdateOrgasmChangeVar(loc_key, vArousalRate, -15.0f, mSet);
+
     SendOrgasmEvent();
+
+    if (_LinkedWidgetUsed) SendLinkedMeterEvent(wHide);
 }
 
 RE::Actor* ORS::OrgasmActorData::GetActor()
@@ -369,35 +402,53 @@ float ORS::OrgasmActorData::CalculateOrgasmProgress()
     return _OrgasmRate*_OrgasmRateMult;
 }
 
-float ORS::OrgasmActorData::CalculateOrgasmRate()
+float ORS::OrgasmActorData::CalculateOrgasmRate(const float& a_delta)
 {
     //std::unique_lock lock(_lock);
     float loc_res = 0.0f;
     for (auto&& it1 : _Sources) 
     {   
-        const float loc_or = it1.second.OrgasmRate;
+        OrgasmChangeData& loc_ocd = it1.second;
+        const float& loc_or = loc_ocd.OrgasmRate;
         if (loc_or == 0.0f) continue;
 
-        float       loc_mult        = 0.0f;
-        uint32_t    loc_erozones    = it1.second.EroZones;
+        float           loc_mult        = 0.0f;
+        const uint32_t& loc_erozones    = loc_ocd.EroZones;
 
         for (auto && it2 : _EroZones)
         {
-            //UDSKSELOG("OrgasmActorData::CalculateOrgasmRate({}) - Checking ero zone {:08X}({}) - Mult = {} ",_actor->GetName(),it2.EroZoneSlot,it2.DispleyName,it2.Multiplier)
-            if (it2.EroZoneSlot & loc_erozones) loc_mult += it2.Multiplier;
+            //use biggest value
+            if ((it2.EroZoneSlot & loc_erozones) && (it2.Multiplier > loc_mult)) 
+            {
+                loc_mult = it2.Multiplier;
+            }
+        }
+
+        if ((loc_ocd.Mod & mArousingMovement) && (a_delta > 0.0f))
+        {
+            {
+                const auto loc_currentpos = _actor->GetPosition();
+                const float loc_distance = loc_currentpos.GetSquaredDistance(_lastpos);
+                const float loc_basedistance = loc_ocd.BaseDistance*a_delta;
+
+                if (loc_basedistance > 0.0f) loc_mult *= clamp(loc_distance/loc_basedistance,0.0f,3.0f);
+
+                UDSKSELOG("OrgasmActorData::CalculateOrgasmRate() - Distance= {}, Base distance = {}, Distance multiplier = {}",loc_distance,loc_basedistance,loc_distance/loc_basedistance)
+            }
         }
 
         //only if no edging is active
-        if ((!(it1.second.Mod & (mEdgeOnly | mEdgeRandom)) || (GetOrgasmProgress(1) < it1.second.EdgeThreshold)) && it1.second.EdgeRemDuration <= 0.0f) 
+        if ((!(loc_ocd.Mod & (mEdgeOnly | mEdgeRandom)) || (GetOrgasmProgress(1) < loc_ocd.EdgeThreshold)) && loc_ocd.EdgeRemDuration <= 0.0f) 
         {
             //UDSKSELOG("OrgasmActorData::CalculateOrgasmRate({},{}) - Changing orgasm rate by {} - Mult = {}",_actor->GetName(),it1.first,it1.second.OrgasmRate*loc_mult,loc_mult)
             loc_res += (loc_or > 0.0f ? loc_or*loc_mult : loc_or);
         }
-        else if (it1.second.EdgeRemDuration <= 0.0f) 
+        else if (loc_ocd.EdgeRemDuration <= 0.0f) 
         {
-            it1.second.EdgeRemDuration = it1.second.EdgeDuration; //set edge timeout
+            loc_ocd.EdgeRemDuration = loc_ocd.EdgeDuration; //set edge timeout
         }
     }
+
     loc_res = clamp(loc_res,-5000.0f,5000.0f);
     //UDSKSELOG("OrgasmActorData::CalculateOrgasmRate({}) - Final orgasm rate = {} ",_actor->GetName(),loc_res)
 
@@ -444,31 +495,45 @@ float ORS::OrgasmActorData::CalculateOrgasmResistenceMult()
     return clamp(loc_res,0.0f,100.0f);
 }
 
-inline float ORS::OrgasmActorData::CalculateArousalRate()
+inline float ORS::OrgasmActorData::CalculateArousalRate(const float& a_delta)
 {
     //std::unique_lock lock(_lock);
     float loc_res = 0.0f;
     for (auto&& it1 : _Sources) 
     {  
-        const float loc_ar = it1.second.ArousalRate; 
+        OrgasmChangeData& loc_ocd = it1.second;
+        const float& loc_ar = loc_ocd.ArousalRate; 
         if (loc_ar == 0.0f) continue;
 
-        float       loc_mult        = 0.0f;
-        uint32_t    loc_erozones    = it1.second.EroZones;
+        float           loc_mult        = 0.0f;
+        const uint32_t& loc_erozones    = loc_ocd.EroZones;
 
         for (auto && it2 : _EroZones)
         {
-            if (it2.EroZoneSlot & loc_erozones) loc_mult += it2.Multiplier;
+            //use biggest value
+            if ((it2.EroZoneSlot & loc_erozones) && (it2.Multiplier > loc_mult)) 
+            {
+                loc_mult = it2.Multiplier;
+            }
+        }
+
+        if ((loc_ocd.Mod & mArousingMovement) && (a_delta > 0.0f))
+        {
+            const auto loc_currentpos = _actor->GetPosition();
+            const float loc_distance = loc_currentpos.GetDistance(_lastpos);
+            const float loc_basedistance = loc_ocd.BaseDistance*a_delta;
+
+            if (loc_basedistance > 0.0f) loc_mult *= clamp(loc_distance/loc_basedistance,0.0f,2.0f);
         }
 
         //only if no edging is active
-        if ((!(it1.second.Mod & (mEdgeOnly | mEdgeRandom)) || (GetOrgasmProgress(1) < it1.second.EdgeThreshold)) && it1.second.EdgeRemDuration <= 0.0f) 
+        if ((!(loc_ocd.Mod & (mEdgeOnly | mEdgeRandom)) || (GetOrgasmProgress(1) < loc_ocd.EdgeThreshold)) && loc_ocd.EdgeRemDuration <= 0.0f) 
         {
             loc_res += (loc_ar > 0.0f ? loc_ar*loc_mult : loc_ar);
         }
-        else if (it1.second.EdgeRemDuration <= 0.0f) 
+        else if (loc_ocd.EdgeRemDuration <= 0.0f) 
         {
-            it1.second.EdgeRemDuration = it1.second.EdgeDuration; //set edge timeout
+            loc_ocd.EdgeRemDuration = loc_ocd.EdgeDuration; //set edge timeout
         }
     }
     return clamp(loc_res,-100.0f,100.0f);
@@ -533,21 +598,115 @@ void ORS::OrgasmActorData::ElapseChanges(const float& a_delta)
 
 inline void ORS::OrgasmActorData::UpdateWidget()
 {
-    //if (_LinkedWidgetPath == "") return;
-    //
-    //const float loc_rate = _OrgasmRateTotal*100.0/_OrgasmCapacity;
-    //
-    //if (_LinkedWidgetType == tSkyUi)
-    //{
-    //    UD::MeterManager::SetMeterRateSkyUi(_LinkedWidgetPath,loc_rate);
-    //}
-    //else if (_LinkedWidgetType == tIWW)
-    //{
-    //    UD::MeterManager::SetMeterRateIWW(_LinkedWidgetId,loc_rate);
-    //}
+    if (_LinkedWidgetUsed)
+    {
+        if (_LinkedWidgetShown && (GetOrgasmProgress(1) < 0.025f))
+        {
+            SendLinkedMeterEvent(wHide);
+            _LinkedWidgetShown = false;
+        }
+        else if (!_LinkedWidgetShown && (GetOrgasmProgress(1) >= 0.025f))
+        {
+            SendLinkedMeterEvent(wShow);
+            _LinkedWidgetShown = true;
+        }
+    }
+}
+
+inline void ORS::OrgasmActorData::UpdateExpression(const float& a_delta)
+{
+    _ExpressionTimer += a_delta;
+
+    if (!_ExpressionSet && (_OrgasmRate >= _OrgasmResistence*0.5f) && (_ExpressionTimer >= EXPRUPDATETIME))
+    {
+    
+        SendOrgasmExpressionEvent(eSet);
+        _ExpressionTimer = 0.0f;
+        _ExpressionSet = true;
+
+    }
+    else if (_ExpressionSet && (_OrgasmRate < _OrgasmResistence*0.5) && (GetOrgasmProgress(1) < 0.25) ) 
+    {
+        SendOrgasmExpressionEvent(eReset);
+        _ExpressionTimer = EXPRUPDATETIME;
+        _ExpressionSet = false;
+    }
+}
+
+inline void ORS::OrgasmActorData::UpdatePosition()
+{
+    _lastpos = _actor->GetPosition();
 }
 
 inline void ORS::OrgasmActorData::SendOrgasmEvent()
 {
-	UD::UpdateManager::GetSingleton()->AddSerTask(SendOrgasmEventTask,_actor,false);
+    if (_actor == nullptr) return;
+    auto loc_handle = _actor->GetHandle();
+    SKSE::GetTaskInterface()->AddTask([loc_handle]
+        {
+            SKSE::ModCallbackEvent modEvent{
+                "ORS_ActorOrgasm",
+                "",
+                0.0f,
+                loc_handle.get().get()
+            };
+
+            UDSKSELOG("Sending orgasm event for {}",loc_handle.get()->GetName())
+
+            auto modCallback = SKSE::GetModCallbackEventSource();
+            modCallback->SendEvent(&modEvent);
+        }
+    );
+}
+
+inline void ORS::OrgasmActorData::SendOrgasmExpressionEvent(ORS::ExpressionUpdateType a_type)
+{
+    if (_actor == nullptr) return;
+    auto loc_handle = _actor->GetHandle();
+    SKSE::GetTaskInterface()->AddTask([loc_handle,a_type]
+        {
+            SKSE::ModCallbackEvent modEvent{
+                "ORS_ExpressionUpdate",
+                "",
+                (float)a_type,
+                loc_handle.get().get()
+            };
+
+            if (loc_handle.get() == nullptr) 
+            {
+                return;
+            }
+
+            UDSKSELOG("Sending expression update for {}",loc_handle.get()->GetName())
+
+            auto modCallback = SKSE::GetModCallbackEventSource();
+            modCallback->SendEvent(&modEvent);
+        }
+    );
+}
+
+inline void ORS::OrgasmActorData::SendLinkedMeterEvent(LinkedWidgetUpdateType a_type)
+{
+    if (_actor == nullptr) return;
+    auto loc_handle = _actor->GetHandle();
+    SKSE::GetTaskInterface()->AddTask([loc_handle,a_type]
+        {
+            SKSE::ModCallbackEvent modEvent{
+                "ORS_LinkedWidgetUpdate",
+                "",
+                (float)a_type,
+                loc_handle.get().get()
+            };
+
+            if (loc_handle.get() == nullptr) 
+            {
+                return;
+            }
+
+            UDSKSELOG("Sending linked widget update for {}",loc_handle.get()->GetName())
+
+            auto modCallback = SKSE::GetModCallbackEventSource();
+            modCallback->SendEvent(&modEvent);
+        }
+    );
 }
