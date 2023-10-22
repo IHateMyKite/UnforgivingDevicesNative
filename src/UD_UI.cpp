@@ -73,9 +73,17 @@ namespace UD
     {
         if (update)
         {
-            value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
-            if      (value > 100.0f)    value = 100.0f;
-            else if (value < 0.0f)      value = 0.0f;
+            if (extcalc == nullptr)
+            {
+                value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
+                if      (value > 100.0f)    value = 100.0f;
+                else if (value < 0.0f)      value = 0.0f;
+            }
+            else
+            {
+                value = extcalc(*extclass);
+            }
+
 
             static RE::UI* loc_ui = RE::UI::GetSingleton();
 

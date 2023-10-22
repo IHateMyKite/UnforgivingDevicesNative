@@ -38,6 +38,8 @@ void ORS::OrgasmManager::Update(float a_delta)
 
     //UDSKSELOG("OrgasmManager::Update({})",a_delta)
 
+    std::vector<std::thread> loc_threads;
+
     for (auto&& it :_actors)
     {
         //UDSKSELOG("OrgasmManager::Update({}) - Updating actor {}",a_delta,it.first->GetName())
@@ -46,13 +48,16 @@ void ORS::OrgasmManager::Update(float a_delta)
         if (loc_actororgasm != nullptr && it.first != nullptr && (std::find(loc_actors.begin(),loc_actors.end(), it.first) != loc_actors.end()))
         {
             loc_actororgasm->SetActor(it.first);
-            loc_actororgasm->Update(a_delta);
+            //create thread for every actor
+            loc_threads.push_back(std::thread(&OrgasmActorData::Update,loc_actororgasm,a_delta));
         }
         else
         {
             //error
         }
     }
+
+    for (auto&& it : loc_threads) it.join();
 
     //UDSKSELOG("OrgasmManager::Update({}) - Done",a_delta)
 }
@@ -166,7 +171,7 @@ float ORS::OrgasmManager::GetAntiOrgasmRate(RE::Actor* a_actor)
 void ORS::OrgasmManager::LinkActorToMeter(RE::Actor* a_actor, std::string a_path, MeterWidgetType a_type, int a_id)
 {
     if (a_actor == nullptr) return;
-    //UDSKSELOG("OrgasmManager::LinkActorToMeter({})",a_actor->GetName(),a_path,a_type,a_id)
+    UDSKSELOG("OrgasmManager::LinkActorToMeter({})",a_actor->GetName(),a_path,a_type,a_id)
     std::unique_lock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
@@ -177,7 +182,7 @@ void ORS::OrgasmManager::LinkActorToMeter(RE::Actor* a_actor, std::string a_path
 void ORS::OrgasmManager::UnlinkActorFromMeter(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return;
-    //UDSKSELOG("OrgasmManager::UnlinkActorFromMeter({})",a_actor->GetName())
+    UDSKSELOG("OrgasmManager::UnlinkActorFromMeter({})",a_actor->GetName())
     std::unique_lock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)

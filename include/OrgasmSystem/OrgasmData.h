@@ -6,9 +6,23 @@ using boost::algorithm::clamp;
 
 namespace ORS
 {
-    //how often will be expression updated (if set)
-    #define EXPRUPDATETIME 5.0f
+    // === Calibration ===
 
+    //how often will be expression updated (if set)
+    #define EXPRUPDATETIME  2.0f
+
+    //thresholds for updating expression
+    #define EXPUPDATEMINTH  0.10f
+    #define EXPUPDATEMAXTH  0.20f
+
+    //orgasm progress required for linked widget to show
+    #define WIDGETSHOWTH    0.025f
+
+    //distance to travel in 1s for 100% orgasm rate
+    #define BASEDISTANCE    2500.0f
+
+
+    // === ENums
 
     enum OrgasmVariable : uint8_t
     {
@@ -30,8 +44,6 @@ namespace ORS
         vEdgeDuration               = 11,
         vEdgeRemDuration            = 12,
         vEdgeThreshold              = 13,
-
-        vBaseDistance               = 14,
 
         vLast
     };
@@ -81,6 +93,31 @@ namespace ORS
         wHide   = 1
     };
 
+    enum EroZone : uint32_t
+    {
+        eNone                   = 0x00000000,
+        eVagina1                = 0x00000001,
+        eVagina2                = 0x00000002,
+        eClitoris               = 0x00000004,
+        ePenis1                 = 0x00000008,
+        ePenis2                 = 0x00000010,
+        ePenis3                 = 0x00000020,
+        eNipples                = 0x00000040,
+        eAnal1                  = 0x00000080,
+        eAnal2                  = 0x00000100,
+        eDefault                = 0x00000200    //when you dont care about ero zones
+    };
+    class OrgasmEroZone
+    {
+    public:
+        char        Alias[6];
+        char        DispleyName[12];
+        EroZone     EroZoneSlot = eNone;
+        float       Multiplier  = 1.0f;
+    };
+
+    // === Classes
+
     class OrgasmChangeData
     {
     public:
@@ -104,31 +141,7 @@ namespace ORS
         float       ArousalRate             = 0.0f;
         float       ArousalRateMult         = 0.0f;
 
-        float       BaseDistance            = 0.0f;
-        uint8_t     _reserved[12];
-    };
-
-    enum EroZone : uint32_t
-    {
-        eNone                   = 0x00000000,
-        eVagina1                = 0x00000001,
-        eVagina2                = 0x00000002,
-        eClitoris               = 0x00000004,
-        ePenis1                 = 0x00000008,
-        ePenis2                 = 0x00000010,
-        ePenis3                 = 0x00000020,
-        eNipples                = 0x00000040,
-        eAnal1                  = 0x00000080,
-        eAnal2                  = 0x00000100,
-        eDefault                = 0x00000200    //when you dont care about ero zones
-    };
-    class OrgasmEroZone
-    {
-    public:
-        char        Alias[6];
-        char        DispleyName[12];
-        EroZone     EroZoneSlot = eNone;
-        float       Multiplier  = 1.0f;
+        uint8_t     _reserved[16];
     };
 
     class OrgasmActorData
@@ -214,6 +227,7 @@ namespace ORS
         float   _AntiOrgasmRate         = 0.0f;
         float   _OrgasmRateMult         = 1.0f;
         float   _OrgasmRateTotal        = 0.0f;
+        float   _OrgasmRatePersist      = 0.0f;
 
         float   _OrgasmForcing          = 0.0f;
 
@@ -228,6 +242,7 @@ namespace ORS
 
         float   _Arousal                = 0.0f;
         float   _ArousalRate            = 0.0f;
+        float   _ArousalRatePersist     = 0.0f;
         float   _ArousalRateMult        = 1.0f;
 
         bool                _LinkedWidgetUsed       = false;
@@ -240,6 +255,5 @@ namespace ORS
         bool                _ExpressionSet      = false;
 
         RE::NiPoint3 _lastpos;
-        //mutable std::mutex _lock;
     };
 }

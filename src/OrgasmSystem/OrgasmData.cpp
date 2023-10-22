@@ -53,6 +53,9 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
 
     ElapseChanges(a_delta);
 
+    _OrgasmRatePersist  = _OrgasmRate;
+    _ArousalRatePersist = _ArousalRate;
+
     UpdateWidget();
     UpdatePosition();
     UpdateExpression(a_delta);
@@ -175,7 +178,6 @@ bool ORS::OrgasmActorData::UpdateOrgasmChangeVar(std::string a_key, OrgasmVariab
         UPDORGVAR(EdgeDuration)
         UPDORGVAR(EdgeRemDuration)
         UPDORGVAR(EdgeThreshold)
-        UPDORGVAR(BaseDistance)
         default:
             return false;
     };
@@ -229,7 +231,6 @@ float ORS::OrgasmActorData::GetOrgasmChangeVar(std::string a_key, OrgasmVariable
         GETORGVAR(EdgeDuration)
         GETORGVAR(EdgeRemDuration)
         GETORGVAR(EdgeThreshold)
-        GETORGVAR(BaseDistance)
         default:
             return 0.0f;
     };
@@ -245,14 +246,14 @@ float ORS::OrgasmActorData::GetOrgasmVariable(OrgasmVariable a_variable)
 {
     switch (a_variable)
     {
-        case vOrgasmRate:       return CalculateOrgasmRate(1.0f/60.0f);
+        case vOrgasmRate:       return _OrgasmRatePersist;
         case vOrgasmRateMult:   return CalculateOrgasmRateMult();
         case vOrgasmResistence: return CalculateOrgasmResistence();
         case vOrgasmResistenceMult: return CalculateOrgasmResistenceMult();
         case vOrgasmCapacity:   return CalculateOrgasmCapacity();
         case vOrgasmForcing:    return CalculateOrgasmForcing();
         case vArousal:          return _Arousal;
-        case vArousalRate:      return CalculateArousalRate(1.0f/60.0f);
+        case vArousalRate:      return _ArousalRatePersist;
         case vArousalRateMult:  return CalculateArousalRateMult();
         default:                return 0.0f;
     };
@@ -270,9 +271,6 @@ void ORS::OrgasmActorData::LinkActorToMeter(std::string a_path, MeterWidgetType 
         case tSkyUi : UD::MeterManager::SetExtCalcSkyUi(_LinkedWidgetPath,this,&OrgasmActorData::GetOrgasmProgressLink); break;
         case tIWW   : UD::MeterManager::SetExtCalcIWW(a_id,this,&OrgasmActorData::GetOrgasmProgressLink); break;
     }
-
-    
-    
 }
 
 void ORS::OrgasmActorData::UnlinkActorFromMeter()
@@ -339,13 +337,11 @@ RE::Actor* ORS::OrgasmActorData::GetActor()
 
 void ORS::OrgasmActorData::SetActor(RE::Actor* a_actor)
 {
-    //std::unique_lock lock(_lock);
     _actor = a_actor;
 }
 
 void ORS::OrgasmActorData::OnGameLoaded(SKSE::SerializationInterface* serde)
 {       
-    //std::unique_lock lock(_lock);
     serde->ReadRecordData(&_OrgasmProgress,sizeof(float));
 
     serde->ReadRecordData(_EroZones,32*sizeof(OrgasmEroZone));
@@ -368,11 +364,13 @@ void ORS::OrgasmActorData::OnGameLoaded(SKSE::SerializationInterface* serde)
         _Sources[loc_key] = OrgasmChangeData();
         serde->ReadRecordData(&_Sources[loc_key],sizeof(OrgasmChangeData));
     }
+
+    //update to set up local variables
+    Update(0.0f);
 }
 
 void ORS::OrgasmActorData::OnGameSaved(SKSE::SerializationInterface* serde)
 {
-    //std::unique_lock lock(_lock);
     serde->WriteRecordData(&_OrgasmProgress,sizeof(float));
 
     serde->WriteRecordData(_EroZones,32*sizeof(OrgasmEroZone));
@@ -393,7 +391,6 @@ void ORS::OrgasmActorData::OnGameSaved(SKSE::SerializationInterface* serde)
 
 void ORS::OrgasmActorData::OnRevert(SKSE::SerializationInterface* serde)
 {
-    //std::unique_lock lock(_lock);
     _Sources.clear();
 }
 
@@ -404,7 +401,6 @@ float ORS::OrgasmActorData::CalculateOrgasmProgress()
 
 float ORS::OrgasmActorData::CalculateOrgasmRate(const float& a_delta)
 {
-    //std::unique_lock lock(_lock);
     float loc_res = 0.0f;
     for (auto&& it1 : _Sources) 
     {   
@@ -429,11 +425,11 @@ float ORS::OrgasmActorData::CalculateOrgasmRate(const float& a_delta)
             {
                 const auto loc_currentpos = _actor->GetPosition();
                 const float loc_distance = loc_currentpos.GetSquaredDistance(_lastpos);
-                const float loc_basedistance = loc_ocd.BaseDistance*a_delta;
+                const float loc_basedistance = BASEDISTANCE*a_delta;
 
                 if (loc_basedistance > 0.0f) loc_mult *= clamp(loc_distance/loc_basedistance,0.0f,3.0f);
 
-                UDSKSELOG("OrgasmActorData::CalculateOrgasmRate() - Distance= {}, Base distance = {}, Distance multiplier = {}",loc_distance,loc_basedistance,loc_distance/loc_basedistance)
+                //UDSKSELOG("OrgasmActorData::CalculateOrgasmRate() - Distance= {}, Base distance = {}, Distance multiplier = {}",loc_distance,loc_basedistance,loc_distance/loc_basedistance)
             }
         }
 
@@ -457,7 +453,6 @@ float ORS::OrgasmActorData::CalculateOrgasmRate(const float& a_delta)
 
 float ORS::OrgasmActorData::CalculateOrgasmRateMult()
 {
-    //std::unique_lock lock(_lock);
     float loc_res = 1.0f;
     for (auto&& it : _Sources) loc_res += it.second.OrgasmRateMult;
     return clamp(loc_res,0.0f,100.0f);
@@ -465,7 +460,6 @@ float ORS::OrgasmActorData::CalculateOrgasmRateMult()
 
 float ORS::OrgasmActorData::CalculateOrgasmForcing()
 {
-    //std::unique_lock lock(_lock);
     float loc_res = 0.0f;
     for (auto&& it : _Sources) loc_res += it.second.OrgasmForcing;
     return clamp(loc_res,0.0f,10000.0f);
@@ -473,7 +467,6 @@ float ORS::OrgasmActorData::CalculateOrgasmForcing()
 
 float ORS::OrgasmActorData::CalculateOrgasmCapacity()
 {
-    //std::unique_lock lock(_lock);
     float loc_res = 100.0f;
     for (auto&& it : _Sources) loc_res += it.second.OrgasmCapacity;
     return clamp(loc_res,1.0f,10000.0f);
@@ -481,7 +474,6 @@ float ORS::OrgasmActorData::CalculateOrgasmCapacity()
 
 float ORS::OrgasmActorData::CalculateOrgasmResistence()
 {
-    //std::unique_lock lock(_lock);
     float loc_res = 3.5f;
     for (auto&& it : _Sources) loc_res += it.second.OrgasmResistence;
     return clamp(loc_res,0.0f,100.0f);
@@ -489,7 +481,6 @@ float ORS::OrgasmActorData::CalculateOrgasmResistence()
 
 float ORS::OrgasmActorData::CalculateOrgasmResistenceMult()
 {
-    //std::unique_lock lock(_lock);
     float loc_res = 1.0f;
     for (auto&& it : _Sources) loc_res += it.second.OrgasmResistenceMult;
     return clamp(loc_res,0.0f,100.0f);
@@ -497,7 +488,6 @@ float ORS::OrgasmActorData::CalculateOrgasmResistenceMult()
 
 inline float ORS::OrgasmActorData::CalculateArousalRate(const float& a_delta)
 {
-    //std::unique_lock lock(_lock);
     float loc_res = 0.0f;
     for (auto&& it1 : _Sources) 
     {  
@@ -520,8 +510,8 @@ inline float ORS::OrgasmActorData::CalculateArousalRate(const float& a_delta)
         if ((loc_ocd.Mod & mArousingMovement) && (a_delta > 0.0f))
         {
             const auto loc_currentpos = _actor->GetPosition();
-            const float loc_distance = loc_currentpos.GetDistance(_lastpos);
-            const float loc_basedistance = loc_ocd.BaseDistance*a_delta;
+            const float loc_distance = loc_currentpos.GetSquaredDistance(_lastpos);
+            const float loc_basedistance = BASEDISTANCE*a_delta;
 
             if (loc_basedistance > 0.0f) loc_mult *= clamp(loc_distance/loc_basedistance,0.0f,2.0f);
         }
@@ -541,7 +531,6 @@ inline float ORS::OrgasmActorData::CalculateArousalRate(const float& a_delta)
 
 inline float ORS::OrgasmActorData::CalculateArousalRateMult()
 {
-    //std::unique_lock lock(_lock);
     float loc_res = 1.0f;
     for (auto&& it : _Sources) loc_res += it.second.ArousalRateMult;
     return clamp(loc_res,0.0f,100.0f);
@@ -549,7 +538,6 @@ inline float ORS::OrgasmActorData::CalculateArousalRateMult()
 
 void ORS::OrgasmActorData::ElapseChanges(const float& a_delta)
 {
-    //std::unique_lock lock(_lock);
     for (auto&& it : _Sources) 
     {   
         OrgasmChangeData& loc_oc = it.second;
@@ -579,8 +567,7 @@ void ORS::OrgasmActorData::ElapseChanges(const float& a_delta)
                 {
                     if (loc_oc.Mod & mTimeMod_Lin)
                     {
-                        if (loc_oc.OrgasmRate > 0.0f) loc_oc.OrgasmRate = std::lerp(0.0f,loc_oc.OrgasmRateOriginal,loc_oc.ElapsedDuration/loc_oc.Duration);
-                        else loc_oc.OrgasmRate = std::lerp(loc_oc.OrgasmRateOriginal,0.0f,loc_oc.ElapsedDuration/loc_oc.Duration);
+                        loc_oc.OrgasmRate = std::lerp(loc_oc.OrgasmRateOriginal,0.0f,loc_oc.ElapsedDuration/loc_oc.Duration);
                     }
                     else if (loc_oc.Mod & mTimeMod_Exp)
                     {
@@ -600,12 +587,12 @@ inline void ORS::OrgasmActorData::UpdateWidget()
 {
     if (_LinkedWidgetUsed)
     {
-        if (_LinkedWidgetShown && (GetOrgasmProgress(1) < 0.025f))
+        if (_LinkedWidgetShown && (GetOrgasmProgress(1) < WIDGETSHOWTH))
         {
             SendLinkedMeterEvent(wHide);
             _LinkedWidgetShown = false;
         }
-        else if (!_LinkedWidgetShown && (GetOrgasmProgress(1) >= 0.025f))
+        else if (!_LinkedWidgetShown && (GetOrgasmProgress(1) >= WIDGETSHOWTH))
         {
             SendLinkedMeterEvent(wShow);
             _LinkedWidgetShown = true;
@@ -615,21 +602,24 @@ inline void ORS::OrgasmActorData::UpdateWidget()
 
 inline void ORS::OrgasmActorData::UpdateExpression(const float& a_delta)
 {
-    _ExpressionTimer += a_delta;
-
-    if (!_ExpressionSet && (_OrgasmRate >= _OrgasmResistence*0.5f) && (_ExpressionTimer >= EXPRUPDATETIME))
+    if (_actor->Is3DLoaded())
     {
+        _ExpressionTimer += a_delta;
+
+        if (!_ExpressionSet && (GetOrgasmProgress(1) > EXPUPDATEMAXTH) && (_ExpressionTimer >= EXPRUPDATETIME))
+        {
     
-        SendOrgasmExpressionEvent(eSet);
-        _ExpressionTimer = 0.0f;
-        _ExpressionSet = true;
+            SendOrgasmExpressionEvent(eSet);
+            _ExpressionTimer = 0.0f;
+            _ExpressionSet = true;
 
-    }
-    else if (_ExpressionSet && (_OrgasmRate < _OrgasmResistence*0.5) && (GetOrgasmProgress(1) < 0.25) ) 
-    {
-        SendOrgasmExpressionEvent(eReset);
-        _ExpressionTimer = EXPRUPDATETIME;
-        _ExpressionSet = false;
+        }
+        else if (_ExpressionSet && (GetOrgasmProgress(1) < EXPUPDATEMINTH)) 
+        {
+            SendOrgasmExpressionEvent(eReset);
+            _ExpressionTimer = EXPRUPDATETIME;
+            _ExpressionSet = false;
+        }
     }
 }
 
@@ -662,6 +652,9 @@ inline void ORS::OrgasmActorData::SendOrgasmEvent()
 inline void ORS::OrgasmActorData::SendOrgasmExpressionEvent(ORS::ExpressionUpdateType a_type)
 {
     if (_actor == nullptr) return;
+
+    UDSKSELOG("OrgasmActorData::SendOrgasmExpressionEvent({},{})",_actor->GetName(),a_type)
+
     auto loc_handle = _actor->GetHandle();
     SKSE::GetTaskInterface()->AddTask([loc_handle,a_type]
         {
@@ -676,9 +669,6 @@ inline void ORS::OrgasmActorData::SendOrgasmExpressionEvent(ORS::ExpressionUpdat
             {
                 return;
             }
-
-            UDSKSELOG("Sending expression update for {}",loc_handle.get()->GetName())
-
             auto modCallback = SKSE::GetModCallbackEventSource();
             modCallback->SendEvent(&modEvent);
         }

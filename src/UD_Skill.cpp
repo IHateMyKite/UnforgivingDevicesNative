@@ -7,13 +7,13 @@ namespace UD
         UDSKSELOG("CalculateSkillFromPerks called a_actor={},a_formlist={}",reinterpret_cast<uintptr_t>(a_actor),reinterpret_cast<uintptr_t>(a_formlist))
 
         int loc_res = 0;
-        UDSKSELOG("Checking persist forms")
+        //UDSKSELOG("Checking persist forms")
         for (auto&& it : a_formlist->forms)
         {
             if (it != nullptr)
             {
                 RE::BGSPerk* loc_perk = it->As<RE::BGSPerk>();
-                UDSKSELOG("Checking perk {}",loc_perk->GetName());
+                //UDSKSELOG("Checking perk {}",loc_perk->GetName());
                 if ((loc_perk != nullptr) && a_actor->HasPerk(loc_perk))
                 {
                     loc_res += a_increase;
@@ -24,7 +24,7 @@ namespace UD
         if ((a_formlist->scriptAddedFormCount > 0U) && (a_formlist->scriptAddedTempForms != nullptr))
         {
             auto loc_forms = *a_formlist->scriptAddedTempForms;
-            UDSKSELOG("Checking temp forms")
+            //UDSKSELOG("Checking temp forms")
             for (uint32_t i = 0; i < a_formlist->scriptAddedFormCount; i++)
             {
                 
@@ -32,7 +32,7 @@ namespace UD
                 if (loc_form != nullptr)
                 {
                     RE::BGSPerk* loc_perk = loc_form->As<RE::BGSPerk>();
-                    UDSKSELOG("Checking perk {}",loc_perk->GetName());
+                    //UDSKSELOG("Checking perk {}",loc_perk->GetName());
                     if ((loc_perk != nullptr) && a_actor->HasPerk(loc_perk))
                     {
                         loc_res += a_increase;
