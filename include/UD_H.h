@@ -22,5 +22,6 @@
 #include <UD_Skill.h>
 #include <UD_Modifiers.h>
 #include <UD_Serialization.h>
+#include <UD_ControlManager.h>
 #include <OrgasmSystem/OrgasmData.h>
 #include <OrgasmSystem/OrgasmManager.h>

@@ -42,9 +42,9 @@ std::vector<RE::Actor*> UD::ActorSlotManager::GetRegisteredActors()
     return loc_result;
 }
 
-UD::ActorStorage UD::ActorSlotManager::GetActorStorage(RE::Actor* a_actor)
+UD::ActorStorage* UD::ActorSlotManager::GetActorStorage(RE::Actor* a_actor)
 {
-    return _slots && a_actor ? (*_slots)[a_actor] : UD::ActorStorage();
+    return (_slots && a_actor) ? &(*_slots)[a_actor] : nullptr;
 }
 
 bool UD::ActorSlotManager::RegisterSlotQuest(RE::TESQuest* a_quest)

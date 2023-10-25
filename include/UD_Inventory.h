@@ -7,6 +7,11 @@ namespace UD
         public:
             static void Reload()
             {
+                static bool loc_installed = false;
+                if (loc_installed) return;
+
+                loc_installed = true;
+
                 //inventory script filter
                 invfilter.first.clear();
                 invfilter.first.push_back(KeywordManager::udinvdevice);
@@ -27,6 +32,7 @@ namespace UD
 
             inline static std::vector<RE::TESForm*> GetInventoryDevices(RE::Actor* a_actor, bool b_worn)
             {
+                UDSKSELOG("GetInventoryDevices called")
                 if (a_actor == nullptr) return std::vector<RE::TESForm*>();
 
                 RE::Actor::InventoryItemMap     loc_inv = a_actor->GetInventory(FilterInvDevices);
@@ -35,7 +41,7 @@ namespace UD
 
                 for(auto&& it : loc_inv)
                 {
-                    if ((!b_worn) || (it.second.second->IsWorn())) 
+                    if ((!b_worn) || ((it.second.second != nullptr) && it.second.second->IsWorn())) 
                     {
                         loc_res.push_back(it.first);
                     }
@@ -53,7 +59,7 @@ namespace UD
 
                 for(auto&& it : loc_inv)
                 {
-                    if ((!b_worn) || (it.second.second->IsWorn())) 
+                    if ((!b_worn) || ((it.second.second != nullptr) && (it.second.second->IsWorn()))) 
                     {
                         loc_res.push_back(it.first);
                     }
@@ -71,7 +77,7 @@ namespace UD
 
                 for(auto&& it : loc_inv)
                 {
-                    if ((!b_worn) || (it.second.second->IsWorn())) 
+                    if ((!b_worn) || ((it.second.second != nullptr) && it.second.second->IsWorn())) 
                     {
                         loc_res.push_back(it.first);
                     }
@@ -89,7 +95,7 @@ namespace UD
                 for(auto&& it : loc_weapons)
                 {
                     RE::TESObjectWEAP* loc_weapon = static_cast<RE::TESObjectWEAP*>(it.first);
-                    if (IsSharp(loc_weapon)) 
+                    if ((loc_weapon != nullptr) && IsSharp(loc_weapon)) 
                     {
                         if (loc_result == nullptr) loc_result = loc_weapon;
                         else

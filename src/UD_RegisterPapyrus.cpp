@@ -27,7 +27,10 @@ namespace UD
         REGISTERPAPYRUSFUNC(DecodeBit,true)
         REGISTERPAPYRUSFUNC(iRange,true)
         REGISTERPAPYRUSFUNC(fRange,true)
+        REGISTERPAPYRUSFUNC(iInRange,true)
+        REGISTERPAPYRUSFUNC(fInRange,true)
         REGISTERPAPYRUSFUNC(Round,true)
+        REGISTERPAPYRUSFUNC(FormatFloat,true)
         REGISTERPAPYRUSFUNC(IsPlayer,true)
         REGISTERPAPYRUSFUNC(GetActorName,true)
         REGISTERPAPYRUSFUNC(FloatToInt,true)
@@ -74,6 +77,9 @@ namespace UD
         //actor slot manager
         REGISTERPAPYRUSFUNC(RegisterSlotQuest,true)
         REGISTERPAPYRUSFUNC(GetRegisteredActors,true)
+
+        //player control
+        REGISTERPAPYRUSFUNC(SyncControlSetting,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

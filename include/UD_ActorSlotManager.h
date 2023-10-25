@@ -19,7 +19,7 @@ namespace UD
 
         std::vector<RE::Actor*> GetRegisteredActors();
 
-        ActorStorage GetActorStorage(RE::Actor* a_actor);
+        ActorStorage* GetActorStorage(RE::Actor* a_actor);
 
         bool RegisterSlotQuest(RE::TESQuest* a_quest);
     private:

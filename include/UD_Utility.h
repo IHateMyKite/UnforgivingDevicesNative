@@ -11,6 +11,10 @@ namespace UD
     int     Round(PAPYRUSFUNCHANDLE,float a_value);
     int     iRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max);
     float   fRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max);
+    bool    iInRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max);
+    bool    fInRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max);
+
+    std::string FormatFloat(PAPYRUSFUNCHANDLE,float a_value,int a_floatpoints);
 
     int     FloatToInt(PAPYRUSFUNCHANDLE,float a_value);
 

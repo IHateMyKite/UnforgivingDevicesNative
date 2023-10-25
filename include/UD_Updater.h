@@ -15,6 +15,9 @@ namespace UD
 		
         static void ActorUpdatePatched(RE::Actor* a_this, float a_delta);
         REL::Relocation<decltype(ActorUpdatePatched)> ActorUpdate;
+
+        std::atomic_bool t1mutex = false;
+        std::atomic_bool t2mutex = false;
     private:
         int _installed = false;
     };

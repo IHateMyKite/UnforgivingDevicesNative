@@ -35,6 +35,33 @@ namespace UD
         return boost::algorithm::clamp(a_value,a_min,a_max);
     }
 
+    bool iInRange(PAPYRUSFUNCHANDLE, int a_value, int a_min, int a_max)
+    {
+        return (a_value >= a_min && a_value <= a_max);
+    }
+
+    bool fInRange(PAPYRUSFUNCHANDLE, float a_value, float a_min, float a_max)
+    {
+        return (a_value >= a_min && a_value <= a_max);
+    }
+
+    std::string FormatFloat(PAPYRUSFUNCHANDLE, float a_value, int a_floatpoints)
+    {
+        if (a_floatpoints <= 0) return std::to_string(static_cast<int>(a_value));
+
+        std::string loc_res = std::to_string(a_value);
+        const size_t loc_point = loc_res.find('.');
+
+        //only erase if string have dot and offset is valid
+        if ((loc_point != loc_res.npos) && ((loc_point + (a_floatpoints + 1)) < loc_res.size()))
+        {
+            //erase all float points after dot pos + a_floatpoints
+            loc_res.erase(loc_point+ (a_floatpoints + 1),loc_res.npos);
+        }
+
+        return loc_res;
+    }
+
     int FloatToInt(PAPYRUSFUNCHANDLE, float a_value)
     {
         assert (sizeof(int) == sizeof(float));

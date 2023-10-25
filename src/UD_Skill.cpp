@@ -4,6 +4,8 @@ namespace UD
 {
     int CalculateSkillFromPerks(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, RE::BGSListForm* a_formlist, int a_increase)
     {
+        if (a_actor == nullptr || a_formlist == nullptr) return 10;
+
         UDSKSELOG("CalculateSkillFromPerks called a_actor={},a_formlist={}",reinterpret_cast<uintptr_t>(a_actor),reinterpret_cast<uintptr_t>(a_formlist))
 
         int loc_res = 0;

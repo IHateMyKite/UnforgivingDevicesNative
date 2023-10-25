@@ -2,6 +2,9 @@
 #include <map>
 
 #include <boost/algorithm/clamp.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
+
 using boost::algorithm::clamp;
 
 namespace ORS
@@ -21,6 +24,8 @@ namespace ORS
     //distance to travel in 1s for 100% orgasm rate
     #define BASEDISTANCE    2500.0f
 
+
+    #define PDATAVERSION    1U
 
     // === ENums
 
@@ -44,6 +49,8 @@ namespace ORS
         vEdgeDuration               = 11,
         vEdgeRemDuration            = 12,
         vEdgeThreshold              = 13,
+
+        vHornyLevel                 = 14,
 
         vLast
     };
@@ -150,7 +157,7 @@ namespace ORS
         //OrgasmActorData(RE::Actor* a_actor) : _actor(a_actor){};
         void    Update(const float& a_delta);
         float   GetOrgasmProgress(int a_mod) const;
-        float   GetOrgasmProgressLink() const { return clamp(100.0f*_OrgasmProgress/_OrgasmCapacity,0.0f,100.0f);}
+        float   GetOrgasmProgressLink() const { return clamp(100.0f*_PDATA.OrgasmProgress/_RDATA.OrgasmCapacity,0.0f,100.0f);}
         void    ResetOrgasmProgress();
         bool    OrgasmChangeExist(std::string a_key) const;
         bool    AddOrgasmChange(std::string a_key,  OrgasmMod a_mod,
@@ -168,7 +175,7 @@ namespace ORS
         bool    HaveOrgasmChange(std::string a_key);
 
         float   GetOrgasmVariable(OrgasmVariable a_variable);
-        float   GetAntiOrgasmRate(){return _AntiOrgasmRate;}
+        float   GetAntiOrgasmRate(){return _RDATA.AntiOrgasmRate;}
 
         void    LinkActorToMeter(std::string a_path,MeterWidgetType a_type,int a_id);
         void    UnlinkActorFromMeter();
@@ -190,7 +197,7 @@ namespace ORS
 
         void    UpdatePosition();
     private:
-        inline float CalculateOrgasmProgress();
+        inline float CalculateOrgasmProgress(const float& a_delta);
         inline float CalculateOrgasmRate(const float& a_delta);
         inline float CalculateOrgasmRateMult();
         inline float CalculateOrgasmForcing();
@@ -199,6 +206,7 @@ namespace ORS
         inline float CalculateOrgasmResistenceMult();
         inline float CalculateArousalRate(const float& a_delta);
         inline float CalculateArousalRateMult();
+        inline float CalculateHornyLevel(const float& a_delta);
         inline void  ElapseChanges(const float& a_delta);
         inline void  UpdateWidget();
 
@@ -210,50 +218,73 @@ namespace ORS
     private:
         RE::Actor*  _actor;
         std::map<std::string,OrgasmChangeData>  _Sources;
-        OrgasmEroZone                           _EroZones[32] = 
+
+        struct PERSIST_DATA_HEADER
         {
-            {"VAGN1","Vagina 1" ,eVagina1},
-            {"VAGN2","Vagina 2" ,eVagina2},
-            {"CLITO","Clitoris" ,eClitoris},
-            {"PENS1","Penis 1"  ,ePenis1},
-            {"PENS2","Penis 2"  ,ePenis2},
-            {"PENS3","Penis 3"  ,ePenis3},
-            {"NIPPL","Nipples"  ,eNipples},
-            {"ANAL1","Anal 1"   ,eAnal1},
-            {"ANAL2","Anal 2"   ,eAnal2},
-            {"DEFAU","Default"  ,eDefault},
+            
+            uint8_t         version = PDATAVERSION; //always change when data structure is changed !!!
+            uint16_t        size    = sizeof(PERSIST_DATA);
+            uint16_t        ocsize  = sizeof(OrgasmChangeData);
         };
-        float   _OrgasmRate             = 0.0f;
-        float   _AntiOrgasmRate         = 0.0f;
-        float   _OrgasmRateMult         = 1.0f;
-        float   _OrgasmRateTotal        = 0.0f;
-        float   _OrgasmRatePersist      = 0.0f;
 
-        float   _OrgasmForcing          = 0.0f;
+        PERSIST_DATA_HEADER _PDATAH;
 
-        float   _OrgasmCapacity         = 100.0f;
+        struct PERSIST_DATA
+        {
+            OrgasmEroZone   EroZones[32] = 
+            {
+                {"VAGN1","Vagina 1" ,eVagina1},
+                {"VAGN2","Vagina 2" ,eVagina2},
+                {"CLITO","Clitoris" ,eClitoris},
+                {"PENS1","Penis 1"  ,ePenis1},
+                {"PENS2","Penis 2"  ,ePenis2},
+                {"PENS3","Penis 3"  ,ePenis3},
+                {"NIPPL","Nipples"  ,eNipples},
+                {"ANAL1","Anal 1"   ,eAnal1},
+                {"ANAL2","Anal 2"   ,eAnal2},
+                {"DEFAU","Default"  ,eDefault},
+            };
+            float   OrgasmProgress         = 0.0f;
+            float   HornyLevel             = 100.0f;
+            uint8_t Reserved[32]; //reserved 32 bytes for future additiones
+        };
 
-        float   _OrgasmResistence       = 3.5f;
-        float   _OrgasmResistenceMult   = 1.0;
+        PERSIST_DATA _PDATA;
 
-        float   _OrgasmProgress         = 0.0f;
+        struct RUNTIME_DATA
+        {
+            float   OrgasmRate             = 0.0f;
+            float   AntiOrgasmRate         = 0.0f;
+            float   OrgasmRateMult         = 1.0f;
+            float   OrgasmRateTotal        = 0.0f;
+            float   OrgasmRatePersist      = 0.0f;
 
-        float   _OrgasmTimeout          = 0.0f;
+            float   OrgasmForcing          = 0.0f;
 
-        float   _Arousal                = 0.0f;
-        float   _ArousalRate            = 0.0f;
-        float   _ArousalRatePersist     = 0.0f;
-        float   _ArousalRateMult        = 1.0f;
+            float   OrgasmCapacity         = 100.0f;
 
-        bool                _LinkedWidgetUsed       = false;
-        std::string         _LinkedWidgetPath       = "";
-        MeterWidgetType     _LinkedWidgetType       = tSkyUi;
-        int32_t             _LinkedWidgetId         = 0;
-        bool                _LinkedWidgetShown      = false;
+            float   OrgasmResistence       = 3.5f;
+            float   OrgasmResistenceMult   = 1.0;
 
-        float               _ExpressionTimer    = EXPRUPDATETIME;
-        bool                _ExpressionSet      = false;
+            float   OrgasmTimeout          = 0.0f;
 
-        RE::NiPoint3 _lastpos;
+            float   Arousal                = 0.0f;
+            float   ArousalRate            = 0.0f;
+            float   ArousalRatePersist     = 0.0f;
+            float   ArousalRateMult        = 1.0f;
+
+            bool                LinkedWidgetUsed       = false;
+            std::string         LinkedWidgetPath       = "";
+            MeterWidgetType     LinkedWidgetType       = tSkyUi;
+            int32_t             LinkedWidgetId         = 0;
+            bool                LinkedWidgetShown      = false;
+
+            float               ExpressionTimer    = EXPRUPDATETIME;
+            bool                ExpressionSet      = false;
+
+            RE::NiPoint3 lastpos;
+        };
+
+        RUNTIME_DATA _RDATA;
     };
 }

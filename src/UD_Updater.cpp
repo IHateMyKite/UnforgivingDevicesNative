@@ -8,26 +8,26 @@ namespace UD
 {
     void UpdateManager::UpdateThread1(const float& a_delta)
     {
-        static std::atomic_bool loc_mutex = false;
-        if (loc_mutex) return;
-        loc_mutex = true;
+        
+        if (t1mutex) return;
+        t1mutex = true;
 
+        ControlManager::GetSingleton()->UpdateControl();
         ActorSlotManager::GetSingleton()->Update();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); //only once per 1s
+        std::this_thread::sleep_for(std::chrono::milliseconds(500)); //only once per 1s
 
-        loc_mutex = false;
+        t1mutex = false;
     }
 
     void UpdateManager::UpdateThread2(const float& a_delta)
     {
-        static std::atomic_bool loc_mutex = false;
-        if (loc_mutex) return;
-        loc_mutex = true;
+        if (t2mutex) return;
+        t2mutex = true;
 
         ORS::OrgasmManager::GetSingleton()->Update(a_delta);
 
-        loc_mutex = false;
+        t2mutex = false;
     }
 
     void UpdateManager::Hook()
@@ -39,15 +39,17 @@ namespace UD
     {
         static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
 
+        UpdateManager* loc_manager = UpdateManager::GetSingleton();
+
         if (a_this == loc_player)
         {   
-            std::thread(&UpdateManager::UpdateThread1,UpdateManager::GetSingleton(),a_delta).detach();
-            std::thread(&UpdateManager::UpdateThread2,UpdateManager::GetSingleton(),a_delta).detach();
+            if (!loc_manager->t1mutex) std::thread(&UpdateManager::UpdateThread1,loc_manager,a_delta).detach();
+            if (!loc_manager->t2mutex) std::thread(&UpdateManager::UpdateThread2,loc_manager,a_delta).detach();
 
             MinigameEffectManager::GetSingleton()->UpdateMinigameEffect(a_this,a_delta);
             MinigameEffectManager::GetSingleton()->UpdateMeters(a_this,a_delta);
         }
-        UpdateManager::GetSingleton()->ActorUpdate(a_this,a_delta);
+        loc_manager->ActorUpdate(a_this,a_delta);
     }
 
     void UpdateManager::CreateUpdateThreads(void)
