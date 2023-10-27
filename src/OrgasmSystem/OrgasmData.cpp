@@ -1,5 +1,6 @@
 #include <OrgasmSystem/OrgasmData.h>
 #include <UD_UI.h>
+#include <UD_ModEvents.h>
 
 using boost::algorithm::clamp;
 
@@ -685,19 +686,22 @@ inline void ORS::OrgasmActorData::SendOrgasmEvent()
 {
     if (_actor == nullptr) return;
     auto loc_handle = _actor->GetHandle();
-    SKSE::GetTaskInterface()->AddTask([loc_handle]
+    SKSE::GetTaskInterface()->AddTask([loc_handle,this]
         {
-            SKSE::ModCallbackEvent modEvent{
-                "ORS_ActorOrgasm",
-                "",
-                0.0f,
-                loc_handle.get().get()
-            };
-
+            //SKSE::ModCallbackEvent modEvent{
+            //    "ORS_ActorOrgasm",
+            //    "",
+            //    0.0f,
+            //    loc_handle.get().get()
+            //};
+            //
             UDSKSELOG("Sending orgasm event for {}",loc_handle.get()->GetName())
 
-            auto modCallback = SKSE::GetModCallbackEventSource();
-            modCallback->SendEvent(&modEvent);
+            UD::ModEvents::GetSingleton()->OrgasmEvent.QueueEvent(loc_handle.get().get(),_RDATA.OrgasmRate,_RDATA.Arousal);
+
+            //
+            //auto modCallback = SKSE::GetModCallbackEventSource();
+            //modCallback->SendEvent(&modEvent);
         }
     );
 }
@@ -706,7 +710,8 @@ inline void ORS::OrgasmActorData::SendOrgasmExpressionEvent(ORS::ExpressionUpdat
 {
     if (_actor == nullptr) return;
 
-    UDSKSELOG("OrgasmActorData::SendOrgasmExpressionEvent({},{})",_actor->GetName(),a_type)
+    UDSKSELOG("OrgasmActorData::SendOrgasmExpressionEvent start")
+    //UDSKSELOG("OrgasmActorData::SendOrgasmExpressionEvent({},{})",_actor->GetName(),a_type)
 
     auto loc_handle = _actor->GetHandle();
     SKSE::GetTaskInterface()->AddTask([loc_handle,a_type]
@@ -718,6 +723,9 @@ inline void ORS::OrgasmActorData::SendOrgasmExpressionEvent(ORS::ExpressionUpdat
                 loc_handle.get().get()
             };
 
+            UDSKSELOG("Sending orgasm exp update")
+            UDSKSELOG("Actor",loc_handle.get()->GetName())
+
             if (loc_handle.get() == nullptr) 
             {
                 return;
@@ -726,10 +734,12 @@ inline void ORS::OrgasmActorData::SendOrgasmExpressionEvent(ORS::ExpressionUpdat
             modCallback->SendEvent(&modEvent);
         }
     );
+    UDSKSELOG("OrgasmActorData::SendOrgasmExpressionEvent end")
 }
 
 inline void ORS::OrgasmActorData::SendLinkedMeterEvent(LinkedWidgetUpdateType a_type)
 {
+    UDSKSELOG("OrgasmActorData::SendLinkedMeterEvent start")
     if (_actor == nullptr) return;
     auto loc_handle = _actor->GetHandle();
     SKSE::GetTaskInterface()->AddTask([loc_handle,a_type]
@@ -746,10 +756,12 @@ inline void ORS::OrgasmActorData::SendLinkedMeterEvent(LinkedWidgetUpdateType a_
                 return;
             }
 
-            UDSKSELOG("Sending linked widget update for {}",loc_handle.get()->GetName())
+            UDSKSELOG("Sending linked widget update")
+            UDSKSELOG("Actor",loc_handle.get()->GetName())
 
             auto modCallback = SKSE::GetModCallbackEventSource();
             modCallback->SendEvent(&modEvent);
         }
     );
+    UDSKSELOG("OrgasmActorData::SendLinkedMeterEvent end")
 }

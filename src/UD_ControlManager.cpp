@@ -17,15 +17,21 @@ void UD::ControlManager::Setup()
         _minigamefaction = static_cast<RE::TESFaction*>(loc_datahandler->LookupForm(0x150DA3,"UnforgivingDevices.esp"));
         _animationfaction = static_cast<RE::TESFaction*>(loc_datahandler->LookupForm(0x029567,"Devious Devices - Integration.esm"));
 
-        //init control map
+        //load memory
+        _OriginalControls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
+        _HardcoreControls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
+        _DisabledControls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
+
+        SaveOriginalControls();
+
+        DebugPrintControls();
+
+        //init control stacks
         auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::ControlMap::InputContextID::kGameplay]->deviceMappings;
-        //UDSKSELOG("Number of mappings = {}",(*loc_control).size())
         for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
         {
-            //UDSKSELOG("Checking mapping of size {}",loc_control[i].size())
             for (auto&& it : loc_control[i]) 
             {
-                //UDSKSELOG("Checking {}",it.eventID)
                 {
                     const auto loc_foundit = std::find_if(_hardcoreids.begin(),_hardcoreids.end(),[it](const RE::BSFixedString& a_id)
                     {
@@ -35,55 +41,50 @@ void UD::ControlManager::Setup()
                     });
 
                     const bool loc_found = (loc_foundit != _hardcoreids.end());
-                    if (loc_found)
+                    if (!loc_found)
                     {
-                        _hardcorecontrols.push_back({&it,it,(RE::INPUT_DEVICE)i});
-                        UDSKSELOG("Hardcore control added - {} , {} , {} , {} ",it.eventID,it.inputKey,it.linked,it.remappable)
+                        _HardcoreControls[i].push_back(it);
                     } 
                 }
 
                 {
-                    const auto loc_foundit = std::find_if(_minigameids.begin(),_minigameids.end(),[it](const RE::BSFixedString& a_id)
+                    const auto loc_foundit = std::find_if(_disableids.begin(),_disableids.end(),[it](const RE::BSFixedString& a_id)
                     {
                         if (it.eventID == a_id)return true;
                         return false;
                     
                     });
 
-                    const bool loc_found = (loc_foundit != _minigameids.end());
-                    if (loc_found)
+                    const bool loc_found = (loc_foundit != _disableids.end());
+                    if (!loc_found)
                     {
-                        _minigamecontrols.push_back({&it,it,(RE::INPUT_DEVICE)i});
-                        UDSKSELOG("Minigame control added - {} , {} , {} , {} ",it.eventID,it.inputKey,it.linked,it.remappable)
+                        _DisabledControls[i].push_back(it);
                     } 
                 }
 
             }
         }
 
+        DebugPrintControls(_HardcoreControls);
+        DebugPrintControls(_DisabledControls);
     }
 }
 
 void UD::ControlManager::UpdateControl()
 {
     //check if player is in minigame
-    if (PlayerInMinigame() || PlayerInZadAnimation())
+    bool loc_status[3];
+
+    CheckStatusSafe(loc_status);
+
+    if ((loc_status[1] || loc_status[2]) && !RE::PlayerCamera::GetSingleton()->IsInFreeCameraMode())
     {
         if (!_ControlsDisabled)
         {
             _ControlsDisabled = true;
-            SKSE::GetTaskInterface()->AddTask([&]()
+            SKSE::GetTaskInterface()->AddTask([this]()
             {
-                for (auto&& it : _minigamecontrols) 
-                {
-                    //UDSKSELOG("Disabling control for {} on key {}",it.ptr->eventID,it.ptr->inputKey)
-                    if (it.ptr->inputKey != static_cast<uint16_t>(-1) && (it.ptr->inputKey != it.originalval.inputKey))
-                    {
-                        //update original value
-                        it.originalval = *it.ptr;
-                    }
-                    it.ptr->inputKey = static_cast<uint16_t>(-1);
-                }
+                ApplyControls(_DisabledControls);
             });
         }
     }
@@ -92,84 +93,39 @@ void UD::ControlManager::UpdateControl()
         if (_ControlsDisabled)
         {
             _ControlsDisabled = false;
-            SKSE::GetTaskInterface()->AddTask([&]()
+            SKSE::GetTaskInterface()->AddTask([this]()
             {
-                
-                for (auto&& it : _minigamecontrols) 
-                {
-                    if (it.ptr->inputKey != static_cast<uint16_t>(-1) && (it.ptr->inputKey != it.originalval.inputKey))
-                    {
-                        //update original value
-                        it.originalval = *it.ptr;
-                    }
-                    //UDSKSELOG("Restoring control for {} with key {} to {} with key {}",it.ptr->eventID,it.ptr->inputKey,it.originalval.eventID,it.originalval.inputKey)
-                    *it.ptr = it.originalval;
-                }
+                ApplyControls(_OriginalControls);
             });
         }
         else
         {
             if (_hardcoreMode)
             {
-                if (PlayerIsBound())
+                if (loc_status[0])
                 {
-                    SKSE::GetTaskInterface()->AddTask([&]()
+                    SKSE::GetTaskInterface()->AddTask([this]()
                     {
-                        for (auto&& it : _hardcorecontrols) 
-                        {
-                            if (it.ptr->inputKey != static_cast<uint16_t>(-1) && (it.ptr->inputKey != it.originalval.inputKey))
-                            {
-                                //update original value
-                                it.originalval = *it.ptr;
-                            }
-                            //UDSKSELOG("Disabling control for {} on key {}",it.ptr->eventID,it.ptr->inputKey)
-                            it.ptr->inputKey = static_cast<uint16_t>(-1);
-                        }
+                        ApplyControls(_HardcoreControls);
                     });
+                    DebugPrintControls();
                 }
                 else
                 {
-                    SKSE::GetTaskInterface()->AddTask([&]()
+                    SKSE::GetTaskInterface()->AddTask([this]()
                     {
-                
-                        for (auto&& it : _hardcorecontrols) 
-                        {
-                            if (it.ptr->inputKey != static_cast<uint16_t>(-1) && (it.ptr->inputKey != it.originalval.inputKey))
-                            {
-                                //update original value
-                                it.originalval = *it.ptr;
-                            }
-                            //UDSKSELOG("Restoring control for {} with key {} to {} with key {}",it.ptr->eventID,it.ptr->inputKey,it.originalval.eventID,it.originalval.inputKey)
-                            *it.ptr = it.originalval;
-                        }
+                        ApplyControls(_OriginalControls);
                     });
                 }
             }
         }
     }
-
-}
-
-const std::vector<UD::ControlDisable>& UD::ControlManager::GetHardcoreControls() const
-{
-    return _hardcorecontrols;
+    //UDSKSELOG("ControlManager::UpdateControl() end")
 }
 
 void UD::ControlManager::SyncSetting(bool a_hardcoreMode)
 {
     _hardcoreMode = a_hardcoreMode;
-    if (_hardcoreMode)
-    {
-        UpdateControl();
-    }
-    else
-    {
-        SKSE::GetTaskInterface()->AddTask([&]()
-        {
-            for (auto&& it : _hardcorecontrols) *it.ptr = it.originalval;
-        });
-    }
-    
 }
 
 bool UD::ControlManager::HardcoreMode() const
@@ -220,6 +176,102 @@ bool UD::ControlManager::PlayerInZadAnimation() const
     return loc_player->IsInFaction(_animationfaction);
 }
 
+void UD::ControlManager::CheckStatusSafe(bool* a_result)
+{
+    bool* loc_res = a_result;
+
+    bool loc_fetchingstatus = true;
+
+    //UDSKSELOG("ControlManager::CheckStatusSafe() - Sending check status task...")
+
+    SKSE::GetTaskInterface()->AddTask([this,&loc_res,&loc_fetchingstatus]()
+    {
+        //UDSKSELOG("ControlManager::CheckStatusSafe() - Serial task received - checking status...")
+        loc_res[0] = PlayerIsBound();
+        loc_res[1] = PlayerInMinigame();
+        loc_res[2] = PlayerInZadAnimation();
+        loc_fetchingstatus = false;
+    });
+
+    while (loc_fetchingstatus)
+    {
+        //UDSKSELOG("ControlManager::CheckStatusSafe() - waiting...")
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+    UDSKSELOG("ControlManager::CheckStatusSafe() - Status checked - Bound = {} , Animating = {} , Minigame = {} , Free cam = {}",loc_res[0],loc_res[1],loc_res[2],RE::PlayerCamera::GetSingleton()->IsInFreeCameraMode())
+}
+
+void UD::ControlManager::DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls)
+{
+    if (a_controls == nullptr) return;
+
+    UDSKSELOG("==Printing controls , Size={}==",a_controls->size())
+    for (int j = 0; j <= RE::INPUT_DEVICES::kVirtualKeyboard; j++)
+    {
+        UDSKSELOG("=INPUT_DEVICES = {:2}",j)
+        for (auto&& it : a_controls[j]) 
+        {
+            UDSKSELOG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
+        }
+    }
+}
+
+void UD::ControlManager::DebugPrintControls()
+{
+    UDSKSELOG("==Printing control==")
+    for (int i = 0; i < RE::UserEvents::INPUT_CONTEXT_IDS::kTotal; i++)
+    {
+        UDSKSELOG("=INPUT_CONTEXT_IDS = {:2}",i)
+        auto loc_control = RE::ControlMap::GetSingleton()->controlMap[i]->deviceMappings;
+        for (int j = 0; j <= RE::INPUT_DEVICES::kVirtualKeyboard; j++)
+        {
+            UDSKSELOG("=INPUT_DEVICES = {:2}",j)
+            for (auto&& it : loc_control[j]) 
+            {
+                UDSKSELOG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
+            }
+        }
+    }
+}
+
+bool UD::ControlManager::HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_DEVICE a_device)
+{
+    for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
+    {
+        for (auto&& it : _OriginalControls[i])
+        {
+            const auto loc_it = std::find_if(_hardcoreids.begin(),_hardcoreids.end(),[it,i,a_dxkeycode,a_device](const RE::BSFixedString& a_event)
+                {
+                    if ((a_device == i) && (it.inputKey == a_dxkeycode) && (it.eventID == a_event)) return true;
+                    return false;
+                }
+            );
+            if (loc_it != _hardcoreids.end()) return true;
+        }
+    }
+    return false;
+}
+
+void UD::ControlManager::SaveOriginalControls()
+{
+    auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::UserEvents::INPUT_CONTEXT_IDS::kGameplay]->deviceMappings;
+    for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
+    {
+        _OriginalControls[i] = loc_control[i];
+    }
+}
+
+void UD::ControlManager::ApplyControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls)
+{
+    if (a_controls == nullptr) return;
+    auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::UserEvents::INPUT_CONTEXT_IDS::kGameplay]->deviceMappings;
+    for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
+    {
+        loc_control[i] = a_controls[i];
+    }
+}
+
 RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* eventPtr, RE::BSTEventSource<RE::InputEvent*>*)
 {
     if (_Cooldown) return RE::BSEventNotifyControl::kContinue; //on cooldown - return
@@ -236,35 +288,26 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
 
         const RE::INPUT_DEVICE loc_Device = loc_buttonEvent->GetDevice();
 
-        //UDSKSELOG("Key {} pressed",loc_dxScanCode)
+        const bool loc_hmbuttonpress = ControlManager::GetSingleton()->HardcoreButtonPressed(loc_dxScanCode,loc_Device);
 
-        //check all saved controls for tween menu and compare
-        auto loc_hc = ControlManager::GetSingleton()->GetHardcoreControls();
-
-        const auto loc_it = std::find_if(loc_hc.begin(),loc_hc.end(),[loc_dxScanCode,loc_Device](const ControlDisable& a_control)
-            {
-                if ((loc_dxScanCode == a_control.originalval.inputKey) && (loc_Device == a_control.device)) return true;
-                return false;
-            }
-        );
-
-        if (loc_it != loc_hc.end())
+        if (loc_hmbuttonpress)
         {
-            if (ControlManager::GetSingleton()->PlayerIsBound() && !ControlManager::GetSingleton()->PlayerInMinigame() && !ControlManager::GetSingleton()->PlayerInZadAnimation())
+            const bool loc_bound        = ControlManager::GetSingleton()->PlayerIsBound();
+            const bool loc_animation    = ControlManager::GetSingleton()->PlayerInZadAnimation();
+            const bool loc_minigame     = ControlManager::GetSingleton()->PlayerInMinigame();
+
+            if (loc_bound && !loc_minigame && !loc_animation)
             {
-                SKSE::ModCallbackEvent modEvent{
-                    "UD_HMTweenMenu",
-                    "",
-                    0.0f,
-                    nullptr
-                };
+                if (loc_bound)
+                {
+                    RE::DebugNotification("You are bound and can't do anything!");
+                }
+
+                ModEvents::GetSingleton()->HMTweenMenuEvent.QueueEvent();
 
                 UDSKSELOG("Sending player tween menu event")
 
-                auto modCallback = SKSE::GetModCallbackEventSource();
-                modCallback->SendEvent(&modEvent);
-
-                std::thread([&]()
+                std::thread([this]()
                 {
                     _Cooldown = true;
                     std::this_thread::sleep_for(std::chrono::milliseconds(600));

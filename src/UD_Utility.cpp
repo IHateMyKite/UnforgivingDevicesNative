@@ -78,6 +78,13 @@ namespace UD
     {
         if (a_actor == nullptr) return "ERROR";
         const auto loc_base = a_actor->GetActorBase();
+
+        if (loc_base == nullptr) 
+        {
+            UDSKSELOG("GetActorName - Actor {:08X} have no actor base!",a_actor->GetFormID())
+            return a_actor->GetName();
+        }
+
         std::string loc_res = loc_base->GetName();
 
         if (loc_res == "")

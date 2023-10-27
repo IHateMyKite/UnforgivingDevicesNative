@@ -32,7 +32,8 @@ namespace UD
 
             inline static std::vector<RE::TESForm*> GetInventoryDevices(RE::Actor* a_actor, bool b_worn)
             {
-                UDSKSELOG("GetInventoryDevices called")
+                //UDSKSELOG("GetInventoryDevices called")
+                
                 if (a_actor == nullptr) return std::vector<RE::TESForm*>();
 
                 RE::Actor::InventoryItemMap     loc_inv = a_actor->GetInventory(FilterInvDevices);
@@ -53,6 +54,8 @@ namespace UD
             {
                 if (a_actor == nullptr) return std::vector<RE::TESForm*>();
                 
+                //UDSKSELOG("GetRenderDevices called")
+
                 RE::Actor::InventoryItemMap     loc_inv = a_actor->GetInventory(FilterRenDevices);
 
                 std::vector<RE::TESForm*> loc_res;
@@ -71,6 +74,8 @@ namespace UD
             {
                 if (a_actor == nullptr) return std::vector<RE::TESForm*>();
 
+                //UDSKSELOG("GetInvisibleDevices called")
+
                 RE::Actor::InventoryItemMap     loc_inv = a_actor->GetInventory(FilterInvisibleDevices);
 
                 std::vector<RE::TESForm*> loc_res;
@@ -88,6 +93,8 @@ namespace UD
             inline static RE::TESObjectWEAP* GetSharpestWeapon(RE::Actor* a_actor)
             {
                 if (a_actor == nullptr) return nullptr;
+
+                //UDSKSELOG("GetSharpestWeapon called")
 
                 RE::Actor::InventoryItemMap loc_weapons = a_actor->GetInventory(FilterWeapons);
                 RE::TESObjectWEAP* loc_result = nullptr;

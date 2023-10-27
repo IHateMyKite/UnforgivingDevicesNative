@@ -81,6 +81,11 @@ namespace UD
         //player control
         REGISTERPAPYRUSFUNC(SyncControlSetting,true)
 
+        //events
+        REGISTERPAPYRUSFUNC(RegisterForHMTweenMenu,true)
+        REGISTERPAPYRUSFUNC(RegisterForOrgasmEvent_Ref,true)
+        REGISTERPAPYRUSFUNC(RegisterForOrgasmEvent_Form,true)
+
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 
         return true;

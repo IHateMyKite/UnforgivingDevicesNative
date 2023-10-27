@@ -40,7 +40,7 @@ namespace UD
             }
             catch(boost::bad_lexical_cast &)
             {
-                UDSKSELOG("_GetModifierParam() - Error casting {} to {}",a_param,a_Index,a_DefaultValue,a_param,typeid(T).name())
+                UDSKSELOG("_GetModifierParam({},{}) - Error casting {} to {}",a_param,a_Index,a_DefaultValue,a_param,typeid(T).name())
                 return a_DefaultValue;
             }
         }

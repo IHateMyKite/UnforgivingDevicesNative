@@ -2,15 +2,6 @@
 
 namespace UD
 {
-
-    struct ControlDisable
-    {
-        RE::ControlMap::UserEventMapping*   ptr;
-        RE::ControlMap::UserEventMapping    originalval;
-        RE::INPUT_DEVICES::INPUT_DEVICE     device;
-    };
-
-
     class KeyEventSink : public RE::BSTEventSink<RE::InputEvent*>
     {
     SINGLETONHEADER(KeyEventSink)
@@ -29,15 +20,18 @@ namespace UD
         void Setup();
 
         void UpdateControl();
-
-        const std::vector<ControlDisable>& GetHardcoreControls() const;
-
         void SyncSetting(bool a_hardcoreMode);
 
         bool HardcoreMode() const;
         bool PlayerIsBound() const;
         bool PlayerInMinigame() const;
         bool PlayerInZadAnimation() const;
+
+        void CheckStatusSafe(bool* a_result);
+
+        void DebugPrintControls();
+
+        bool HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_DEVICE a_device);
     private:
         
     private:
@@ -46,6 +40,9 @@ namespace UD
         std::vector<RE::BGSKeyword*> _boundkeywords;
         RE::TESFaction*              _minigamefaction;
         RE::TESFaction*              _animationfaction;
+        RE::BSTArray<RE::ControlMap::UserEventMapping>* _OriginalControls;
+        RE::BSTArray<RE::ControlMap::UserEventMapping>* _HardcoreControls;
+        RE::BSTArray<RE::ControlMap::UserEventMapping>* _DisabledControls;
 
         //can be found in clibs UserEvents.h
 
@@ -56,7 +53,7 @@ namespace UD
             "Favorites"
         };
 
-        const std::vector<RE::BSFixedString> _minigameids = 
+        const std::vector<RE::BSFixedString> _disableids = 
         {
             //base player controls
             "Forward"               ,
@@ -105,13 +102,12 @@ namespace UD
             "MapLookMode",
         };
 
-        std::vector<ControlDisable> _hardcorecontrols;
-        std::vector<ControlDisable> _minigamecontrols;
-
         bool _hardcoreMode = false;
-
         bool _ControlsDisabled = false;
 
+        void SaveOriginalControls();
+        void DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
+        void ApplyControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
     };
 
     inline void SyncControlSetting(PAPYRUSFUNCHANDLE, bool a_hardcoremode)
