@@ -9,15 +9,21 @@ namespace UD
         RE::BSEventNotifyControl ProcessEvent(RE::InputEvent* const* eventPtr,RE::BSTEventSource<RE::InputEvent*>*);
 
     private:
-        std::atomic_bool _Cooldown = false;
-        std::atomic_bool _isBound  = false;
+        bool _Cooldown = false;
+    };
+
+    class CameraEventSink : public RE::BSTEventSink<SKSE::CameraEvent>
+    {
+    SINGLETONHEADER(CameraEventSink)
+    public:
+        RE::BSEventNotifyControl ProcessEvent(const SKSE::CameraEvent* eventPtr,RE::BSTEventSource<SKSE::CameraEvent>*);
     };
 
     class ControlManager
     {
     SINGLETONHEADER(ControlManager)
     public:
-        void Setup();
+        void Setup(const boost::property_tree::ptree& a_ptree);
 
         void UpdateControl();
         void SyncSetting(bool a_hardcoreMode);
@@ -32,6 +38,10 @@ namespace UD
         void DebugPrintControls();
 
         bool HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_DEVICE a_device);
+
+        void ApplyOriginalControls();
+        void DisableControls();
+        void DisableControlsFC();
     private:
         
     private:
@@ -43,30 +53,68 @@ namespace UD
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _OriginalControls;
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _HardcoreControls;
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _DisabledControls;
+        RE::BSTArray<RE::ControlMap::UserEventMapping>* _DisabledNoMoveControls;
 
         //can be found in clibs UserEvents.h
 
-        const std::vector<RE::BSFixedString> _hardcoreids = 
-        {
-            "Tween Menu",
-            "Quick Inventory",
-            "Favorites"
-        };
+        std::vector<std::string> _hardcoreids;
+        std::vector<std::string> _disableids; 
+        //{
+        //    //base player controls
+        //    "Forward"               ,
+        //    "Back"                  ,
+        //    "Strafe Right"          ,
+        //    "Strafe Left"           ,
+        //    "Move"                  ,
+        //    "Activate"              ,
+        //    "Left Attack/Block"     ,
+        //    "Right Attack/Block"    ,
+        //    "Dual Attack"           ,
+        //    "ForceRelease"          ,
+        //    //"Pause"               ,
+        //    "Ready Weapon"          ,
+        //    "Toggle POV"            ,
+        //    "Jump"                  ,
+        //    "Sprint"                ,
+        //    "Sneak"                 ,
+        //    "Shout"                 ,
+        //    "KinectShout"           ,
+        //    "Grab"                  ,
+        //    "Run"                   ,
+        //    "Toggle Always Run"     ,
+        //    "Auto-Move"             ,
+        //
+        //    //menu control
+        //    "Journal",
+        //    "Tween Menu",
+        //    "Quick Inventory",
+        //    "Quick Magic",
+        //    "Quick Map",
+        //    "Quick Stats",
+        //    "Wait",
+        //    "Favorites",
+        //    "Hotkey1",
+        //    "Hotkey2",
+        //    "Hotkey3",
+        //    "Hotkey4",
+        //    "Hotkey5",
+        //    "Hotkey6",
+        //    "Hotkey7",
+        //    "Hotkey8",
+        //    "Inventory",
+        //    "LeftEquip",
+        //    "RightEquip",
+        //    "MapLookMode",
+        //};
 
-        const std::vector<RE::BSFixedString> _disableids = 
+        const std::vector<std::string> _disablenomoveids = 
         {
             //base player controls
-            "Forward"               ,
-            "Back"                  ,
-            "Strafe Right"          ,
-            "Strafe Left"           ,
-            "Move"                  ,
             "Activate"              ,
             "Left Attack/Block"     ,
             "Right Attack/Block"    ,
             "Dual Attack"           ,
             "ForceRelease"          ,
-            //"Pause"               ,
             "Ready Weapon"          ,
             "Toggle POV"            ,
             "Jump"                  ,
@@ -99,13 +147,17 @@ namespace UD
             "Inventory",
             "LeftEquip",
             "RightEquip",
-            "MapLookMode",
+            "MapLookMode"
         };
 
         bool _hardcoreMode = false;
         bool _ControlsDisabled = false;
+        bool _HardcoreModeApplied = false;
+
+        bool _DisableFreeCamera = true;
 
         void SaveOriginalControls();
+        void InitControlOverride(RE::BSTArray<RE::ControlMap::UserEventMapping>** a_controls,const std::vector<std::string>& a_filter);
         void DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
         void ApplyControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
     };

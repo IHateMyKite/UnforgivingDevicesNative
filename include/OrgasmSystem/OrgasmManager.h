@@ -18,7 +18,7 @@ namespace ORS
     {
     SINGLETONHEADER(OrgasmManager)
     public:
-        void    Setup();
+        void    Setup(const boost::property_tree::ptree& a_ptree);
         void    Update(float a_delta);
         bool    AddOrgasmChange(RE::Actor* a_actor, 
                                 std::string a_key,  

@@ -26,3 +26,4 @@
 #include <UD_ModEvents.h>
 #include <OrgasmSystem/OrgasmData.h>
 #include <OrgasmSystem/OrgasmManager.h>
+#include <OrgasmSystem/OrgasmConfig.h>

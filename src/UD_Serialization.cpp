@@ -19,7 +19,7 @@ namespace UD
 
         if (loc_iniloaded)
         {
-            LoadMode loc_LoadMode = (LoadMode)loc_pt.get<int>("General.LoadMode");
+            LoadMode loc_LoadMode = (LoadMode)loc_pt.get<int>("General.iLoadMode");
 
             switch(loc_LoadMode)
             {

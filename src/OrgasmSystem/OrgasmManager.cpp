@@ -8,7 +8,7 @@ namespace ORS
     ModifyArousal OSLAModifyArousal;
 }
 
-void ORS::OrgasmManager::Setup()
+void ORS::OrgasmManager::Setup(const boost::property_tree::ptree& a_ptree)
 {
     if (!_installed)
     {
@@ -27,6 +27,7 @@ void ORS::OrgasmManager::Setup()
         }
         _installed = true;
     }
+    OrgasmConfig::GetSingleton()->LoadConfig(a_ptree);
     if(_installed) Update(0.0f);
 }
 

@@ -7,7 +7,6 @@ namespace UD
     //macro to make the code more readable
     #define PROCESSMETER(a,x,c)                 \
     {                                           \
-    _mutex.lock();                              \
     for (int i = 0;i < a.size();i++)            \
     {                                           \
         if (a[i]->c)                            \
@@ -15,12 +14,10 @@ namespace UD
             x                                   \
         }                                       \
     }                                           \
-    _mutex.unlock();                            \
     }
 
     #define PROCESSMETERRET(a, x, y, z, c)      \
     {                                           \
-    _mutex.lock();                              \
     for (int i = 0;i < a.size();i++)            \
     {                                           \
         if (a[i]->c)                            \
@@ -30,7 +27,6 @@ namespace UD
             return y;                           \
         }                                       \
     }                                           \
-    _mutex.unlock();                            \
     return z;                                   \
     }
 
@@ -65,7 +61,6 @@ namespace UD
     public:
         inline static void Update(const float& f_timemult = 1.0f)
         {   
-            _mutex.lock();
             static int i;
             for (i = 0;i < _metersIWW.size();i++)
             {
@@ -75,16 +70,13 @@ namespace UD
             {
                 _metersSkyUi[i]->Process(f_timemult);
             }
-            _mutex.unlock();
         }
         inline static int RemoveAll()
         {
-            _mutex.lock();
             int loc_size1 = _metersIWW.size();
             int loc_size2 = _metersSkyUi.size();
             _metersIWW.clear();
             _metersSkyUi.clear();
-            _mutex.unlock();
             return (loc_size1 + loc_size2); 
         }
 
@@ -109,15 +101,15 @@ namespace UD
             }
             else
             {
-                _mutex.lock();
+                //_mutex.lock();
                 _metersIWW.push_back(std::unique_ptr<MeterEntryIWW>(new MeterEntryIWW(s_path,i_id,s_name,f_base,f_rate,b_show)));
                 UDSKSELOG("::AddEntryIWW - added id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
-                _mutex.unlock();
+                //_mutex.unlock();
             }
         }
         inline static bool  RemoveEntryIWW(int i_id)
         {
-            _mutex.lock();
+            //_mutex.lock();
             for (int i = 0;i < _metersIWW.size();i++)
             {
                 if (_metersIWW[i]->id == i_id) 
@@ -127,7 +119,7 @@ namespace UD
                     return true;
                 }
             }
-            _mutex.unlock();
+            //_mutex.unlock();
             return false;
         }
         inline static void  ToggleMeterIWW(int i_id,bool b_toggle)
@@ -192,15 +184,15 @@ namespace UD
             }
             else
             {
-                _mutex.lock();
+                //_mutex.lock();
                 _metersSkyUi.push_back(std::unique_ptr<MeterEntrySkyUi>(new MeterEntrySkyUi(s_path,s_name,f_base,f_rate,b_show)));
                 UDSKSELOG("::AddEntrySkyUi - added = id={},update={},rate={},value={}",_metersSkyUi.back()->id,_metersSkyUi.back()->update,_metersSkyUi.back()->rate,_metersSkyUi.back()->value);
-                _mutex.unlock();
+                //_mutex.unlock();
             }
         }
         inline static bool  RemoveEntrySkyUi(const std::string& s_path)
         {
-            _mutex.lock();
+            //_mutex.lock();
             for (int i = 0;i < _metersSkyUi.size();i++)
             {
                 if (_metersSkyUi[i]->path == s_path) 
@@ -210,7 +202,7 @@ namespace UD
                     return true;
                 }
             }
-            _mutex.unlock();
+            //_mutex.unlock();
             return false;
         }
         inline static void  ToggleMeterSkyUi(const std::string& s_path,bool b_toggle)

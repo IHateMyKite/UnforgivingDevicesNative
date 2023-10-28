@@ -4,21 +4,34 @@ namespace UD
 {
     inline void _OnGameLoad()
     {
-
         UD::ReloadLib();
+
+        boost::property_tree::ptree loc_pt;
+        bool loc_iniloaded = true;
+        try
+        {
+            boost::property_tree::ini_parser::read_ini("Data\\skse\\plugins\\UDNative.ini", loc_pt);
+        }
+        catch( std::exception &ex )
+        {
+            // you either print it out or have a MessageBox pop up or hide it.
+            UDSKSELOG("ERROR: {}",ex.what())
+            loc_iniloaded = false;
+        }
 
         MeterManager::RemoveAll();
         KeywordManager::Reload();
         InventoryHandler::Reload();
-        ORS::OrgasmManager::GetSingleton()->Setup();
+        ORS::OrgasmManager::GetSingleton()->Setup(loc_pt);
         ActorSlotManager::GetSingleton()->Setup();
-        ControlManager::GetSingleton()->Setup();
+        ControlManager::GetSingleton()->Setup(loc_pt);
 
         //remove effect in case that user reloaded the game without exit
         if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
 
         UpdateManager::GetSingleton()->CreateUpdateThreads();
     }
+
 
     inline void _OnPostPostLoad()
     {

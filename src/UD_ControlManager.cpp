@@ -2,9 +2,10 @@
 
 
 SINGLETONBODY(UD::KeyEventSink)
+SINGLETONBODY(UD::CameraEventSink)
 SINGLETONBODY(UD::ControlManager)
 
-void UD::ControlManager::Setup()
+void UD::ControlManager::Setup(const boost::property_tree::ptree& a_ptree)
 {
     if (!_installed)
     {
@@ -19,55 +20,37 @@ void UD::ControlManager::Setup()
 
         //load memory
         _OriginalControls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
-        _HardcoreControls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
-        _DisabledControls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
-
         SaveOriginalControls();
 
-        DebugPrintControls();
+        boost::split(_hardcoreids,a_ptree.get<std::string>("Disabler.asHardcoreModeDisable"),boost::is_any_of(","));
 
-        //init control stacks
-        auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::ControlMap::InputContextID::kGameplay]->deviceMappings;
-        for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
+        for (auto&& it :_hardcoreids) 
         {
-            for (auto&& it : loc_control[i]) 
-            {
-                {
-                    const auto loc_foundit = std::find_if(_hardcoreids.begin(),_hardcoreids.end(),[it](const RE::BSFixedString& a_id)
-                    {
-                        if (it.eventID == a_id)return true;
-                        return false;
-                    
-                    });
-
-                    const bool loc_found = (loc_foundit != _hardcoreids.end());
-                    if (!loc_found)
-                    {
-                        _HardcoreControls[i].push_back(it);
-                    } 
-                }
-
-                {
-                    const auto loc_foundit = std::find_if(_disableids.begin(),_disableids.end(),[it](const RE::BSFixedString& a_id)
-                    {
-                        if (it.eventID == a_id)return true;
-                        return false;
-                    
-                    });
-
-                    const bool loc_found = (loc_foundit != _disableids.end());
-                    if (!loc_found)
-                    {
-                        _DisabledControls[i].push_back(it);
-                    } 
-                }
-
-            }
+            auto loc_first = it.find_first_not_of(' ');
+            auto loc_last  = it.find_last_not_of(' ');
+            it = it.substr(loc_first,loc_last - loc_first + 1);
         }
 
-        DebugPrintControls(_HardcoreControls);
-        DebugPrintControls(_DisabledControls);
+        UDSKSELOG("Hardcore disable config loaded. Number = {}",_hardcoreids.size())
+        for (auto&& it : _hardcoreids) UDSKSELOG("{}",it)
+
+        InitControlOverride(&_HardcoreControls,_hardcoreids);
+
+        _disableids = _disablenomoveids; //copy disable which doesnt disable movement
+        _disableids.insert(_disableids.begin(),{"Forward","Back","Strafe Right","Strafe Left"}); //add movement disable
+
+        InitControlOverride(&_DisabledControls,_disableids);
+
+        InitControlOverride(&_DisabledNoMoveControls,_disablenomoveids);
+
+        SKSE::GetCameraEventSource()->AddEventSink(CameraEventSink::GetSingleton());
+
+        UDSKSELOG("ControlManager installed")
+        //DebugPrintControls(_HardcoreControls);
+        //DebugPrintControls(_DisabledControls);
     }
+
+    _DisableFreeCamera = a_ptree.get<bool>("Disabler.bDisableFreeCamera");
 }
 
 void UD::ControlManager::UpdateControl()
@@ -84,7 +67,7 @@ void UD::ControlManager::UpdateControl()
             _ControlsDisabled = true;
             SKSE::GetTaskInterface()->AddTask([this]()
             {
-                ApplyControls(_DisabledControls);
+                DisableControls();
             });
         }
     }
@@ -102,25 +85,25 @@ void UD::ControlManager::UpdateControl()
         {
             if (_hardcoreMode)
             {
-                if (loc_status[0])
+                if (loc_status[0] && !_HardcoreModeApplied)
                 {
+                    _HardcoreModeApplied = true;
                     SKSE::GetTaskInterface()->AddTask([this]()
                     {
                         ApplyControls(_HardcoreControls);
                     });
-                    DebugPrintControls();
                 }
-                else
+                else if (!loc_status[0] && _HardcoreModeApplied)
                 {
+                    _HardcoreModeApplied = false;
                     SKSE::GetTaskInterface()->AddTask([this]()
                     {
-                        ApplyControls(_OriginalControls);
+                        ApplyOriginalControls();
                     });
                 }
             }
         }
     }
-    //UDSKSELOG("ControlManager::UpdateControl() end")
 }
 
 void UD::ControlManager::SyncSetting(bool a_hardcoreMode)
@@ -196,10 +179,10 @@ void UD::ControlManager::CheckStatusSafe(bool* a_result)
     while (loc_fetchingstatus)
     {
         //UDSKSELOG("ControlManager::CheckStatusSafe() - waiting...")
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
-    UDSKSELOG("ControlManager::CheckStatusSafe() - Status checked - Bound = {} , Animating = {} , Minigame = {} , Free cam = {}",loc_res[0],loc_res[1],loc_res[2],RE::PlayerCamera::GetSingleton()->IsInFreeCameraMode())
+    //UDSKSELOG("ControlManager::CheckStatusSafe() - Status checked - Bound = {} , Animating = {} , Minigame = {} , Free cam = {}",loc_res[0],loc_res[1],loc_res[2],RE::PlayerCamera::GetSingleton()->IsInFreeCameraMode())
 }
 
 void UD::ControlManager::DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls)
@@ -253,12 +236,60 @@ bool UD::ControlManager::HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_D
     return false;
 }
 
+void UD::ControlManager::ApplyOriginalControls()
+{
+    ApplyControls(_OriginalControls);
+}
+
+void UD::ControlManager::DisableControls()
+{
+    ApplyControls(_DisabledControls);
+}
+
+void UD::ControlManager::DisableControlsFC()
+{
+    if (_DisableFreeCamera)
+    {
+        ApplyControls(_DisabledNoMoveControls);
+    }
+    else
+    {
+        ApplyOriginalControls();
+    }
+}
+
 void UD::ControlManager::SaveOriginalControls()
 {
     auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::UserEvents::INPUT_CONTEXT_IDS::kGameplay]->deviceMappings;
     for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
     {
         _OriginalControls[i] = loc_control[i];
+    }
+}
+
+void UD::ControlManager::InitControlOverride(RE::BSTArray<RE::ControlMap::UserEventMapping>** a_controls,const std::vector<std::string>& a_filter)
+{
+    *a_controls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
+    auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::ControlMap::InputContextID::kGameplay]->deviceMappings;
+    for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
+    {
+        for (auto&& it : loc_control[i]) 
+        {
+            {
+                const auto loc_foundit = std::find_if(a_filter.begin(),a_filter.end(),[it](const std::string& a_id)
+                {
+                    if (std::strcmp(it.eventID.c_str(),a_id.c_str()) == 0) return true;
+                    return false;
+                    
+                });
+
+                const bool loc_found = (loc_foundit != a_filter.end());
+                if (!loc_found)
+                {
+                    (*a_controls)[i].push_back(it);
+                } 
+            }
+        }
     }
 }
 
@@ -286,23 +317,19 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
         const uint32_t    loc_dxScanCode  = loc_buttonEvent->GetIDCode();
         if (loc_buttonEvent->IsRepeating()) return RE::BSEventNotifyControl::kContinue;
 
-        const RE::INPUT_DEVICE loc_Device = loc_buttonEvent->GetDevice();
-
-        const bool loc_hmbuttonpress = ControlManager::GetSingleton()->HardcoreButtonPressed(loc_dxScanCode,loc_Device);
-
-        if (loc_hmbuttonpress)
+        const bool loc_bound = ControlManager::GetSingleton()->PlayerIsBound();
+        if ( loc_bound                                                  &&
+            !ControlManager::GetSingleton()->PlayerInMinigame()         &&
+            !ControlManager::GetSingleton()->PlayerInZadAnimation())
         {
-            const bool loc_bound        = ControlManager::GetSingleton()->PlayerIsBound();
-            const bool loc_animation    = ControlManager::GetSingleton()->PlayerInZadAnimation();
-            const bool loc_minigame     = ControlManager::GetSingleton()->PlayerInMinigame();
-
-            if (loc_bound && !loc_minigame && !loc_animation)
+            const RE::INPUT_DEVICE loc_Device = loc_buttonEvent->GetDevice();
+            const bool loc_hmbuttonpress = ControlManager::GetSingleton()->HardcoreButtonPressed(loc_dxScanCode,loc_Device);
+            if (loc_hmbuttonpress)
             {
                 if (loc_bound)
                 {
                     RE::DebugNotification("You are bound and can't do anything!");
                 }
-
                 ModEvents::GetSingleton()->HMTweenMenuEvent.QueueEvent();
 
                 UDSKSELOG("Sending player tween menu event")
@@ -314,6 +341,43 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
                     _Cooldown = false;
                 }).detach();
             }
+        }
+    }
+
+    return RE::BSEventNotifyControl::kContinue;
+}
+
+RE::BSEventNotifyControl UD::CameraEventSink::ProcessEvent(const SKSE::CameraEvent* eventPtr, RE::BSTEventSource<SKSE::CameraEvent>*)
+{                      
+    if (eventPtr == nullptr) return RE::BSEventNotifyControl::kContinue;
+    
+    
+
+    RE::TESCameraState* loc_new = eventPtr->newState;
+    RE::TESCameraState* loc_old = eventPtr->oldState;
+    
+
+    if (loc_new != nullptr)
+    {
+        UDSKSELOG("Camera state: new = {}",loc_new->id);
+        switch(loc_new->id)
+        {
+        case RE::CameraState::kFree:
+            ControlManager::GetSingleton()->DisableControlsFC();
+            return RE::BSEventNotifyControl::kContinue;
+            break;
+        }
+    }
+
+    if (loc_old != nullptr)
+    {
+        UDSKSELOG("Camera state: old = {}",loc_old->id);
+        switch(loc_old->id)
+        {
+        case RE::CameraState::kFree:
+            ControlManager::GetSingleton()->DisableControls(); //disable untill control manager is updated
+            return RE::BSEventNotifyControl::kContinue;
+            break;
         }
     }
 

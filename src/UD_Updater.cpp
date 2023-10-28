@@ -39,7 +39,7 @@ namespace UD
     {
         static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
 
-        UpdateManager* loc_manager = UpdateManager::GetSingleton();
+        static UpdateManager* loc_manager = UpdateManager::GetSingleton();
 
         if (a_this == loc_player)
         {   

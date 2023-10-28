@@ -9,22 +9,7 @@ using boost::algorithm::clamp;
 
 namespace ORS
 {
-    // === Calibration ===
-
-    //how often will be expression updated (if set)
-    #define EXPRUPDATETIME  2.0f
-
-    //thresholds for updating expression
-    #define EXPUPDATEMINTH  0.10f
-    #define EXPUPDATEMAXTH  0.20f
-
-    //orgasm progress required for linked widget to show
-    #define WIDGETSHOWTH    0.025f
-
-    //distance to travel in 1s for 100% orgasm rate
-    #define BASEDISTANCE    2500.0f
-
-
+    // Current orgasm data version
     #define PDATAVERSION    1U
 
     // === ENums
@@ -279,7 +264,7 @@ namespace ORS
             int32_t             LinkedWidgetId         = 0;
             bool                LinkedWidgetShown      = false;
 
-            float               ExpressionTimer    = EXPRUPDATETIME;
+            float               ExpressionTimer    = 2.0f;
             bool                ExpressionSet      = false;
 
             RE::NiPoint3 lastpos;

@@ -430,6 +430,7 @@ float ORS::OrgasmActorData::CalculateOrgasmProgress(const float& a_delta)
 
 float ORS::OrgasmActorData::CalculateOrgasmRate(const float& a_delta)
 {
+    static OrgasmConfig* loc_config = OrgasmConfig::GetSingleton();
     float loc_res = 0.0f;
     for (auto&& it1 : _Sources) 
     {   
@@ -454,7 +455,7 @@ float ORS::OrgasmActorData::CalculateOrgasmRate(const float& a_delta)
             {
                 const auto loc_currentpos = _actor->GetPosition();
                 const float loc_distance = loc_currentpos.GetSquaredDistance(_RDATA.lastpos);
-                const float loc_basedistance = BASEDISTANCE*a_delta;
+                const float loc_basedistance = loc_config->BASEDISTANCE*a_delta;
 
                 if (loc_basedistance > 0.0f) loc_mult *= clamp(loc_distance/loc_basedistance,0.0f,3.0f);
 
@@ -517,6 +518,7 @@ float ORS::OrgasmActorData::CalculateOrgasmResistenceMult()
 
 inline float ORS::OrgasmActorData::CalculateArousalRate(const float& a_delta)
 {
+    static OrgasmConfig* loc_config = OrgasmConfig::GetSingleton();
     float loc_res = 0.0f;
     for (auto&& it1 : _Sources) 
     {  
@@ -540,7 +542,7 @@ inline float ORS::OrgasmActorData::CalculateArousalRate(const float& a_delta)
         {
             const auto loc_currentpos = _actor->GetPosition();
             const float loc_distance = loc_currentpos.GetSquaredDistance(_RDATA.lastpos);
-            const float loc_basedistance = BASEDISTANCE*a_delta;
+            const float loc_basedistance = loc_config->BASEDISTANCE*a_delta;
 
             if (loc_basedistance > 0.0f) loc_mult *= clamp(loc_distance/loc_basedistance,0.0f,2.0f);
         }
@@ -637,14 +639,15 @@ void ORS::OrgasmActorData::ElapseChanges(const float& a_delta)
 
 inline void ORS::OrgasmActorData::UpdateWidget()
 {
+    static OrgasmConfig* loc_config = OrgasmConfig::GetSingleton();
     if (_RDATA.LinkedWidgetUsed)
     {
-        if (_RDATA.LinkedWidgetShown && (GetOrgasmProgress(1) < WIDGETSHOWTH))
+        if (_RDATA.LinkedWidgetShown && (GetOrgasmProgress(1) < loc_config->WIDGETSHOWTH))
         {
             SendLinkedMeterEvent(wHide);
             _RDATA.LinkedWidgetShown = false;
         }
-        else if (!_RDATA.LinkedWidgetShown && (GetOrgasmProgress(1) >= WIDGETSHOWTH))
+        else if (!_RDATA.LinkedWidgetShown && (GetOrgasmProgress(1) >= loc_config->WIDGETSHOWTH))
         {
             SendLinkedMeterEvent(wShow);
             _RDATA.LinkedWidgetShown = true;
@@ -654,13 +657,14 @@ inline void ORS::OrgasmActorData::UpdateWidget()
 
 inline void ORS::OrgasmActorData::UpdateExpression(const float& a_delta)
 {
+    static OrgasmConfig* loc_config = OrgasmConfig::GetSingleton();
     if (_actor->Is3DLoaded())
     {
         _RDATA.ExpressionTimer += a_delta;
 
         const float loc_progress = GetOrgasmProgress(1);
 
-        if ((!_RDATA.ExpressionSet || (_RDATA.ExpressionTimer >= EXPRUPDATETIME)) && (loc_progress > EXPUPDATEMAXTH))
+        if ((!_RDATA.ExpressionSet || (_RDATA.ExpressionTimer >= loc_config->EXPRUPDATETIME)) && (loc_progress > loc_config->EXPUPDATEMAXTH))
         {
     
             SendOrgasmExpressionEvent(eSet);
@@ -668,10 +672,10 @@ inline void ORS::OrgasmActorData::UpdateExpression(const float& a_delta)
             _RDATA.ExpressionSet = true;
 
         }
-        else if (_RDATA.ExpressionSet && (loc_progress < EXPUPDATEMINTH)) 
+        else if (_RDATA.ExpressionSet && (loc_progress < loc_config->EXPUPDATEMINTH)) 
         {
             SendOrgasmExpressionEvent(eReset);
-            _RDATA.ExpressionTimer = EXPRUPDATETIME;
+            _RDATA.ExpressionTimer = loc_config->EXPRUPDATETIME;
             _RDATA.ExpressionSet = false;
         }
     }
@@ -688,20 +692,8 @@ inline void ORS::OrgasmActorData::SendOrgasmEvent()
     auto loc_handle = _actor->GetHandle();
     SKSE::GetTaskInterface()->AddTask([loc_handle,this]
         {
-            //SKSE::ModCallbackEvent modEvent{
-            //    "ORS_ActorOrgasm",
-            //    "",
-            //    0.0f,
-            //    loc_handle.get().get()
-            //};
-            //
             UDSKSELOG("Sending orgasm event for {}",loc_handle.get()->GetName())
-
             UD::ModEvents::GetSingleton()->OrgasmEvent.QueueEvent(loc_handle.get().get(),_RDATA.OrgasmRate,_RDATA.Arousal);
-
-            //
-            //auto modCallback = SKSE::GetModCallbackEventSource();
-            //modCallback->SendEvent(&modEvent);
         }
     );
 }
@@ -724,7 +716,6 @@ inline void ORS::OrgasmActorData::SendOrgasmExpressionEvent(ORS::ExpressionUpdat
             };
 
             UDSKSELOG("Sending orgasm exp update")
-            UDSKSELOG("Actor",loc_handle.get()->GetName())
 
             if (loc_handle.get() == nullptr) 
             {
@@ -757,7 +748,6 @@ inline void ORS::OrgasmActorData::SendLinkedMeterEvent(LinkedWidgetUpdateType a_
             }
 
             UDSKSELOG("Sending linked widget update")
-            UDSKSELOG("Actor",loc_handle.get()->GetName())
 
             auto modCallback = SKSE::GetModCallbackEventSource();
             modCallback->SendEvent(&modEvent);

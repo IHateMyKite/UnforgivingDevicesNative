@@ -51,6 +51,7 @@ set(source_files ${source_files}
     src/UD_ModEvents.cpp
     src/OrgasmSystem/OrgasmManager.cpp
     src/OrgasmSystem/OrgasmData.cpp
+    src/OrgasmSystem/OrgasmConfig.cpp
 )
 
 # Setup your SKSE plugin as an SKSE plugin!
