@@ -224,6 +224,39 @@ int ORS::OrgasmManager::RemoveAllOrgasmChanges(RE::Actor* a_actor)
     return loc_oc.RemoveAllOrgasmChanges();
 }
 
+bool ORS::OrgasmManager::IsOrgasming(RE::Actor* a_actor)
+{
+    if (a_actor == nullptr) return 0;
+    //UDSKSELOG("OrgasmManager::IsOrgasming({})",a_actor->GetName())
+    std::unique_lock lock(_lock);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.IsOrgasming();
+}
+
+int ORS::OrgasmManager::GetOrgasmingCount(RE::Actor* a_actor)
+{
+    if (a_actor == nullptr) return 0;
+    //UDSKSELOG("OrgasmManager::GetOrgasmingCount({})",a_actor->GetName())
+    std::unique_lock lock(_lock);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.GetOrgasmingCount();
+}
+
+void ORS::OrgasmManager::Orgasm(RE::Actor* a_actor)
+{
+    if (a_actor == nullptr) return;
+    //UDSKSELOG("OrgasmManager::GetOrgasmingCount({})",a_actor->GetName())
+    std::unique_lock lock(_lock);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    loc_oc.Orgasm();
+}
+
 void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm)
 {
     #define REGISTERPAPYRUSFUNC(name,unhook) vm->RegisterFunction(#name, "OrgasmSystem", ORS::name,unhook);
@@ -242,8 +275,13 @@ void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine 
     REGISTERPAPYRUSFUNC(MakeUniqueKey,true)
     REGISTERPAPYRUSFUNC(GetAllOrgasmChanges,true)
     REGISTERPAPYRUSFUNC(RemoveAllOrgasmChanges,true)
+    REGISTERPAPYRUSFUNC(IsOrgasming,true)
+    REGISTERPAPYRUSFUNC(GetOrgasmingCount,true)
+    REGISTERPAPYRUSFUNC(Orgasm,true)
     // ----
     #undef REGISTERPAPYRUSFUNC
+
+    OrgasmEvents::GetSingleton()->RegisterPapyrus(vm);
 }
 
 void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde)

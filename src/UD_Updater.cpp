@@ -12,10 +12,10 @@ namespace UD
         if (t1mutex) return;
         t1mutex = true;
 
-        ControlManager::GetSingleton()->UpdateControl();
         ActorSlotManager::GetSingleton()->Update();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500)); //only once per 1s
+        ControlManager::GetSingleton()->UpdateControl();
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(500)); //only once per 500ms
 
         t1mutex = false;
     }
@@ -43,11 +43,15 @@ namespace UD
 
         if (a_this == loc_player)
         {   
+            PlayerStatus::GetSingleton()->Update();
+
             if (!loc_manager->t1mutex) std::thread(&UpdateManager::UpdateThread1,loc_manager,a_delta).detach();
             if (!loc_manager->t2mutex) std::thread(&UpdateManager::UpdateThread2,loc_manager,a_delta).detach();
 
             MinigameEffectManager::GetSingleton()->UpdateMinigameEffect(a_this,a_delta);
             MinigameEffectManager::GetSingleton()->UpdateMeters(a_this,a_delta);
+            
+            //ControlManager::GetSingleton()->UpdateControl();
         }
         loc_manager->ActorUpdate(a_this,a_delta);
     }

@@ -11,13 +11,6 @@ void UD::ControlManager::Setup(const boost::property_tree::ptree& a_ptree)
     {
         _installed = true;
 
-        RE::TESDataHandler* loc_datahandler = RE::TESDataHandler::GetSingleton();
-
-        _boundkeywords.push_back(static_cast<RE::BGSKeyword*>(loc_datahandler->LookupForm(0x05226C,"Devious Devices - Integration.esm")));
-
-        _minigamefaction = static_cast<RE::TESFaction*>(loc_datahandler->LookupForm(0x150DA3,"UnforgivingDevices.esp"));
-        _animationfaction = static_cast<RE::TESFaction*>(loc_datahandler->LookupForm(0x029567,"Devious Devices - Integration.esm"));
-
         //load memory
         _OriginalControls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
         SaveOriginalControls();
@@ -56,51 +49,39 @@ void UD::ControlManager::Setup(const boost::property_tree::ptree& a_ptree)
 void UD::ControlManager::UpdateControl()
 {
     //check if player is in minigame
-    bool loc_status[3];
+    typedef UD::PlayerStatus::Status Status;
+    const Status loc_status = PlayerStatus::GetSingleton()->GetPlayerStatus();
 
-    CheckStatusSafe(loc_status);
+    const bool loc_bound        = loc_status & Status::sBound;
+    const bool loc_minigame     = loc_status & Status::sMinigame;
+    const bool loc_animation    = loc_status & Status::sAnimation;
+    
 
-    if ((loc_status[1] || loc_status[2]) && !RE::PlayerCamera::GetSingleton()->IsInFreeCameraMode())
+    //CheckStatusSafe(loc_status);
+
+    if ((loc_minigame || loc_animation))
     {
         if (!_ControlsDisabled)
         {
-            _ControlsDisabled = true;
-            SKSE::GetTaskInterface()->AddTask([this]()
-            {
-                DisableControls();
-            });
+            DisableControls();
         }
     }
     else
     {
         if (_ControlsDisabled)
         {
-            _ControlsDisabled = false;
-            SKSE::GetTaskInterface()->AddTask([this]()
-            {
-                ApplyControls(_OriginalControls);
-            });
+             ApplyOriginalControls();
         }
-        else
+        if (_hardcoreMode && !_ControlsDisabled)
         {
-            if (_hardcoreMode)
+            if (loc_bound && !_HardcoreModeApplied)
             {
-                if (loc_status[0] && !_HardcoreModeApplied)
-                {
-                    _HardcoreModeApplied = true;
-                    SKSE::GetTaskInterface()->AddTask([this]()
-                    {
-                        ApplyControls(_HardcoreControls);
-                    });
-                }
-                else if (!loc_status[0] && _HardcoreModeApplied)
-                {
-                    _HardcoreModeApplied = false;
-                    SKSE::GetTaskInterface()->AddTask([this]()
-                    {
-                        ApplyOriginalControls();
-                    });
-                }
+                _HardcoreModeApplied = true;
+                ApplyControls(_HardcoreControls);
+            }
+            else if (!loc_bound && _HardcoreModeApplied)
+            {
+                ApplyOriginalControls();
             }
         }
     }
@@ -114,75 +95,6 @@ void UD::ControlManager::SyncSetting(bool a_hardcoreMode)
 bool UD::ControlManager::HardcoreMode() const
 {
     return _hardcoreMode;
-}
-
-bool UD::ControlManager::PlayerIsBound() const
-{
-    RE::Actor* loc_player = RE::PlayerCharacter::GetSingleton();
-
-    if (loc_player == nullptr) return false;
-
-    //check normal hb device (like armbinder)
-    const RE::TESObjectARMO* loc_hbdevice = loc_player->GetWornArmor(RE::BIPED_MODEL::BipedObjectSlot::kModChestPrimary);
-
-    bool loc_res = loc_hbdevice && loc_hbdevice->HasKeywordInArray(_boundkeywords,false);
-
-    if (!loc_res)
-    {
-        //check body hb (like straitjacket)
-        const RE::TESObjectARMO* locbodydevice = loc_player->GetWornArmor(RE::BIPED_MODEL::BipedObjectSlot::kBody);
-
-        loc_res = locbodydevice && locbodydevice->HasKeywordInArray(_boundkeywords,false);
-    }
-    return loc_res;
-}
-
-bool UD::ControlManager::PlayerInMinigame() const
-{
-    RE::Actor* loc_player = RE::PlayerCharacter::GetSingleton();
-
-    if (loc_player == nullptr) return false;
-
-    if (loc_player == nullptr || _minigamefaction == nullptr) return false;
-
-    return loc_player->IsInFaction(_minigamefaction);
-}
-
-bool UD::ControlManager::PlayerInZadAnimation() const
-{
-    RE::Actor* loc_player = RE::PlayerCharacter::GetSingleton();
-
-    if (loc_player == nullptr) return false;
-
-    if (loc_player == nullptr || _animationfaction == nullptr) return false;
-
-    return loc_player->IsInFaction(_animationfaction);
-}
-
-void UD::ControlManager::CheckStatusSafe(bool* a_result)
-{
-    bool* loc_res = a_result;
-
-    bool loc_fetchingstatus = true;
-
-    //UDSKSELOG("ControlManager::CheckStatusSafe() - Sending check status task...")
-
-    SKSE::GetTaskInterface()->AddTask([this,&loc_res,&loc_fetchingstatus]()
-    {
-        //UDSKSELOG("ControlManager::CheckStatusSafe() - Serial task received - checking status...")
-        loc_res[0] = PlayerIsBound();
-        loc_res[1] = PlayerInMinigame();
-        loc_res[2] = PlayerInZadAnimation();
-        loc_fetchingstatus = false;
-    });
-
-    while (loc_fetchingstatus)
-    {
-        //UDSKSELOG("ControlManager::CheckStatusSafe() - waiting...")
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-
-    //UDSKSELOG("ControlManager::CheckStatusSafe() - Status checked - Bound = {} , Animating = {} , Minigame = {} , Free cam = {}",loc_res[0],loc_res[1],loc_res[2],RE::PlayerCamera::GetSingleton()->IsInFreeCameraMode())
 }
 
 void UD::ControlManager::DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls)
@@ -238,11 +150,14 @@ bool UD::ControlManager::HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_D
 
 void UD::ControlManager::ApplyOriginalControls()
 {
+    _ControlsDisabled = false;
+    _HardcoreModeApplied = false;
     ApplyControls(_OriginalControls);
 }
 
 void UD::ControlManager::DisableControls()
 {
+    _ControlsDisabled = true;
     ApplyControls(_DisabledControls);
 }
 
@@ -317,10 +232,11 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
         const uint32_t    loc_dxScanCode  = loc_buttonEvent->GetIDCode();
         if (loc_buttonEvent->IsRepeating()) return RE::BSEventNotifyControl::kContinue;
 
-        const bool loc_bound = ControlManager::GetSingleton()->PlayerIsBound();
-        if ( loc_bound                                                  &&
-            !ControlManager::GetSingleton()->PlayerInMinigame()         &&
-            !ControlManager::GetSingleton()->PlayerInZadAnimation())
+        typedef UD::PlayerStatus::Status Status;
+        const Status loc_status = PlayerStatus::GetSingleton()->GetPlayerStatus();
+
+        const bool loc_bound = loc_status & Status::sBound;
+        if ( loc_bound && !(loc_status & Status::sMinigame)  && !(loc_status & Status::sAnimation))
         {
             const RE::INPUT_DEVICE loc_Device = loc_buttonEvent->GetDevice();
             const bool loc_hmbuttonpress = ControlManager::GetSingleton()->HardcoreButtonPressed(loc_dxScanCode,loc_Device);

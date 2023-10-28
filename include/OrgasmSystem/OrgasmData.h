@@ -75,8 +75,10 @@ namespace ORS
 
     enum ExpressionUpdateType : uint8_t
     {
-        eSet    = 0,
-        eReset  = 1
+        eNormalSet       = 0,
+        eNormalReset     = 1,
+        eOrgasmSet       = 2,
+        eOrgasmReset     = 3
     };
 
     enum LinkedWidgetUpdateType : uint8_t
@@ -164,12 +166,11 @@ namespace ORS
 
         void    LinkActorToMeter(std::string a_path,MeterWidgetType a_type,int a_id);
         void    UnlinkActorFromMeter();
-
         std::string MakeUniqueKey(std::string a_base);
-
         std::vector<std::string> GetAllOrgasmChanges();
         int     RemoveAllOrgasmChanges();
-
+        bool    IsOrgasming() {return _RDATA.OrgasmCount > 0;};
+        int     GetOrgasmingCount() {return _RDATA.OrgasmCount;};
         void    Orgasm(void);
 
         RE::Actor*  GetActor();
@@ -200,6 +201,9 @@ namespace ORS
         inline void SendOrgasmEvent();
         inline void SendOrgasmExpressionEvent(ExpressionUpdateType a_type);
         inline void SendLinkedMeterEvent(LinkedWidgetUpdateType a_type);
+
+
+        inline bool IsPlayer();
     private:
         RE::Actor*  _actor;
         std::map<std::string,OrgasmChangeData>  _Sources;
@@ -264,10 +268,13 @@ namespace ORS
             int32_t             LinkedWidgetId         = 0;
             bool                LinkedWidgetShown      = false;
 
-            float               ExpressionTimer    = 2.0f;
+            float               ExpressionTimer    = 0.0f;
             bool                ExpressionSet      = false;
 
             RE::NiPoint3 lastpos;
+
+            float   OrgasmTimer = 0.0f;
+            uint8_t OrgasmCount = 0;
         };
 
         RUNTIME_DATA _RDATA;

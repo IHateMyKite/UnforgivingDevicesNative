@@ -52,11 +52,13 @@ namespace ORS
 
         void    LinkActorToMeter(RE::Actor* a_actor,std::string a_path, MeterWidgetType a_type, int a_id);
         void    UnlinkActorFromMeter(RE::Actor* a_actor);
-
         std::string MakeUniqueKey(RE::Actor* a_actor,std::string a_base);
-
         std::vector<std::string> GetAllOrgasmChanges(RE::Actor* a_actor);
         int     RemoveAllOrgasmChanges(RE::Actor* a_actor);
+        bool    IsOrgasming(RE::Actor* a_actor);
+        int     GetOrgasmingCount(RE::Actor* a_actor);
+        void    Orgasm(RE::Actor* a_actor);
+
 
         void    RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm);
 
@@ -150,4 +152,18 @@ namespace ORS
         return OrgasmManager::GetSingleton()->RemoveAllOrgasmChanges(a_actor);
     }
 
+    inline bool IsOrgasming(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        return OrgasmManager::GetSingleton()->IsOrgasming(a_actor);
+    }
+
+    inline int GetOrgasmingCount(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        return OrgasmManager::GetSingleton()->GetOrgasmingCount(a_actor);
+    }
+
+    inline void Orgasm(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        OrgasmManager::GetSingleton()->Orgasm(a_actor);
+    }
 }

@@ -83,8 +83,6 @@ namespace UD
 
         //events
         REGISTERPAPYRUSFUNC(RegisterForHMTweenMenu,true)
-        REGISTERPAPYRUSFUNC(RegisterForOrgasmEvent_Ref,true)
-        REGISTERPAPYRUSFUNC(RegisterForOrgasmEvent_Form,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

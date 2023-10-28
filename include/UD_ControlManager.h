@@ -29,9 +29,6 @@ namespace UD
         void SyncSetting(bool a_hardcoreMode);
 
         bool HardcoreMode() const;
-        bool PlayerIsBound() const;
-        bool PlayerInMinigame() const;
-        bool PlayerInZadAnimation() const;
 
         void CheckStatusSafe(bool* a_result);
 
@@ -46,66 +43,14 @@ namespace UD
         
     private:
         bool _installed = false;
-
-        std::vector<RE::BGSKeyword*> _boundkeywords;
-        RE::TESFaction*              _minigamefaction;
-        RE::TESFaction*              _animationfaction;
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _OriginalControls;
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _HardcoreControls;
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _DisabledControls;
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _DisabledNoMoveControls;
 
         //can be found in clibs UserEvents.h
-
         std::vector<std::string> _hardcoreids;
         std::vector<std::string> _disableids; 
-        //{
-        //    //base player controls
-        //    "Forward"               ,
-        //    "Back"                  ,
-        //    "Strafe Right"          ,
-        //    "Strafe Left"           ,
-        //    "Move"                  ,
-        //    "Activate"              ,
-        //    "Left Attack/Block"     ,
-        //    "Right Attack/Block"    ,
-        //    "Dual Attack"           ,
-        //    "ForceRelease"          ,
-        //    //"Pause"               ,
-        //    "Ready Weapon"          ,
-        //    "Toggle POV"            ,
-        //    "Jump"                  ,
-        //    "Sprint"                ,
-        //    "Sneak"                 ,
-        //    "Shout"                 ,
-        //    "KinectShout"           ,
-        //    "Grab"                  ,
-        //    "Run"                   ,
-        //    "Toggle Always Run"     ,
-        //    "Auto-Move"             ,
-        //
-        //    //menu control
-        //    "Journal",
-        //    "Tween Menu",
-        //    "Quick Inventory",
-        //    "Quick Magic",
-        //    "Quick Map",
-        //    "Quick Stats",
-        //    "Wait",
-        //    "Favorites",
-        //    "Hotkey1",
-        //    "Hotkey2",
-        //    "Hotkey3",
-        //    "Hotkey4",
-        //    "Hotkey5",
-        //    "Hotkey6",
-        //    "Hotkey7",
-        //    "Hotkey8",
-        //    "Inventory",
-        //    "LeftEquip",
-        //    "RightEquip",
-        //    "MapLookMode",
-        //};
 
         const std::vector<std::string> _disablenomoveids = 
         {

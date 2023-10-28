@@ -49,6 +49,8 @@ set(source_files ${source_files}
     src/UD_Serialization.cpp
     src/UD_ControlManager.cpp
     src/UD_ModEvents.cpp
+    src/UD_PlayerStatus.cpp
+    src/OrgasmSystem/OrgasmEvents.cpp
     src/OrgasmSystem/OrgasmManager.cpp
     src/OrgasmSystem/OrgasmData.cpp
     src/OrgasmSystem/OrgasmConfig.cpp

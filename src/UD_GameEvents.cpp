@@ -19,6 +19,7 @@ namespace UD
             loc_iniloaded = false;
         }
 
+        PlayerStatus::GetSingleton()->Setup();
         MeterManager::RemoveAll();
         KeywordManager::Reload();
         InventoryHandler::Reload();

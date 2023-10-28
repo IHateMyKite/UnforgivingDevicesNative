@@ -24,6 +24,8 @@
 #include <UD_Serialization.h>
 #include <UD_ControlManager.h>
 #include <UD_ModEvents.h>
+#include <UD_PlayerStatus.h>
+#include <OrgasmSystem/OrgasmEvents.h>
 #include <OrgasmSystem/OrgasmData.h>
 #include <OrgasmSystem/OrgasmManager.h>
 #include <OrgasmSystem/OrgasmConfig.h>

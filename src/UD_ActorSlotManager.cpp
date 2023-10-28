@@ -17,7 +17,6 @@ void UD::ActorSlotManager::Setup()
 
 void UD::ActorSlotManager::Update()
 {
-    std::unique_lock lock(_lock);
     ValidateAliases();
 
     if (_slots == nullptr) return;
