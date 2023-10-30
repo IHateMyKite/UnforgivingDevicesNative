@@ -4,6 +4,15 @@
 
 using boost::algorithm::clamp;
 
+std::vector<ORS::HornyLevel> ORS::g_HornyLevels = {
+    {0.0f,20.0f,"You are feeling very exhausted!","Very exhausted"},
+    {30.0f,75.0f,"You are feeling exhausted","Exhausted"},
+    {75.0f,125.0f,"Your libido is under control","Normal"},
+    {125.0f,200.0f,"You are feeling horny","Horny"},
+    {200.0f,300.0f,"You are feeling increadibly horny","Increadibly horny"},
+    {300.0f,400.0f,"You want to cum badly","Wants to cum badly"}
+};
+
 void ORS::OrgasmActorData::Update(const float& a_delta)
 {
     if (_actor == nullptr) return;
@@ -21,12 +30,6 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
         }
         _RDATA.OrgasmTimer = 0.0f;
         _RDATA.OrgasmCount = 0;
-    }
-
-    if (_RDATA.OrgasmTimeout > 0.0f)
-    {
-        _RDATA.OrgasmTimeout -= a_delta;
-        return;
     }
 
     _RDATA.ArousalRate            = CalculateArousalRate(a_delta);
@@ -63,8 +66,7 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
         Orgasm();
     }
 
-    //validate horny level
-    _PDATA.HornyLevel = clamp(_PDATA.HornyLevel,1.0,400.0);
+    if (IsPlayer()) CheckHornyLevel();
 
     //UDSKSELOG("ORS::OrgasmActorData::Update({}) - {} = {} - {} --- T= {}",_actor->GetName(),_OrgasmProgress,_OrgasmRate,_AntiOrgasmRate,_OrgasmRateTotal)
 }
@@ -276,6 +278,20 @@ void ORS::OrgasmActorData::LinkActorToMeter(std::string a_path, MeterWidgetType 
     }
 }
 
+std::string ORS::OrgasmActorData::GetHornyStatus()
+{
+    const float loc_hornylevel = _PDATA.HornyLevel;
+    for (auto&& it : g_HornyLevels)
+    {
+        const bool loc_inrange = ((loc_hornylevel >= it.Min) && (loc_hornylevel <= it.Max));
+        if (loc_inrange)
+        {
+            return it.Status;
+        }
+    }
+    return "ERROR";
+}
+
 void ORS::OrgasmActorData::UnlinkActorFromMeter()
 {
      _RDATA.LinkedWidgetUsed  = false;
@@ -321,28 +337,21 @@ void ORS::OrgasmActorData::Orgasm(void)
 {
     const OrgasmConfig* loc_config = OrgasmConfig::GetSingleton();
 
-    _RDATA.OrgasmTimeout = loc_config->ORGASMTIMEOUT;
-
     if (_RDATA.OrgasmTimer == 0.0f) 
     {
         _RDATA.OrgasmTimer = std::lerp(loc_config->ORGASMDURATIONMIN,loc_config->ORGASMDURATIONMAX,clamp(_PDATA.HornyLevel - 100.0f,0.0f,300.0f)/300.0f);
     }
     else _RDATA.OrgasmTimer += loc_config->ORGASMDURATIONADD;
     
-    _RDATA.OrgasmCount += 1;
-
-    ResetOrgasmProgress();
+    _RDATA.OrgasmCount++;
 
     std::string loc_key = MakeUniqueKey("PostOrgasm");
 
-    AddOrgasmChange(loc_key,(OrgasmMod)0xA000C,eDefault,-5.0f,-0.25f,0.0f,0.0f,0.25f,0.25f);
+    AddOrgasmChange(loc_key,(OrgasmMod)(0x00004 | (loc_config->ORGASMTIMEOUT << 16)),eDefault,-15.0f,-0.25f,0.0f,0.0f,0.25f,0.25f);
     UpdateOrgasmChangeVar(loc_key, vArousalRate, -15.0f, mSet);
 
     SendOrgasmEvent();
     SendOrgasmExpressionEvent(eOrgasmSet);
-    if (_RDATA.LinkedWidgetUsed) SendLinkedMeterEvent(wHide);
-    
-    _PDATA.HornyLevel -= (_PDATA.HornyLevel > 100.0 ? (_PDATA.HornyLevel*0.25f + 80.0f) : 40.0f);
 }
 
 RE::Actor* ORS::OrgasmActorData::GetActor()
@@ -429,7 +438,7 @@ float ORS::OrgasmActorData::CalculateOrgasmProgress(const float& a_delta)
 {
     float loc_res = _PDATA.OrgasmProgress;
 
-    loc_res += (_RDATA.OrgasmRate*_RDATA.OrgasmRateMult*a_delta*(clamp(_PDATA.HornyLevel/100.0f,0.5f,4.0f)));
+    loc_res += (_RDATA.OrgasmRate*_RDATA.OrgasmRateMult*a_delta*(clamp(_PDATA.HornyLevel/200.0f,0.25f,1.25f)));
 
     const float loc_ArousalMult   = clamp(std::pow(10.0f,clamp(100.0f/clamp(_RDATA.Arousal,1.0f,100.0f),1.0f,2.0f) - 1.0f),1.0f,100.0f);;
     _RDATA.AntiOrgasmRate         = static_cast<float>(loc_ArousalMult*_RDATA.OrgasmResistenceMult*_RDATA.OrgasmResistence);
@@ -449,7 +458,7 @@ float ORS::OrgasmActorData::CalculateOrgasmProgress(const float& a_delta)
     }
 
     loc_res = clamp(loc_res,0.0f,_RDATA.OrgasmCapacity);
-    if (loc_res < 0.01f) loc_res = 0.0f;
+    if (loc_res < 0.0f) loc_res = 0.0f;
 
     return loc_res;
 }
@@ -483,7 +492,7 @@ float ORS::OrgasmActorData::CalculateOrgasmRate(const float& a_delta)
                 const float loc_distance = loc_currentpos.GetSquaredDistance(_RDATA.lastpos);
                 const float loc_basedistance = loc_config->BASEDISTANCE*a_delta;
 
-                if (loc_basedistance > 0.0f) loc_mult *= clamp(loc_distance/loc_basedistance,0.0f,3.0f);
+                if (loc_basedistance > 0.0f) loc_mult *= clamp(loc_distance/loc_basedistance,0.0f,10.0f);
 
                 //UDSKSELOG("OrgasmActorData::CalculateOrgasmRate() - Distance= {}, Base distance = {}, Distance multiplier = {}",loc_distance,loc_basedistance,loc_distance/loc_basedistance)
             }
@@ -599,25 +608,35 @@ inline float ORS::OrgasmActorData::CalculateHornyLevel(const float& a_delta)
 
     float loc_res = _PDATA.HornyLevel;
 
-    const float loc_rate = 6.0f*loc_orgprogp;
-
-    //base increase based on orgasm progress
-    if (loc_orgprogp > 0.05f) loc_res += loc_rate*a_delta;
-
-    //aprox value to 100
-    if (loc_rate < 0.25)
+    if (_RDATA.OrgasmCount > 0)
     {
-        if (loc_res > 100.0f)
+        loc_res -= 3.0f*(100.0f/clamp(_RDATA.Arousal,25.0f,100.0f))*_RDATA.OrgasmCount*a_delta;
+    }
+    else
+    {
+        //base increase based on orgasm progress
+        const float loc_rate = 5.0f*loc_orgprogp;
+        if (loc_orgprogp > 0.05f) loc_res += loc_rate*a_delta;
+
+        //aprox value to 100
+        if (loc_orgprogp < 0.1f)
         {
-            loc_res -= static_cast<float>(0.5*(100.0/clamp(_RDATA.Arousal,25.0,100.0))*a_delta);
-            if (loc_res < 100.0f) loc_res = 100.0f;
-        }
-        else if (loc_res < 100.0f)
-        {
-            loc_res += static_cast<float>(1.0f*(_RDATA.Arousal/100.0f)*a_delta);
-            if (loc_res > 100.0f) loc_res = 100.0f;
+            if (loc_res > 100.0f)
+            {
+                loc_res -= static_cast<float>(0.5f*(100.0f/clamp(_RDATA.Arousal,25.0f,100.0f))*a_delta);
+                if (loc_res < 100.0f) loc_res = 100.0f;
+            }
+            else if (loc_res < 100.0f)
+            {
+                loc_res += static_cast<float>(0.5f*(_RDATA.Arousal/100.0f)*a_delta);
+                if (loc_res > 100.0f) loc_res = 100.0f;
+            }
         }
     }
+    
+    //validate horny level
+    loc_res = clamp(loc_res,1.0,400.0);
+
     return loc_res;
 }
 
@@ -741,7 +760,7 @@ inline void ORS::OrgasmActorData::SendOrgasmEvent()
 
     SKSE::GetTaskInterface()->AddTask([loc_handle,loc_rdata,loc_pdata]
         {
-            UDSKSELOG("Sending orgasm event for {}",loc_handle.get()->GetName())
+            //UDSKSELOG("Sending orgasm event for {}",loc_handle.get()->GetName())
             OrgasmEvents::GetSingleton()->OrgasmEvent.QueueEvent(loc_handle.get().get(),loc_rdata.OrgasmRate,loc_rdata.Arousal,loc_pdata.HornyLevel);
         }
     );
@@ -758,7 +777,7 @@ inline void ORS::OrgasmActorData::SendOrgasmExpressionEvent(ORS::ExpressionUpdat
 
     SKSE::GetTaskInterface()->AddTask([loc_handle,loc_rdata,loc_pdata,a_type]
         {
-            UDSKSELOG("Sending expression update for {}",loc_handle.get()->GetName())
+            //UDSKSELOG("Sending expression update for {}",loc_handle.get()->GetName())
             OrgasmEvents::GetSingleton()->ExpressionUpdateEvent.QueueEvent(loc_handle.get().get(),a_type,loc_rdata.OrgasmRate,loc_rdata.Arousal,loc_pdata.HornyLevel);
         }
     );
@@ -794,4 +813,28 @@ inline bool ORS::OrgasmActorData::IsPlayer()
 {
     static RE::Actor* loc_player = RE::PlayerCharacter::GetSingleton();
     return (_actor == loc_player);
+}
+
+inline void ORS::OrgasmActorData::CheckHornyLevel()
+{
+    if (!OrgasmConfig::GetSingleton()->HORNYMESSAGES) return;
+
+    const float loc_hornylevel = _PDATA.HornyLevel;
+    for (auto&& it : g_HornyLevels)
+    {
+        const bool loc_inrange = (loc_hornylevel > it.Min && loc_hornylevel < it.Max);
+        if (loc_inrange && !it.Printed)
+        {
+            it.Printed = true;
+            auto loc_msg = it.Msg.c_str();
+            SKSE::GetTaskInterface()->AddTask([loc_msg]
+            {
+                RE::DebugNotification(loc_msg);
+            });
+        }
+        else if (!loc_inrange)
+        {
+            it.Printed = false;
+        }
+    }
 }

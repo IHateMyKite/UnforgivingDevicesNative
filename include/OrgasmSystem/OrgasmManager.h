@@ -18,7 +18,7 @@ namespace ORS
     {
     SINGLETONHEADER(OrgasmManager)
     public:
-        void    Setup(const boost::property_tree::ptree& a_ptree);
+        void    Setup(CONFIGFILEARG(a_ptree));
         void    Update(float a_delta);
         bool    AddOrgasmChange(RE::Actor* a_actor, 
                                 std::string a_key,  
@@ -58,7 +58,7 @@ namespace ORS
         bool    IsOrgasming(RE::Actor* a_actor);
         int     GetOrgasmingCount(RE::Actor* a_actor);
         void    Orgasm(RE::Actor* a_actor);
-
+        std::string GetHornyStatus(RE::Actor* a_actor);
 
         void    RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm);
 
@@ -165,5 +165,10 @@ namespace ORS
     inline void Orgasm(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
     {
         OrgasmManager::GetSingleton()->Orgasm(a_actor);
+    }
+
+    inline std::string GetHornyStatus(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        return OrgasmManager::GetSingleton()->GetHornyStatus(a_actor);
     }
 }

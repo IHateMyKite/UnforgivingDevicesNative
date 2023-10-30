@@ -5,7 +5,7 @@ SINGLETONBODY(UD::KeyEventSink)
 SINGLETONBODY(UD::CameraEventSink)
 SINGLETONBODY(UD::ControlManager)
 
-void UD::ControlManager::Setup(const boost::property_tree::ptree& a_ptree)
+void UD::ControlManager::Setup(CONFIGFILEARG(a_ptree))
 {
     if (!_installed)
     {

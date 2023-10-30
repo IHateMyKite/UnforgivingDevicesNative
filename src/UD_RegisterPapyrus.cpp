@@ -84,6 +84,9 @@ namespace UD
         //events
         REGISTERPAPYRUSFUNC(RegisterForHMTweenMenu,true)
 
+        //object handler
+        REGISTERPAPYRUSFUNC(SendRegisterDeviceScriptEvent,true)
+
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 
         return true;

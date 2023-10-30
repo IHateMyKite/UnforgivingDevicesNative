@@ -45,3 +45,5 @@
 
 
 #define PLAYER RE::PlayerCharacter::GetSingleton()
+
+#define CONFIGFILEARG(arg) const boost::property_tree::ptree& arg

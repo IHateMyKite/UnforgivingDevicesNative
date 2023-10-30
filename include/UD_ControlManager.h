@@ -23,7 +23,7 @@ namespace UD
     {
     SINGLETONHEADER(ControlManager)
     public:
-        void Setup(const boost::property_tree::ptree& a_ptree);
+        void Setup(CONFIGFILEARG(a_ptree));
 
         void UpdateControl();
         void SyncSetting(bool a_hardcoreMode);

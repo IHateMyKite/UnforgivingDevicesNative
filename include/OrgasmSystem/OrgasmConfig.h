@@ -23,7 +23,7 @@ namespace ORS
         float BASEDISTANCE   = 2500.0f;
 
         // duration after orgasm, in which will be orgasm variables on actor not calculated (so orgasm system will be basicaly paused)
-        float ORGASMTIMEOUT     = 5.0f;
+        int   ORGASMTIMEOUT     = 5;
 
         //orgasm duration in seconds. Scales with horny level from min value to max value
         float ORGASMDURATIONMIN = 10.0f;
@@ -31,6 +31,8 @@ namespace ORS
 
         //how much duration is added on additional orgasms, when actor didn't stop orgasming yet
         float ORGASMDURATIONADD = 5.0f;
+
+        bool  HORNYMESSAGES     = true;
     };
 
 

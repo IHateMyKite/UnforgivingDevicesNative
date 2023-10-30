@@ -110,6 +110,17 @@ namespace ORS
         float       Multiplier  = 1.0f;
     };
 
+    struct HornyLevel
+    {
+        float Min;
+        float Max;
+        std::string Msg;
+        std::string Status;
+        bool Printed = false;
+    };
+
+    extern std::vector<HornyLevel> g_HornyLevels;
+
     // === Classes
 
     class OrgasmChangeData
@@ -172,6 +183,7 @@ namespace ORS
         bool    IsOrgasming() {return _RDATA.OrgasmCount > 0;};
         int     GetOrgasmingCount() {return _RDATA.OrgasmCount;};
         void    Orgasm(void);
+        std::string GetHornyStatus();
 
         RE::Actor*  GetActor();
         void        SetActor(RE::Actor* a_actor);
@@ -202,8 +214,9 @@ namespace ORS
         inline void SendOrgasmExpressionEvent(ExpressionUpdateType a_type);
         inline void SendLinkedMeterEvent(LinkedWidgetUpdateType a_type);
 
-
         inline bool IsPlayer();
+
+        inline void CheckHornyLevel();
     private:
         RE::Actor*  _actor;
         std::map<std::string,OrgasmChangeData>  _Sources;
@@ -254,8 +267,6 @@ namespace ORS
 
             float   OrgasmResistence       = 3.5f;
             float   OrgasmResistenceMult   = 1.0;
-
-            float   OrgasmTimeout          = 0.0f;
 
             float   Arousal                = 0.0f;
             float   ArousalRate            = 0.0f;

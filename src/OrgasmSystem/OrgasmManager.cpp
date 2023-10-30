@@ -8,7 +8,7 @@ namespace ORS
     ModifyArousal OSLAModifyArousal;
 }
 
-void ORS::OrgasmManager::Setup(const boost::property_tree::ptree& a_ptree)
+void ORS::OrgasmManager::Setup(CONFIGFILEARG(a_ptree))
 {
     if (!_installed)
     {
@@ -257,6 +257,17 @@ void ORS::OrgasmManager::Orgasm(RE::Actor* a_actor)
     loc_oc.Orgasm();
 }
 
+std::string ORS::OrgasmManager::GetHornyStatus(RE::Actor* a_actor)
+{
+    if (a_actor == nullptr) return "ERROR";
+    //UDSKSELOG("OrgasmManager::GetHornyStatus({})",a_actor->GetName())
+    std::unique_lock lock(_lock);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.GetHornyStatus();
+}
+
 void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm)
 {
     #define REGISTERPAPYRUSFUNC(name,unhook) vm->RegisterFunction(#name, "OrgasmSystem", ORS::name,unhook);
@@ -278,6 +289,7 @@ void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine 
     REGISTERPAPYRUSFUNC(IsOrgasming,true)
     REGISTERPAPYRUSFUNC(GetOrgasmingCount,true)
     REGISTERPAPYRUSFUNC(Orgasm,true)
+    REGISTERPAPYRUSFUNC(GetHornyStatus,true)
     // ----
     #undef REGISTERPAPYRUSFUNC
 
