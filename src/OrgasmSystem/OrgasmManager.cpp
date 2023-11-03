@@ -44,6 +44,14 @@ void ORS::OrgasmManager::Update(float a_delta)
     for (auto&& it :_actors)
     {
         //UDSKSELOG("OrgasmManager::Update({}) - Updating actor {}",a_delta,it.first->GetName())
+        RE::Actor* loc_actor = it.first;
+
+        //check if actor is dead. If yes, unregister it
+        if (loc_actor && loc_actor->IsDead())
+        {
+            _actors.erase(loc_actor);
+            continue;
+        }
 
         OrgasmActorData* loc_actororgasm = &it.second;
         if (loc_actororgasm != nullptr && it.first != nullptr && (std::find(loc_actors.begin(),loc_actors.end(), it.first) != loc_actors.end()))
@@ -172,7 +180,7 @@ float ORS::OrgasmManager::GetAntiOrgasmRate(RE::Actor* a_actor)
 void ORS::OrgasmManager::LinkActorToMeter(RE::Actor* a_actor, std::string a_path, MeterWidgetType a_type, int a_id)
 {
     if (a_actor == nullptr) return;
-    UDSKSELOG("OrgasmManager::LinkActorToMeter({})",a_actor->GetName(),a_path,a_type,a_id)
+    //UDSKSELOG("OrgasmManager::LinkActorToMeter({})",a_actor->GetName(),a_path,a_type,a_id)
     std::unique_lock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
@@ -183,7 +191,7 @@ void ORS::OrgasmManager::LinkActorToMeter(RE::Actor* a_actor, std::string a_path
 void ORS::OrgasmManager::UnlinkActorFromMeter(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return;
-    UDSKSELOG("OrgasmManager::UnlinkActorFromMeter({})",a_actor->GetName())
+    //UDSKSELOG("OrgasmManager::UnlinkActorFromMeter({})",a_actor->GetName())
     std::unique_lock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)

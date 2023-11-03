@@ -34,6 +34,8 @@ namespace UD
         REGISTERPAPYRUSFUNC(IsPlayer,true)
         REGISTERPAPYRUSFUNC(GetActorName,true)
         REGISTERPAPYRUSFUNC(FloatToInt,true)
+        REGISTERPAPYRUSFUNC(RandomFloat,true)
+        REGISTERPAPYRUSFUNC(RandomInt,true)
 
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
@@ -86,7 +88,9 @@ namespace UD
 
         //object handler
         REGISTERPAPYRUSFUNC(SendRegisterDeviceScriptEvent,true)
-
+        REGISTERPAPYRUSFUNC(SendMinigameThreadEvents,true)
+        REGISTERPAPYRUSFUNC(SendRemoveRenderDeviceEvent,true)
+            
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 
         return true;

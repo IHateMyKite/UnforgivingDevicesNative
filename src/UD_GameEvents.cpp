@@ -19,6 +19,7 @@ namespace UD
             loc_iniloaded = false;
         }
 
+        RandomGenerator::GetSingleton()->Setup(loc_pt);
         PlayerStatus::GetSingleton()->Setup();
         MeterManager::RemoveAll();
         KeywordManager::Reload();

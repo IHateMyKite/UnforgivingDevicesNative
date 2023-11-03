@@ -5,25 +5,25 @@ namespace UD
 {
     int GetStringParamInt(PAPYRUSFUNCHANDLE, std::string a_DataStr, int a_Index, int a_DefaultValue)
     {
-        UDSKSELOG("GetStringParamInt({},{},{})",a_DataStr,a_Index,a_DefaultValue)
+        //UDSKSELOG("GetStringParamInt({},{},{})",a_DataStr,a_Index,a_DefaultValue)
         return _GetModifierParam<int>(a_DataStr,a_Index,a_DefaultValue);
     }
 
     float GetStringParamFloat(PAPYRUSFUNCHANDLE, std::string a_DataStr, int a_Index, float a_DefaultValue)
     {
-        UDSKSELOG("GetStringParamFloat({},{},{})",a_DataStr,a_Index,a_DefaultValue)
+        //UDSKSELOG("GetStringParamFloat({},{},{})",a_DataStr,a_Index,a_DefaultValue)
         return _GetModifierParam<float>(a_DataStr,a_Index,a_DefaultValue);
     }
 
     std::string GetStringParamString(PAPYRUSFUNCHANDLE, std::string a_DataStr, int a_Index, std::string a_DefaultValue)
     {
-        UDSKSELOG("GetStringParamString({},{},{})",a_DataStr,a_Index,a_DefaultValue)
+        //UDSKSELOG("GetStringParamString({},{},{})",a_DataStr,a_Index,a_DefaultValue)
         return _GetModifierParam<std::string>(a_DataStr,a_Index,a_DefaultValue);
     }
 
     std::vector<std::string> GetModifierAllParam(PAPYRUSFUNCHANDLE, std::string a_param)
     {
-        UDSKSELOG("GetModifierAllParam({})",a_param)
+        //UDSKSELOG("GetModifierAllParam({})",a_param)
         return _GetModifierAllParam<std::string>(a_param);
     }
 

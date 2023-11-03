@@ -1,7 +1,6 @@
 #include <UD_Utility.h>
 namespace UD 
 {
-    
     int CodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_value,int a_size,int a_index)
     {
         if (a_index + a_size > 32) return UDBITERRORVALUE;
@@ -106,5 +105,30 @@ namespace UD
         }
 
         return loc_res;
+    }
+
+    SINGLETONBODY(RandomGenerator)
+
+    void RandomGenerator::Setup(CONFIGFILEARG(a_ptree))
+    {
+        _seed = time(NULL);
+    }
+    float RandomGenerator::RandomNumber() const
+    {
+        return static_cast<double>(MWC64X())/_UI32_MAX;
+    }
+    float RandomGenerator::RandomFloat(const float& a_min, const float& a_max) const
+    {
+        return a_min + RandomNumber()*(a_max - a_min);
+    }
+    int RandomGenerator::RandomInt(const int& a_min,const int& a_max) const
+    {
+        return a_min + boost::math::lround(RandomNumber()*static_cast<float>(a_max - a_min));
+    }
+    uint32_t RandomGenerator::MWC64X() const
+    {
+	    uint32_t c = (_seed) >> 32, x = (_seed) & 0xFFFFFFFF;
+	    _seed = x * ((uint64_t)4294883355U) + c;
+	    return x ^ c;
     }
 }

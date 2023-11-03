@@ -53,4 +53,30 @@ namespace UD
         //writte data  to vtable
         REL::safe_write(reinterpret_cast<uintptr_t>(&loc_vtable[REL::Module::IsVR() ? a_indxVR : a_indxSEAE]), &a_funptr, sizeof(uintptr_t));
     }
+
+
+    //https://cas.ee.ic.ac.uk/people/dt10/research/rngs-gpu-mwc64x.html
+    class RandomGenerator
+    {
+    SINGLETONHEADER(RandomGenerator)
+    public:
+        void Setup(CONFIGFILEARG(a_ptree));
+        //black magic random generator
+        inline float    RandomNumber() const;
+        float    RandomFloat(const float& a_min,const float& a_max) const;
+        int      RandomInt(const int& a_min,const int& a_max) const;
+
+    private:
+        inline uint32_t MWC64X() const;
+        mutable uint64_t _seed;
+    };
+
+    inline float RandomFloat(PAPYRUSFUNCHANDLE,float a_min,float a_max)
+    {
+        return RandomGenerator::GetSingleton()->RandomFloat(a_min,a_max);
+    }
+    inline int RandomInt(PAPYRUSFUNCHANDLE,int a_min,int a_max)
+    {
+        return RandomGenerator::GetSingleton()->RandomInt(a_min,a_max);
+    }
 }

@@ -8,9 +8,9 @@ std::vector<ORS::HornyLevel> ORS::g_HornyLevels = {
     {0.0f,20.0f,"You are feeling very exhausted!","Very exhausted"},
     {30.0f,75.0f,"You are feeling exhausted","Exhausted"},
     {75.0f,125.0f,"Your libido is under control","Normal"},
-    {125.0f,200.0f,"You are feeling horny","Horny"},
-    {200.0f,300.0f,"You are feeling increadibly horny","Increadibly horny"},
-    {300.0f,400.0f,"You want to cum badly","Wants to cum badly"}
+    {125.0f,250.0f,"You are feeling horny","Horny"},
+    {250.0f,350.0f,"You are feeling increadibly horny","Increadibly horny"},
+    {350.0f,400.0f,"You want to cum badly","Wants to cum badly"}
 };
 
 void ORS::OrgasmActorData::Update(const float& a_delta)
@@ -79,7 +79,7 @@ float ORS::OrgasmActorData::GetOrgasmProgress(int a_mod) const
 
 void ORS::OrgasmActorData::ResetOrgasmProgress()
 {
-    UDSKSELOG("OrgasmManager::ResetOrgasmProgress({})",_actor->GetName())
+    //UDSKSELOG("OrgasmManager::ResetOrgasmProgress({})",_actor->GetName())
     //std::unique_lock lock(_lock);
     _PDATA.OrgasmProgress = 0.0f;
 }
@@ -112,7 +112,7 @@ bool ORS::OrgasmActorData::AddOrgasmChange(std::string a_key,   OrgasmMod a_mod,
         
     }
 
-    UDSKSELOG("OrgasmActorData::AddOrgasmChange({},{},{})",_actor->GetName(),a_key,a_orgasmRate)
+    //UDSKSELOG("OrgasmActorData::AddOrgasmChange({},{},{})",_actor->GetName(),a_key,a_orgasmRate)
 
     a_key.copy(_Sources[a_key].Key,a_key.size() + 1); //+ 1 so it also copy \0 character
     _Sources[a_key].OrgasmRateOriginal      = a_orgasmRate;
@@ -146,7 +146,7 @@ bool ORS::OrgasmActorData::AddOrgasmChange(std::string a_key,   OrgasmMod a_mod,
 bool ORS::OrgasmActorData::RemoveOrgasmChange(std::string a_key)
 {
     //std::unique_lock lock(_lock);
-    UDSKSELOG("OrgasmActorData::RemoveOrgasmChange({},{})",_actor->GetName(),a_key)
+    //UDSKSELOG("OrgasmActorData::RemoveOrgasmChange({},{})",_actor->GetName(),a_key)
     return _Sources.erase(a_key) > 0;
 }
 
@@ -193,17 +193,17 @@ bool ORS::OrgasmActorData::UpdateOrgasmChangeVar(std::string a_key, OrgasmVariab
         case mSet:
             *loc_var = a_value;
             if (a_variable == vOrgasmRate) _Sources[a_key].OrgasmRateOriginal = a_value;
-            UDSKSELOG("OrgasmActorData::UpdateOrgasmChangeVar({},{},{},{}) - Set to {}",a_key,a_variable,a_value,a_mod,*loc_var)
+            //UDSKSELOG("OrgasmActorData::UpdateOrgasmChangeVar({},{},{},{}) - Set to {}",a_key,a_variable,a_value,a_mod,*loc_var)
             return true;
         case mAdd:
             *loc_var += a_value;
             if (a_variable == vOrgasmRate) _Sources[a_key].OrgasmRateOriginal += a_value;
-            UDSKSELOG("OrgasmActorData::UpdateOrgasmChangeVar({},{},{},{}) - Increased to {}",a_key,a_variable,a_value,a_mod,*loc_var)
+            //UDSKSELOG("OrgasmActorData::UpdateOrgasmChangeVar({},{},{},{}) - Increased to {}",a_key,a_variable,a_value,a_mod,*loc_var)
             return true;
         case mMultiply: 
             *loc_var *= a_value;
             if (a_variable == vOrgasmRate) _Sources[a_key].OrgasmRateOriginal *= a_value;
-            UDSKSELOG("OrgasmActorData::UpdateOrgasmChangeVar({},{},{},{}) - Multiplied to {}",a_key,a_variable,a_value,a_mod,*loc_var)
+            //UDSKSELOG("OrgasmActorData::UpdateOrgasmChangeVar({},{},{},{}) - Multiplied to {}",a_key,a_variable,a_value,a_mod,*loc_var)
             return true;
         default:
             return false;
@@ -478,8 +478,8 @@ float ORS::OrgasmActorData::CalculateOrgasmRate(const float& a_delta)
 
         for (auto && it2 : _PDATA.EroZones)
         {
-            //use biggest value
-            if ((it2.EroZoneSlot & loc_erozones) && (it2.Multiplier > loc_mult)) 
+            //use smalles value
+            if ((it2.EroZoneSlot & loc_erozones) && (it2.Multiplier < loc_mult || loc_mult == 0.0f) && (it2.Multiplier > 0.0f)) 
             {
                 loc_mult = it2.Multiplier;
             }
@@ -566,8 +566,8 @@ inline float ORS::OrgasmActorData::CalculateArousalRate(const float& a_delta)
 
         for (auto && it2 : _PDATA.EroZones)
         {
-            //use biggest value
-            if ((it2.EroZoneSlot & loc_erozones) && (it2.Multiplier > loc_mult)) 
+            //use smalles value
+            if ((it2.EroZoneSlot & loc_erozones) && (it2.Multiplier < loc_mult || loc_mult == 0.0f) && (it2.Multiplier > 0.0f)) 
             {
                 loc_mult = it2.Multiplier;
             }
@@ -610,12 +610,19 @@ inline float ORS::OrgasmActorData::CalculateHornyLevel(const float& a_delta)
 
     if (_RDATA.OrgasmCount > 0)
     {
-        loc_res -= 3.0f*(100.0f/clamp(_RDATA.Arousal,25.0f,100.0f))*_RDATA.OrgasmCount*a_delta;
+        if (loc_res > 85.0)
+        {
+            loc_res -= 3.0f*(100.0f/clamp(_RDATA.Arousal,50.0f,100.0f))*_RDATA.OrgasmCount*a_delta;
+        }
+        else
+        {
+            loc_res -= 1.0f*(clamp(_RDATA.Arousal,25.0f,100.0f))*_RDATA.OrgasmCount*a_delta;
+        }
     }
     else
     {
         //base increase based on orgasm progress
-        const float loc_rate = 5.0f*loc_orgprogp;
+        const float loc_rate = 4.0f*loc_orgprogp;
         if (loc_orgprogp > 0.05f) loc_res += loc_rate*a_delta;
 
         //aprox value to 100
@@ -635,7 +642,7 @@ inline float ORS::OrgasmActorData::CalculateHornyLevel(const float& a_delta)
     }
     
     //validate horny level
-    loc_res = clamp(loc_res,1.0,400.0);
+    loc_res = clamp(loc_res,1.0,g_HornyLevels.back().Max);
 
     return loc_res;
 }
@@ -761,7 +768,7 @@ inline void ORS::OrgasmActorData::SendOrgasmEvent()
     SKSE::GetTaskInterface()->AddTask([loc_handle,loc_rdata,loc_pdata]
         {
             //UDSKSELOG("Sending orgasm event for {}",loc_handle.get()->GetName())
-            OrgasmEvents::GetSingleton()->OrgasmEvent.QueueEvent(loc_handle.get().get(),loc_rdata.OrgasmRate,loc_rdata.Arousal,loc_pdata.HornyLevel);
+            OrgasmEvents::GetSingleton()->OrgasmEvent.QueueEvent(loc_handle.get().get(),loc_rdata.OrgasmRate,loc_rdata.Arousal,loc_pdata.HornyLevel,loc_rdata.OrgasmCount);
         }
     );
 }
