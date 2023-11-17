@@ -44,19 +44,19 @@ void ORS::OrgasmManager::Update(float a_delta)
     for (auto&& it :_actors)
     {
         //UDSKSELOG("OrgasmManager::Update({}) - Updating actor {}",a_delta,it.first->GetName())
-        RE::Actor* loc_actor = it.first;
+        RE::Actor* loc_actor = RE::Actor::LookupByHandle(it.first).get();
 
         //check if actor is dead. If yes, unregister it
         if (loc_actor && loc_actor->IsDead())
         {
-            _actors.erase(loc_actor);
+            _actors.erase(it.first);
             continue;
         }
 
         OrgasmActorData* loc_actororgasm = &it.second;
-        if (loc_actororgasm != nullptr && it.first != nullptr && (std::find(loc_actors.begin(),loc_actors.end(), it.first) != loc_actors.end()))
+        if (loc_actororgasm != nullptr && loc_actor != nullptr && (std::find(loc_actors.begin(),loc_actors.end(), loc_actor) != loc_actors.end()))
         {
-            loc_actororgasm->SetActor(it.first);
+            loc_actororgasm->SetActor(loc_actor);
             //create thread for every actor
             loc_threads.push_back(std::thread(&OrgasmActorData::Update,loc_actororgasm,a_delta));
         }
@@ -76,7 +76,10 @@ bool ORS::OrgasmManager::AddOrgasmChange(RE::Actor* a_actor, std::string a_key, 
     if (a_actor == nullptr) return false;
     //UDSKSELOG("OrgasmManager::AddOrgasmChange({},{},{},{},{})",a_actor->GetName(),a_key,a_mod,a_erozones,a_orgasmRate)
     std::unique_lock lock(_lock);
-    return _actors[a_actor].AddOrgasmChange(a_key,a_mod,a_erozones,a_orgasmRate,a_orgasmRateMult,a_orgasmForcing,a_orgasmCapacity,a_orgasmResisten,a_orgasmResistenceMult);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+
+    return loc_oc.AddOrgasmChange(a_key,a_mod,a_erozones,a_orgasmRate,a_orgasmRateMult,a_orgasmForcing,a_orgasmCapacity,a_orgasmResisten,a_orgasmResistenceMult);
 }
 
 bool ORS::OrgasmManager::AddOrgasmChange(RE::Actor* a_actor, std::string a_key, OrgasmMod a_mod, uint32_t a_erozones, float a_orgasmRate, float a_orgasmRateMult, float a_orgasmForcing, float a_orgasmCapacity, float a_orgasmResisten, float a_orgasmResistenceMult)
@@ -344,10 +347,11 @@ void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde)
                 }
 
                 UDSKSELOG("Loaded actor {} from save",loc_actor->GetName())
-                _actors[loc_actor] = OrgasmActorData();
-                _actors[loc_actor].SetActor(loc_actor);
-                _actors[loc_actor].UpdatePosition();
-                _actors[loc_actor].OnGameLoaded(serde);
+                auto loc_handle = loc_actor->GetHandle().native_handle();
+                _actors[loc_handle] = OrgasmActorData();
+                _actors[loc_handle].SetActor(loc_actor);
+                _actors[loc_handle].UpdatePosition();
+                _actors[loc_handle].OnGameLoaded(serde);
             }
         }
     }
@@ -368,10 +372,11 @@ void ORS::OrgasmManager::OnGameSaved(SKSE::SerializationInterface* serde)
     //now iterate thru all actors
     for (auto&& it : _actors)
     {
+        RE::Actor* loc_actor = RE::Actor::LookupByHandle(it.first).get();
         OrgasmActorData loc_od = it.second;
-        RE::FormID loc_formid = it.first->GetFormID();
+        RE::FormID loc_formid = loc_actor->GetFormID();
         serde->WriteRecordData(&loc_formid,sizeof(RE::FormID));
-        UDSKSELOG("Saving actor {}",it.first->GetName())
+        UDSKSELOG("Saving actor {}",loc_actor->GetName())
         loc_od.OnGameSaved(serde);
     }
 

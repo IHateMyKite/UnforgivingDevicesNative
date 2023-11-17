@@ -10,7 +10,7 @@ namespace UD
 
     inline int GetActorConstrains(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
     {
-        const auto loc_storage = ActorSlotManager::GetSingleton()->GetActorStorage(a_actor);
-        return loc_storage ? loc_storage->Constrains : GetActorConstrainsInter(a_actor); //GetActorConstrainsInter(a_actor);
+        //const auto loc_storage = ActorSlotManager::GetSingleton()->GetActorStorage(a_actor);
+        return /*loc_storage ? loc_storage->Constrains : */ GetActorConstrainsInter(a_actor); //GetActorConstrainsInter(a_actor);
     }
 }

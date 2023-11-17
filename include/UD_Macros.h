@@ -9,7 +9,7 @@
 #define UDSKYUIFORCE 1.0f
 
 //handle of papyrus functions
-#define PAPYRUSFUNCHANDLE RE::StaticFunctionTag*
+#define PAPYRUSFUNCHANDLE RE::StaticFunctionTag* a_psft
 
 #define UDTRUNCVALUE(val,min,max)       \
 {                                       \

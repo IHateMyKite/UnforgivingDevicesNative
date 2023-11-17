@@ -79,4 +79,6 @@ namespace UD
     {
         return RandomGenerator::GetSingleton()->RandomInt(a_min,a_max);
     }
+
+    std::vector<int> DivadeToParts(int a_number, int a_parts);
 }

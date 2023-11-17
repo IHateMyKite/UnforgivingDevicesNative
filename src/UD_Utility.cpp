@@ -107,6 +107,17 @@ namespace UD
         return loc_res;
     }
 
+    std::vector<int> DivadeToParts(int a_number, int a_parts)
+    {
+        const int loc_wholeparts = a_number / a_parts;
+
+        std::vector<int> loc_res(a_parts,loc_wholeparts);
+
+        loc_res.front() += (a_number - loc_wholeparts*a_parts);
+
+        return loc_res;
+    }
+
     SINGLETONBODY(RandomGenerator)
 
     void RandomGenerator::Setup(CONFIGFILEARG(a_ptree))
@@ -127,8 +138,8 @@ namespace UD
     }
     uint32_t RandomGenerator::MWC64X() const
     {
-	    uint32_t c = (_seed) >> 32, x = (_seed) & 0xFFFFFFFF;
-	    _seed = x * ((uint64_t)4294883355U) + c;
-	    return x ^ c;
+        uint32_t c = (_seed) >> 32, x = (_seed) & 0xFFFFFFFF;
+        _seed = x * ((uint64_t)4294883355U) + c;
+        return x ^ c;
     }
 }

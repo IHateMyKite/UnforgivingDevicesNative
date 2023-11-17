@@ -11,8 +11,8 @@ namespace UD
         void UpdateThread1(const float& a_delta);   //used for slow update
         void UpdateThread2(const float& a_delta);   //used for fps tied updated (is called on every frame). Should be fast
 
-		void Hook();
-		
+        void Hook();
+        
         static void ActorUpdatePatched(RE::Actor* a_this, float a_delta);
         REL::Relocation<decltype(ActorUpdatePatched)> ActorUpdate;
 

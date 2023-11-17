@@ -28,7 +28,7 @@ namespace UD
         ActorSlotManager::GetSingleton()->Setup();
         ControlManager::GetSingleton()->Setup(loc_pt);
         PapyrusDelegate::GetSingleton()->Setup(loc_pt);
-
+        MaterialManager::GetSingleton()->Setup(loc_pt);
         //remove effect in case that user reloaded the game without exit
         if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
 

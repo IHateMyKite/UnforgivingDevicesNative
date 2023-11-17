@@ -21,11 +21,11 @@ void UD::ActorSlotManager::Update()
 
     if (_slots == nullptr) return;
 
-    for (auto&& it : *_slots)
-    {
-        //UDSKSELOG("Updating {}",it.first->GetName())
-        it.second.Constrains = GetActorConstrainsInter(it.first);
-    }
+    //for (auto&& it : *_slots)
+    //{
+    //    //UDSKSELOG("Updating {}",it.first->GetName())
+    //    it.second.Constrains = GetActorConstrainsInter(it.first);
+    //}
 }
 
 std::vector<RE::Actor*> UD::ActorSlotManager::GetRegisteredActors()

@@ -11,7 +11,7 @@ namespace ORS
 
 
     #define GETORGCHANGEANDVALIDATE(var,arg)        \
-    OrgasmActorData& var = _actors[arg];            \
+    OrgasmActorData& var = _actors[arg->GetHandle().native_handle()];            \
     var.SetActor(arg);
 
     class OrgasmManager
@@ -69,7 +69,7 @@ namespace ORS
     private:
         bool                _installed = false;
         mutable std::mutex  _lock;
-        std::unordered_map<RE::Actor*,OrgasmActorData> _actors;
+        std::unordered_map<uint32_t,OrgasmActorData> _actors;
     };
 
     inline bool    AddOrgasmChange(PAPYRUSFUNCHANDLE,

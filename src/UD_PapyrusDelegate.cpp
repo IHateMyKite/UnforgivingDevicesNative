@@ -1,8 +1,14 @@
 #include <UD_PapyrusDelegate.h>
 
+#undef GetObject
+
 SINGLETONBODY(UD::PapyrusDelegate)
 
-void UD::PapyrusDelegate::Setup(CONFIGFILEARG(a_ptree))
+using UD::PapyrusDelegate;
+typedef PapyrusDelegate::Result Result;
+typedef PapyrusDelegate::FilterDeviceResult FilterDeviceResult;
+
+void PapyrusDelegate::Setup(CONFIGFILEARG(a_ptree))
 {
     if (!_installed)
     {
@@ -12,7 +18,7 @@ void UD::PapyrusDelegate::Setup(CONFIGFILEARG(a_ptree))
     }
 }
 
-int UD::PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices)
+int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices)
 {
     UDSKSELOG("SendRegisterDeviceScriptEvent called")
 
@@ -48,23 +54,23 @@ int UD::PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::
     return  static_cast<int>(a_devices.size() - loc_tofound);
 }
 
-void UD::PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObjectARMO* a_device,MinigameThreads a_threads)
+Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObjectARMO* a_device, int a_handle1, int a_handle2,MinigameThreads a_threads)
 {
     UDSKSELOG("SendMinigameThreadEvents called")
-    if (a_actor == nullptr || a_device == nullptr || a_threads == 0) return;
-    if (!a_device->HasKeyword(_udrdkw)) return;
+    if (a_actor == nullptr || a_device == nullptr || a_threads == 0) return Result::rArgError;
+    if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
     std::vector<RE::TESObjectARMO*> loc_device = {a_device};
+    RE::VMHandle loc_vmhandle = (int64_t)a_handle1 | ((int64_t)a_handle2 << 32);
 
     const auto loc_vm = InternalVM::GetSingleton();
-
 
     for (auto&& it : loc_vm->attachedScripts)
     {
         auto loc_type = IsUnforgivingDevice(it.second);
         if (loc_type != nullptr)
         {
-            FilterDeviceResult loc_filterres = ProcessDevice(it.first,loc_type,a_actor,loc_device,[&](RE::BSTSmartPointer<RE::BSScript::Object> a_object,RE::TESObjectARMO* a_id,RE::TESObjectARMO* a_rd)
+            FilterDeviceResult loc_filterres = ProcessDevice(it.first,loc_vmhandle,loc_type,a_actor,loc_device,[&](RE::BSTSmartPointer<RE::BSScript::Object> a_object,RE::TESObjectARMO* a_id,RE::TESObjectARMO* a_rd)
             {
                 //init unused callback
                 RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback1;
@@ -78,28 +84,28 @@ void UD::PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESOb
                 if (a_threads & tAV)        loc_vm->DispatchMethodCall(a_object,"_MinigameAVCheckLoopThread",RE::MakeFunctionArguments(),loc_callback4);
                 UDSKSELOG("PapyrusDelegate::SendMinigameThreadEvents - events sent")
             });
-            if (loc_filterres.Result) return;
+            if (loc_filterres.Result) return Result::rSuccess;
         }
     }
+    return Result::rNotFound;
 }
 
-void UD::PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
+Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
 {
     UDSKSELOG("SendRemoveRenderDeviceEvent called")
-    if (a_actor == nullptr || a_device == nullptr) return;
-    if (!a_device->HasKeyword(_udrdkw)) return;
+    if (a_actor == nullptr || a_device == nullptr) return Result::rArgError;
+    if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
     std::vector<RE::TESObjectARMO*> loc_device = {a_device};
 
     const auto loc_vm = InternalVM::GetSingleton();
-
 
     for (auto&& it : loc_vm->attachedScripts)
     {
         auto loc_type = IsUnforgivingDevice(it.second);
         if (loc_type != nullptr)
         {
-            FilterDeviceResult loc_filterres = ProcessDevice(it.first,loc_type,a_actor,loc_device,[&](RE::BSTSmartPointer<RE::BSScript::Object> a_object,RE::TESObjectARMO* a_id,RE::TESObjectARMO* a_rd)
+            FilterDeviceResult loc_filterres = ProcessDevice(it.first,0,loc_type,a_actor,loc_device,[&](RE::BSTSmartPointer<RE::BSScript::Object> a_object,RE::TESObjectARMO* a_id,RE::TESObjectARMO* a_rd)
             {
                 //init unused callback
                 RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback;
@@ -108,13 +114,53 @@ void UD::PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TE
                 loc_vm->DispatchMethodCall(a_object,"removeDevice",loc_args,loc_callback);
                 UDSKSELOG("PapyrusDelegate::SendRemoveRenderDeviceEvent - event sent")
             });
-            if (loc_filterres.Result) return;
+            if (loc_filterres.Result) return Result::rSuccess;
         }
     }
+    return Result::rNotFound;
 }
 
-RE::BSScript::ObjectTypeInfo* UD::PapyrusDelegate::IsUnforgivingDevice(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts)
-{          
+Result UD::PapyrusDelegate::SetVMHandle(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
+{
+    UDSKSELOG("SetVMHandle called")
+    if (a_actor == nullptr || a_device == nullptr) return Result::rArgError;
+    if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
+
+    std::vector<RE::TESObjectARMO*> loc_device = {a_device};
+
+    const auto loc_vm = InternalVM::GetSingleton();
+
+    for (auto&& it : loc_vm->attachedScripts)
+    {
+        auto loc_type = IsUnforgivingDevice(it.second);
+        if (loc_type != nullptr)
+        {
+            bool loc_set = false;
+            FilterDeviceResult loc_filterres = ProcessDevice(it.first,0,loc_type,a_actor,loc_device,[&](RE::BSTSmartPointer<RE::BSScript::Object> a_object,RE::TESObjectARMO* a_id,RE::TESObjectARMO* a_rd)
+            {
+                if (a_object == nullptr) return;
+
+                const auto loc_var1 = a_object->GetVariable("_VMHandle1");
+                const auto loc_var2 = a_object->GetVariable("_VMHandle2");
+
+                if (loc_var1 == nullptr || loc_var2 == nullptr) return;
+
+                if (loc_var1->GetSInt() == 0 && loc_var2->GetSInt() == 0) 
+                {
+                    loc_var1->SetSInt(it.first & 0xFFFFFFFF);
+                    loc_var2->SetSInt((it.first >> 32) & 0xFFFFFFFF);
+                    UDSKSELOG("Handle set to {} = {} | {}",it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
+                    loc_set = true;
+                }
+            });
+            if (loc_set) return Result::rSuccess;
+        }
+    }
+    return Result::rNotFound;
+}
+
+RE::BSScript::ObjectTypeInfo* PapyrusDelegate::IsUnforgivingDevice(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts)
+{
     for (auto&& it : a_scripts)
     {
         auto loc_info = it->GetTypeInfo();
@@ -138,7 +184,7 @@ RE::BSScript::ObjectTypeInfo* UD::PapyrusDelegate::IsUnforgivingDevice(RE::BSTSm
     return nullptr;
 }
 
-UD::FilterDeviceResult UD::PapyrusDelegate::CheckRegisterDevice(RE::VMHandle a_handle,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices)
+FilterDeviceResult PapyrusDelegate::CheckRegisterDevice(RE::VMHandle a_handle,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices)
 {
     static const auto loc_vm = InternalVM::GetSingleton();
 
@@ -152,25 +198,25 @@ UD::FilterDeviceResult UD::PapyrusDelegate::CheckRegisterDevice(RE::VMHandle a_h
         #undef GetObject
 
         //get wearer from script
-        const auto loc_wearer = loc_object->GetVariable("Wearer")->GetObject()->Resolve((RE::VMTypeID)RE::FormType::ActorCharacter);
-    
+        const RE::Actor* loc_wearer = GetScriptVariable<RE::Actor>(loc_object,"Wearer",RE::FormType::ActorCharacter);
+
         //check if device wearer is the same one as passed actor
         if (loc_wearer == a_actor)
         {
             //get render device from script
-            auto loc_rd = (RE::TESObjectARMO*)loc_object->GetProperty("DeviceRendered")->GetObject()->Resolve((RE::VMTypeID)RE::FormType::Armor);
+            RE::TESObjectARMO* loc_rd = GetScriptProperty<RE::TESObjectARMO>(loc_object,"DeviceRendered",RE::FormType::Armor);
             if (loc_rd != nullptr)
             {
                 //check if current device is one in passed array
                 if (std::find(a_devices.begin(),a_devices.end(),loc_rd) != a_devices.end())
                 {
                     //get inventory device from papyrus script
-                    auto loc_id = (RE::TESObjectARMO*)loc_object->GetProperty("DeviceInventory")->GetObject()->Resolve((RE::VMTypeID)RE::FormType::Armor);
+                    RE::TESObjectARMO* loc_id = GetScriptProperty<RE::TESObjectARMO>(loc_object,"DeviceInventory",RE::FormType::Armor);
                     
                     UDSKSELOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
                     
                     //ready function args
-                    auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, RE::TESObjectARMO*, RE::TESObjectARMO*>(std::forward<RE::Actor*>(a_actor),std::forward<RE::TESObjectARMO*>(loc_id),std::forward<RE::TESObjectARMO*>(loc_rd));//RE::MakeFunctionArguments<RE::Actor*,RE::TESObjectARMO*>(a_actor,a_device);
+                    auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, RE::TESObjectARMO*, RE::TESObjectARMO*>(std::forward<RE::Actor*>(a_actor),std::forward<RE::TESObjectARMO*>(loc_id),std::forward<RE::TESObjectARMO*>(loc_rd));
                     
                     //init unused callback
                     RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback;
@@ -186,7 +232,7 @@ UD::FilterDeviceResult UD::PapyrusDelegate::CheckRegisterDevice(RE::VMHandle a_h
     return {false,nullptr,nullptr};
 }
 
-UD::FilterDeviceResult UD::PapyrusDelegate::ProcessDevice(RE::VMHandle a_handle, RE::BSScript::ObjectTypeInfo* a_type, RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices, std::function<void(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun)
+FilterDeviceResult PapyrusDelegate::ProcessDevice(RE::VMHandle a_handle,RE::VMHandle a_handle2, RE::BSScript::ObjectTypeInfo* a_type, RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices, std::function<void(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun)
 {
     static const auto loc_vm = InternalVM::GetSingleton();
 
@@ -194,37 +240,72 @@ UD::FilterDeviceResult UD::PapyrusDelegate::ProcessDevice(RE::VMHandle a_handle,
     RE::BSTSmartPointer<RE::BSScript::Object> loc_object = nullptr;
     loc_vm->FindBoundObject(a_handle,a_type->GetName(),loc_object);
 
-    if (loc_object != nullptr)
+    if (loc_object != nullptr && (a_handle2 == 0 || a_handle == a_handle2))
     {
         //undef this stupidass macro so we can use the GetObject method
         #undef GetObject
 
         //get wearer from script
-        const auto loc_wearer = loc_object->GetVariable("Wearer")->GetObject()->Resolve((RE::VMTypeID)RE::FormType::ActorCharacter);
+        const RE::Actor* loc_wearer = GetScriptVariable<RE::Actor>(loc_object,"Wearer",RE::FormType::ActorCharacter);//loc_object->GetVariable("Wearer")->GetObject()->Resolve((RE::VMTypeID)RE::FormType::ActorCharacter);
     
         //check if device wearer is the same one as passed actor
         if (loc_wearer == a_actor)
         {
             //get render device from script
-            auto loc_rd = (RE::TESObjectARMO*)loc_object->GetProperty("DeviceRendered")->GetObject()->Resolve((RE::VMTypeID)RE::FormType::Armor);
+            RE::TESObjectARMO* loc_rd = GetScriptProperty<RE::TESObjectARMO>(loc_object,"DeviceRendered",RE::FormType::Armor);//(RE::TESObjectARMO*)loc_object->GetProperty("DeviceRendered")->GetObject()->Resolve((RE::VMTypeID)RE::FormType::Armor);
             if (loc_rd != nullptr)
             {
                 //check if current device is one in passed array
                 if (std::find(a_devices.begin(),a_devices.end(),loc_rd) != a_devices.end())
                 {
                     //get inventory device from papyrus script
-                    auto loc_id = (RE::TESObjectARMO*)loc_object->GetProperty("DeviceInventory")->GetObject()->Resolve((RE::VMTypeID)RE::FormType::Armor);
+                    auto loc_id = GetScriptProperty<RE::TESObjectARMO>(loc_object,"DeviceInventory",RE::FormType::Armor);//(RE::TESObjectARMO*)loc_object->GetProperty("DeviceInventory")->GetObject()->Resolve((RE::VMTypeID)RE::FormType::Armor);
                     
-                    UDSKSELOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
+                    if (loc_id != nullptr)
+                    {
+                        UDSKSELOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
                     
-                    //call function
-                    a_fun(loc_object,loc_id,loc_rd);
+                        //call function
+                        a_fun(loc_object,loc_id,loc_rd);
 
-                    return {true,loc_id,loc_rd};
+                        return {true,loc_id,loc_rd};
+                    }
                 }
             }
         }
     }
     //not found, return default struct
     return {false,nullptr,nullptr};
+}
+
+template<class T>
+T* PapyrusDelegate::GetScriptVariable(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_variable, RE::FormType a_type)
+{
+    if (a_scriptobject == nullptr) return nullptr;
+
+    const auto loc_var = a_scriptobject->GetVariable(a_variable);
+
+    if (loc_var == nullptr) return nullptr;
+
+    const auto loc_varobj = loc_var->GetObject();
+
+    if (loc_varobj == nullptr) return nullptr;
+
+    return static_cast<T*>(loc_varobj->Resolve((RE::VMTypeID)a_type));
+}
+
+template<class T>
+T* PapyrusDelegate::GetScriptProperty(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_property, RE::FormType a_type)
+{
+    if (a_scriptobject == nullptr) return nullptr;
+
+    const auto loc_var = a_scriptobject->GetProperty(a_property);
+
+    if (loc_var == nullptr) return nullptr;
+
+    const auto loc_varobj = loc_var->GetObject();
+
+    if (loc_varobj == nullptr) return nullptr;
+
+    return static_cast<T*>(loc_varobj->Resolve((RE::VMTypeID)a_type));
 }

@@ -34,7 +34,7 @@ namespace UD
     {
         if (update)
         {
-            if (extcalc == nullptr)
+            if (extcalc == nullptr || extclass == nullptr)
             {
                 value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
                 if      (value > 100.0f)    value = 100.0f;
@@ -44,28 +44,35 @@ namespace UD
             {
                 value = extcalc(*extclass);
             }
-            static RE::UI* loc_ui = RE::UI::GetSingleton();
 
+            RE::UI* loc_ui = nullptr;
+            if (loc_ui == nullptr) loc_ui = RE::UI::GetSingleton();
+            if (loc_ui == nullptr) return;
             //get hud view
-            static auto loc_hudmenu = loc_ui->menuMap.find("HUD Menu")->second.menu;
-            if (loc_hudmenu == nullptr) return;
-
+            RE::GPtr<RE::IMenu> loc_hudmenu = nullptr;
+            if (loc_hudmenu.get() == nullptr) loc_hudmenu = loc_ui->menuMap.find("HUD Menu")->second.menu;
+            if (loc_hudmenu.get() == nullptr) return;
             //get hud movie
-            static auto loc_uimovie = loc_hudmenu->uiMovie;
-            if (loc_uimovie == nullptr) return;
+            RE::GPtr<RE::GFxMovieView> loc_uimovie = nullptr;
+            if (loc_uimovie.get() == nullptr) loc_uimovie = loc_hudmenu->uiMovie;
+            if (loc_uimovie.get() == nullptr) return;
 
             //set path
             std::string loc_path =  path + ".setMeterPercent";
 
             //set argument
             std::string loc_argstr = std::string(std::to_string(id) + "|" + std::to_string(value));
-            static RE::GFxValue loc_arg;
+            RE::GFxValue loc_arg;
             loc_arg.SetString(loc_argstr);
+
+            loc_ui->processMessagesLock.Lock();
 
             //invoke action script function
             loc_uimovie->Invoke(loc_path.c_str(),NULL,&loc_arg,1);
 
             loc_uimovie->Advance(0.0f);
+
+            loc_ui->processMessagesLock.Unlock();
         }
     }
 
@@ -73,7 +80,7 @@ namespace UD
     {
         if (update)
         {
-            if (extcalc == nullptr)
+            if (extcalc == nullptr || extclass == nullptr)
             {
                 value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
                 if      (value > 100.0f)    value = 100.0f;
@@ -85,28 +92,34 @@ namespace UD
             }
 
 
-            static RE::UI* loc_ui = RE::UI::GetSingleton();
-
+            RE::UI* loc_ui = nullptr;
+            if (loc_ui == nullptr) loc_ui = RE::UI::GetSingleton();
+            if (loc_ui == nullptr) return;
             //get hud view
-            static auto loc_hudmenu = loc_ui->menuMap.find("HUD Menu")->second.menu;
-            if (loc_hudmenu == nullptr) return;
-        
+            RE::GPtr<RE::IMenu> loc_hudmenu = nullptr;
+            if (loc_hudmenu.get() == nullptr) loc_hudmenu = loc_ui->menuMap.find("HUD Menu")->second.menu;
+            if (loc_hudmenu.get() == nullptr) return;
             //get hud movie
-            static auto loc_uimovie = loc_hudmenu->uiMovie;
-            if (loc_uimovie == nullptr) return;
+            RE::GPtr<RE::GFxMovieView> loc_uimovie = nullptr;
+            if (loc_uimovie.get() == nullptr) loc_uimovie = loc_hudmenu->uiMovie;
+            if (loc_uimovie.get() == nullptr) return;
 
             //set path
             std::string loc_path =  path + ".setPercent";
 
             //set argument
-            static RE::GFxValue loc_arg[2];
+            RE::GFxValue loc_arg[2];
             loc_arg[0].SetNumber(value/100.0f);
             loc_arg[1].SetNumber(UDSKYUIFORCE);
+
+            loc_ui->processMessagesLock.Lock();
 
             //invoke action script function
             loc_uimovie->Invoke(loc_path.c_str(),NULL,loc_arg,2);
 
             loc_uimovie->Advance(0.0f);
+
+            loc_ui->processMessagesLock.Unlock();
         }
     }
 

@@ -28,6 +28,7 @@
 #include <UD_ModEvents.h>
 #include <UD_PlayerStatus.h>
 #include <UD_PapyrusDelegate.h>
+#include <UD_Materials.h>
 #include <OrgasmSystem/OrgasmEvents.h>
 #include <OrgasmSystem/OrgasmData.h>
 #include <OrgasmSystem/OrgasmManager.h>

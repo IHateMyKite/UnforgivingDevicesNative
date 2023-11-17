@@ -157,7 +157,7 @@ namespace UD
 
         inline static void  SetExtCalcIWW(int i_id,ORS::OrgasmActorData* a_class,std::function<float(const ORS::OrgasmActorData&)> a_fun)
         {
-            PROCESSMETER(_metersIWW, _metersIWW[i]->extcalc = a_fun;_metersIWW[i]->extclass = a_class;,id == i_id)
+            PROCESSMETER(_metersIWW, _metersIWW[i]->extclass = a_class;_metersIWW[i]->extcalc = a_fun;,id == i_id)
         }
         inline static void  UnsetExtCalcIWW(int i_id)
         {
@@ -240,7 +240,7 @@ namespace UD
     
         inline static void  SetExtCalcSkyUi(const std::string& s_path,ORS::OrgasmActorData* a_class,std::function<float(const ORS::OrgasmActorData&)> a_fun)
         {
-            PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->extcalc = a_fun;_metersSkyUi[i]->extclass = a_class;,path == s_path)
+            PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->extclass = a_class;_metersSkyUi[i]->extcalc = a_fun;,path == s_path)
         }
         inline static void  UnsetExtCalcSkyUi(const std::string& s_path)
         {

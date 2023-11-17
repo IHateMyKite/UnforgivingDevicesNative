@@ -90,7 +90,14 @@ namespace UD
         REGISTERPAPYRUSFUNC(SendRegisterDeviceScriptEvent,true)
         REGISTERPAPYRUSFUNC(SendMinigameThreadEvents,true)
         REGISTERPAPYRUSFUNC(SendRemoveRenderDeviceEvent,true)
-            
+        REGISTERPAPYRUSFUNC(SetVMHandle,true)
+
+        //materials
+        REGISTERPAPYRUSFUNC(IsSteel,true)
+        REGISTERPAPYRUSFUNC(IsEbonite,true)
+        REGISTERPAPYRUSFUNC(IsRope,true)
+        REGISTERPAPYRUSFUNC(IsSecure,true)
+
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 
         return true;
