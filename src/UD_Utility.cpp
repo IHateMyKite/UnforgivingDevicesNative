@@ -1,17 +1,6 @@
 #include <UD_Utility.h>
 namespace UD 
 {
-    int CodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_value,int a_size,int a_index)
-    {
-        if (a_index + a_size > 32) return UDBITERRORVALUE;
-        int loc_clearmap = (((0x1 << a_size) - 1) << a_index);
-        int loc_result = a_codedmap;
-        a_value     =  (a_value << a_index) & loc_clearmap;
-        loc_result  &= (~loc_clearmap);
-        loc_result  |= a_value;
-        return loc_result;
-    }
-
     int DecodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_size,int a_index)
     {
         a_codedmap >>= a_index;
@@ -118,6 +107,20 @@ namespace UD
         return loc_res;
     }
 
+    bool PluginInstalled(PAPYRUSFUNCHANDLE,std::string a_dll)
+    {
+        HINSTANCE dllHandle = LoadLibraryA(a_dll.c_str());
+        if (dllHandle != NULL)
+        {
+            return true;
+            //FreeLibrary(dllHandle);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     SINGLETONBODY(RandomGenerator)
 
     void RandomGenerator::Setup(CONFIGFILEARG(a_ptree))
@@ -141,5 +144,18 @@ namespace UD
         uint32_t c = (_seed) >> 32, x = (_seed) & 0xFFFFFFFF;
         _seed = x * ((uint64_t)4294883355U) + c;
         return x ^ c;
+    }
+
+    SINGLETONBODY(Utility)
+
+    int Utility::CodeBit(int a_codedmap, int a_value, int a_size, int a_index) const
+    {
+        if (a_index + a_size > 32) return UDBITERRORVALUE;
+        int loc_clearmap = (((0x1 << a_size) - 1) << a_index);
+        int loc_result = a_codedmap;
+        a_value     =  (a_value << a_index) & loc_clearmap;
+        loc_result  &= (~loc_clearmap);
+        loc_result  |= a_value;
+        return loc_result;
     }
 }

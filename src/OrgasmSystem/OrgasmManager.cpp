@@ -26,6 +26,7 @@ void ORS::OrgasmManager::Setup(CONFIGFILEARG(a_ptree))
             UDSKSELOG("OrgasmManager::Setup() - ERROR: Cant find OSLAroused.dll!!")
         }
         _installed = true;
+        UDSKSELOG("OrgasmConfig::Setup - installed")
     }
     OrgasmConfig::GetSingleton()->LoadConfig(a_ptree);
     if(_installed) Update(0.0f);

@@ -2,6 +2,8 @@
 
 namespace UD
 {
+    #define CONTROLSDISABLE RE::INPUT_DEVICES::kGamepad
+
     class KeyEventSink : public RE::BSTEventSink<RE::InputEvent*>
     {
     SINGLETONHEADER(KeyEventSink)

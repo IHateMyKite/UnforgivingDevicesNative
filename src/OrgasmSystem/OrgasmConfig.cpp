@@ -7,6 +7,7 @@ using boost::algorithm::clamp;
 
 void ORS::OrgasmConfig::LoadConfig(const boost::property_tree::ptree& a_ptree)
 {
+    UDSKSELOG("OrgasmConfig::LoadConfig - Updating config")
     EXPRUPDATETIME = a_ptree.get<float>("Orgasm.fExpressionUpdateTime");
     EXPUPDATEMINTH = a_ptree.get<float>("Orgasm.fExpressionThresholdMin");
     EXPUPDATEMAXTH = a_ptree.get<float>("Orgasm.fExpressionThresholdMax");
@@ -17,4 +18,8 @@ void ORS::OrgasmConfig::LoadConfig(const boost::property_tree::ptree& a_ptree)
     ORGASMTIMEOUT  = clamp(a_ptree.get<int>("Orgasm.iOrgasmTimeout"),1,std::lround(ORGASMDURATIONMIN));
     ORGASMDURATIONADD = a_ptree.get<float>("Orgasm.fOrgasmDurationAdd");
     HORNYMESSAGES = a_ptree.get<bool>("Orgasm.bHornyMessages");
+    AROUSALEVENTTIMENPC     = a_ptree.get<float>("Orgasm.fArousalEventTimeNPC");
+    AROUSALEVENTTIMEPLAYER  = a_ptree.get<float>("Orgasm.fArousalEventTimePlayer");
+
+    UDSKSELOG("OrgasmConfig::LoadConfig - Config updated")
 }

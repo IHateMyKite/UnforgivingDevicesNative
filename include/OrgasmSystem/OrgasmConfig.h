@@ -33,6 +33,9 @@ namespace ORS
         float ORGASMDURATIONADD = 5.0f;
 
         bool  HORNYMESSAGES     = true;
+
+        float AROUSALEVENTTIMENPC       = 5.0f;
+        float AROUSALEVENTTIMEPLAYER    = 1.0f;
     };
 
 

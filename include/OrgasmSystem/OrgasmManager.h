@@ -5,7 +5,7 @@ namespace ORS
 {
     class OrgasmActorData;
 
-    typedef float(* ModifyArousal)(RE::Actor* actorRef, float value);
+    typedef float(* ModifyArousal)(RE::Actor* actorRef, float value, bool sendevent);
 
     extern ModifyArousal OSLAModifyArousal;
 

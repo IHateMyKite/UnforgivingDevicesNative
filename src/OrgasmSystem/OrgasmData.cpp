@@ -37,9 +37,19 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
 
     const float loc_da            = _RDATA.ArousalRate*_RDATA.ArousalRateMult*a_delta;
 
-    //UDSKSELOG("OrgasmActorData::Update({},{}) _Arousal before = {}, rate = {}",_actor->GetName(),a_delta,_Arousal,loc_da)
-    if (OSLAModifyArousal != nullptr) _RDATA.Arousal = OSLAModifyArousal(_actor,loc_da);
-    //UDSKSELOG("OrgasmActorData::Update({},{}) _Arousal after = {}, rate = {}",_actor->GetName(),a_delta,_Arousal,loc_da)
+    _RDATA.ArousalEventTimer -= a_delta;
+
+    bool loc_sendarousalevent = false;
+    if (_RDATA.ArousalEventTimer <= 0.0f && (_RDATA.ArousalEventLastValue != _RDATA.Arousal))
+    {
+        if (_actor->IsPlayerRef()) _RDATA.ArousalEventTimer = ORS::OrgasmConfig::GetSingleton()->AROUSALEVENTTIMEPLAYER;
+        else _RDATA.ArousalEventTimer = ORS::OrgasmConfig::GetSingleton()->AROUSALEVENTTIMENPC;
+
+        if (_actor->Is3DLoaded()) loc_sendarousalevent = true;
+        _RDATA.ArousalEventLastValue = _RDATA.Arousal;
+    }
+
+    if (OSLAModifyArousal != nullptr) _RDATA.Arousal = OSLAModifyArousal(_actor,loc_da,loc_sendarousalevent);
 
     _RDATA.OrgasmRate             = CalculateOrgasmRate(a_delta);
     _RDATA.OrgasmRateMult         = CalculateOrgasmRateMult();

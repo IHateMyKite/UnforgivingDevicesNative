@@ -6,7 +6,19 @@
 namespace UD 
 {
     #define UDBITERRORVALUE 0xFFFFFFFF
-    int     CodeBit(PAPYRUSFUNCHANDLE,int i_codedmap,int i_value,int i_size,int i_index);
+
+    class Utility
+    {
+    SINGLETONHEADER(Utility)
+    public:
+        int CodeBit(int a_codedmap,int a_value,int a_size,int a_index) const;
+    };
+
+    inline int CodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_value,int a_size,int a_index)
+    {
+        return Utility::GetSingleton()->CodeBit(a_codedmap,a_value,a_size,a_index);
+    }
+
     int     DecodeBit(PAPYRUSFUNCHANDLE,int i_codedMap,int i_size,int i_index);
     int     Round(PAPYRUSFUNCHANDLE,float a_value);
     int     iRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max);
@@ -81,4 +93,6 @@ namespace UD
     }
 
     std::vector<int> DivadeToParts(int a_number, int a_parts);
+
+    bool PluginInstalled(PAPYRUSFUNCHANDLE,std::string a_dll);
 }

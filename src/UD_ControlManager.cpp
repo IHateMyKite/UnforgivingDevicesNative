@@ -55,7 +55,6 @@ void UD::ControlManager::UpdateControl()
     const bool loc_bound        = loc_status & Status::sBound;
     const bool loc_minigame     = loc_status & Status::sMinigame;
     const bool loc_animation    = loc_status & Status::sAnimation;
-    
 
     //CheckStatusSafe(loc_status);
 
@@ -102,7 +101,7 @@ void UD::ControlManager::DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEve
     if (a_controls == nullptr) return;
 
     UDSKSELOG("==Printing controls , Size={}==",a_controls->size())
-    for (int j = 0; j <= RE::INPUT_DEVICES::kVirtualKeyboard; j++)
+    for (int j = 0; j <= CONTROLSDISABLE; j++)
     {
         UDSKSELOG("=INPUT_DEVICES = {:2}",j)
         for (auto&& it : a_controls[j]) 
@@ -119,7 +118,7 @@ void UD::ControlManager::DebugPrintControls()
     {
         UDSKSELOG("=INPUT_CONTEXT_IDS = {:2}",i)
         auto loc_control = RE::ControlMap::GetSingleton()->controlMap[i]->deviceMappings;
-        for (int j = 0; j <= RE::INPUT_DEVICES::kVirtualKeyboard; j++)
+        for (int j = 0; j <= CONTROLSDISABLE; j++)
         {
             UDSKSELOG("=INPUT_DEVICES = {:2}",j)
             for (auto&& it : loc_control[j]) 
@@ -132,7 +131,7 @@ void UD::ControlManager::DebugPrintControls()
 
 bool UD::ControlManager::HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_DEVICE a_device)
 {
-    for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
+    for (int i = 0; i <= CONTROLSDISABLE; i++)
     {
         for (auto&& it : _OriginalControls[i])
         {
@@ -150,6 +149,7 @@ bool UD::ControlManager::HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_D
 
 void UD::ControlManager::ApplyOriginalControls()
 {
+    UDSKSELOG("ApplyOriginalControls called")
     _ControlsDisabled = false;
     _HardcoreModeApplied = false;
     ApplyControls(_OriginalControls);
@@ -157,12 +157,14 @@ void UD::ControlManager::ApplyOriginalControls()
 
 void UD::ControlManager::DisableControls()
 {
+    UDSKSELOG("DisableControls called")
     _ControlsDisabled = true;
     ApplyControls(_DisabledControls);
 }
 
 void UD::ControlManager::DisableControlsFC()
 {
+    UDSKSELOG("DisableControlsFC called")
     if (_DisableFreeCamera)
     {
         ApplyControls(_DisabledNoMoveControls);
@@ -175,8 +177,9 @@ void UD::ControlManager::DisableControlsFC()
 
 void UD::ControlManager::SaveOriginalControls()
 {
+    UDSKSELOG("SaveOriginalControls called")
     auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::UserEvents::INPUT_CONTEXT_IDS::kGameplay]->deviceMappings;
-    for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
+    for (int i = 0; i <= CONTROLSDISABLE; i++)
     {
         _OriginalControls[i] = loc_control[i];
     }
@@ -184,9 +187,9 @@ void UD::ControlManager::SaveOriginalControls()
 
 void UD::ControlManager::InitControlOverride(RE::BSTArray<RE::ControlMap::UserEventMapping>** a_controls,const std::vector<std::string>& a_filter)
 {
-    *a_controls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
+    *a_controls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[CONTROLSDISABLE + 1];
     auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::ControlMap::InputContextID::kGameplay]->deviceMappings;
-    for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
+    for (int i = 0; i <= CONTROLSDISABLE; i++)
     {
         for (auto&& it : loc_control[i]) 
         {
@@ -212,7 +215,7 @@ void UD::ControlManager::ApplyControls(RE::BSTArray<RE::ControlMap::UserEventMap
 {
     if (a_controls == nullptr) return;
     auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::UserEvents::INPUT_CONTEXT_IDS::kGameplay]->deviceMappings;
-    for (int i = 0; i <= RE::INPUT_DEVICES::kVirtualKeyboard; i++)
+    for (int i = 0; i <= CONTROLSDISABLE; i++)
     {
         loc_control[i] = a_controls[i];
     }

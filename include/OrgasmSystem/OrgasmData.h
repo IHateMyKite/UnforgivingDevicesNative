@@ -272,6 +272,8 @@ namespace ORS
             float   ArousalRate            = 0.0f;
             float   ArousalRatePersist     = 0.0f;
             float   ArousalRateMult        = 1.0f;
+            float   ArousalEventTimer      = 3.0f;
+            float   ArousalEventLastValue  = 0.0f;
 
             bool                LinkedWidgetUsed       = false;
             std::string         LinkedWidgetPath       = "";

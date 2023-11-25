@@ -36,6 +36,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(FloatToInt,true)
         REGISTERPAPYRUSFUNC(RandomFloat,true)
         REGISTERPAPYRUSFUNC(RandomInt,true)
+        REGISTERPAPYRUSFUNC(PluginInstalled,true)
 
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
@@ -91,6 +92,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(SendMinigameThreadEvents,true)
         REGISTERPAPYRUSFUNC(SendRemoveRenderDeviceEvent,true)
         REGISTERPAPYRUSFUNC(SetVMHandle,true)
+        REGISTERPAPYRUSFUNC(SetBitMapData,true)
 
         //materials
         REGISTERPAPYRUSFUNC(IsSteel,true)
