@@ -91,8 +91,8 @@ namespace UD
         REGISTERPAPYRUSFUNC(SendRegisterDeviceScriptEvent,true)
         REGISTERPAPYRUSFUNC(SendMinigameThreadEvents,true)
         REGISTERPAPYRUSFUNC(SendRemoveRenderDeviceEvent,true)
-        REGISTERPAPYRUSFUNC(SetVMHandle,true)
         REGISTERPAPYRUSFUNC(SetBitMapData,true)
+        REGISTERPAPYRUSFUNC(UpdateVMHandles,true)
 
         //materials
         REGISTERPAPYRUSFUNC(IsSteel,true)

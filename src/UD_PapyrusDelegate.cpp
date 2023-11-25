@@ -144,51 +144,6 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
     return Result::rNotFound;
 }
 
-Result UD::PapyrusDelegate::SetVMHandle(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
-{
-    UDSKSELOG("SetVMHandle called")
-    if (a_actor == nullptr || a_device == nullptr) return Result::rArgError;
-    if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
-
-    std::vector<RE::TESObjectARMO*> loc_device = {a_device};
-
-    const auto loc_vm = InternalVM::GetSingleton();
-    loc_vm->attachedScriptsLock.Lock();
-
-    for (auto&& it : loc_vm->attachedScripts)
-    {
-        auto loc_type = IsUnforgivingDevice(it.second);
-        if (loc_type != nullptr)
-        {
-            bool loc_set = false;
-            FilterDeviceResult loc_filterres = ProcessDevice(it.first,0,loc_type,a_actor,loc_device,[&](RE::BSTSmartPointer<RE::BSScript::Object> a_object,RE::TESObjectARMO* a_id,RE::TESObjectARMO* a_rd)
-            {
-                if (a_object == nullptr) return;
-
-                const auto loc_var1 = a_object->GetVariable("_VMHandle1");
-                const auto loc_var2 = a_object->GetVariable("_VMHandle2");
-
-                if (loc_var1 == nullptr || loc_var2 == nullptr) return;
-
-                if (loc_var1->GetSInt() == 0 && loc_var2->GetSInt() == 0) 
-                {
-                    loc_var1->SetSInt(it.first & 0xFFFFFFFF);
-                    loc_var2->SetSInt((it.first >> 32) & 0xFFFFFFFF);
-                    UDSKSELOG("Handle set to {} = {} | {}",it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
-                    loc_set = true;
-                }
-            });
-            if (loc_set) 
-            {
-                loc_vm->attachedScriptsLock.Unlock();
-                return Result::rSuccess;
-            }
-        }
-    }
-    loc_vm->attachedScriptsLock.Unlock();
-    return Result::rNotFound;
-}
-
 Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_name, int a_val, uint8_t a_size, uint8_t a_off)
 {
     //UDSKSELOG("SetBitMapData called")
@@ -289,8 +244,6 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
 
     if (a_handle != 0) return a_handle;
 
-    UDSKSELOG("PapyrusDelegate::ValidateVMHandle - Handle is invalid -> validating")
-
     const auto loc_vm = InternalVM::GetSingleton();
 
     RE::VMHandle loc_res = a_handle;
@@ -313,7 +266,7 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
                 {
                     loc_var1->SetSInt(it.first & 0xFFFFFFFF);
                     loc_var2->SetSInt((it.first >> 32) & 0xFFFFFFFF);
-                    UDSKSELOG("Handle set to {} = {} | {}",it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
+                    UDSKSELOG("Handle of {} set to {} = {} | {}",a_id->GetName(),it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
                     loc_res = it.first;
                     return true;
                 }
@@ -482,10 +435,6 @@ FilterDeviceResult UD::PapyrusDelegate::ProcessDevice2(RE::VMHandle a_handle, RE
                     const bool loc_res = a_fun(loc_object,loc_id,loc_rd);
                     return {loc_res,loc_id,loc_rd};
                 }
-            }
-            else
-            {
-                UDSKSELOG("Object doesnt have set ID")
             }
         }
         else
