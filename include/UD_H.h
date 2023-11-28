@@ -10,6 +10,7 @@
     //This file contains includes for all project files
     #include "windows.h"
     #undef GetObject
+    #include <UD_Spinlock.h>
     #include <UD_Config.h>
     #include <UD_Lib.h>
     #include <UD_Keywords.h>

@@ -17,13 +17,6 @@ void UD::ControlManager::Setup()
 
         _hardcoreids = Config::GetSingleton()->GetArray<std::string>("Disabler.asHardcoreModeDisable");
 
-        for (auto&& it :_hardcoreids) 
-        {
-            auto loc_first = it.find_first_not_of(' ');
-            auto loc_last  = it.find_last_not_of(' ');
-            it = it.substr(loc_first,loc_last - loc_first + 1);
-        }
-
         LOG("Hardcore disable config loaded. Number = {}",_hardcoreids.size())
         for (auto&& it : _hardcoreids) LOG("{}",it)
 
@@ -31,16 +24,19 @@ void UD::ControlManager::Setup()
 
         _disableids = _disablenomoveids; //copy disable which doesnt disable movement
         _disableids.insert(_disableids.begin(),{"Forward","Back","Strafe Right","Strafe Left"}); //add movement disable
+        for (auto& it : _disableids) std::transform(it.begin(), it.end(), it.begin(), ::tolower);
+        for (auto& it : _disablenomoveids) std::transform(it.begin(), it.end(), it.begin(), ::tolower);
 
         InitControlOverride(&_DisabledControls,_disableids);
-
         InitControlOverride(&_DisabledNoMoveControls,_disablenomoveids);
 
         SKSE::GetCameraEventSource()->AddEventSink(CameraEventSink::GetSingleton());
 
         LOG("ControlManager installed")
-        //DebugPrintControls(_HardcoreControls);
-        //DebugPrintControls(_DisabledControls);
+        DebugPrintControls(_OriginalControls);
+        DebugPrintControls(_HardcoreControls);
+        DebugPrintControls(_DisabledControls);
+        DebugPrintControls(_DisabledNoMoveControls);
     }
 
     _DisableFreeCamera = Config::GetSingleton()->GetVariable<bool>("Disabler.bDisableFreeCamera",true);
@@ -100,30 +96,30 @@ void UD::ControlManager::DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEve
 {
     if (a_controls == nullptr) return;
 
-    LOG("==Printing controls , Size={}==",a_controls->size())
+    DEBUG("==Printing controls , Size={}==",a_controls->size())
     for (int j = 0; j <= CONTROLSDISABLE; j++)
     {
-        LOG("=INPUT_DEVICES = {:2}",j)
+        DEBUG("=INPUT_DEVICES = {:2}",j)
         for (auto&& it : a_controls[j]) 
         {
-            LOG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
+            DEBUG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
         }
     }
 }
 
 void UD::ControlManager::DebugPrintControls()
 {
-    LOG("==Printing control==")
+    DEBUG("==Printing control==")
     for (int i = 0; i < RE::UserEvents::INPUT_CONTEXT_IDS::kTotal; i++)
     {
-        LOG("=INPUT_CONTEXT_IDS = {:2}",i)
+        DEBUG("=INPUT_CONTEXT_IDS = {:2}",i)
         auto loc_control = RE::ControlMap::GetSingleton()->controlMap[i]->deviceMappings;
         for (int j = 0; j <= CONTROLSDISABLE; j++)
         {
-            LOG("=INPUT_DEVICES = {:2}",j)
+            DEBUG("=INPUT_DEVICES = {:2}",j)
             for (auto&& it : loc_control[j]) 
             {
-                LOG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
+                DEBUG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
             }
         }
     }
@@ -188,6 +184,7 @@ void UD::ControlManager::SaveOriginalControls()
 void UD::ControlManager::InitControlOverride(RE::BSTArray<RE::ControlMap::UserEventMapping>** a_controls,const std::vector<std::string>& a_filter)
 {
     *a_controls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[CONTROLSDISABLE + 1];
+
     auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::ControlMap::InputContextID::kGameplay]->deviceMappings;
     for (int i = 0; i <= CONTROLSDISABLE; i++)
     {
@@ -196,7 +193,9 @@ void UD::ControlManager::InitControlOverride(RE::BSTArray<RE::ControlMap::UserEv
             {
                 const auto loc_foundit = std::find_if(a_filter.begin(),a_filter.end(),[it](const std::string& a_id)
                 {
-                    if (std::strcmp(it.eventID.c_str(),a_id.c_str()) == 0) return true;
+                    std::string loc_eventstr = it.eventID.c_str();
+                    std::transform(loc_eventstr.begin(), loc_eventstr.end(), loc_eventstr.begin(), ::tolower);
+                    if (loc_eventstr == a_id) return true;
                     return false;
                     
                 });

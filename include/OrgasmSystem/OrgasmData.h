@@ -194,6 +194,10 @@ namespace ORS
         void    OnRevert(SKSE::SerializationInterface*);
 
         void    UpdatePosition();
+
+    public:
+        Spinlock lock;
+
     private:
         inline float CalculateOrgasmProgress(const float& a_delta);
         inline float CalculateOrgasmRate(const float& a_delta);

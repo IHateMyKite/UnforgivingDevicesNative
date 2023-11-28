@@ -10,19 +10,11 @@ namespace UD
 {
     class Config
     {
-    public:
-        Config(Config &) = delete;
-        void operator=(const Config &) = delete;
-        static Config* GetSingleton();
+    SINGLETONHEADER(Config)
     public:
         void Setup();
         template<typename T> T GetVariable(std::string a_name, T a_def) const;
         template<typename T> std::vector<T> GetArray(std::string a_name, std::string a_sep = ",") const;
-    protected:
-        Config(std::string a_filename) : _filename(a_filename) {}
-        ~Config(){}
-        static Config* _this;
-        const std::string _filename;
     private:
         bool _ready = false;
         boost::property_tree::ptree _config;

@@ -54,7 +54,7 @@ namespace UD
         std::vector<std::string> _hardcoreids;
         std::vector<std::string> _disableids; 
 
-        const std::vector<std::string> _disablenomoveids = 
+        std::vector<std::string> _disablenomoveids = 
         {
             //base player controls
             "Activate"              ,

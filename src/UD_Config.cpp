@@ -2,15 +2,14 @@
 
 using UD::Config;
 
-Config * Config::_this = new Config("UD_Native");
-Config * Config::GetSingleton(){return _this;}
+SINGLETONBODY(Config)
 
 void Config::Setup()
 {
     _config = boost::property_tree::ptree();
     try
     {
-        boost::property_tree::ini_parser::read_ini("Data\\skse\\plugins\\"+_filename+".ini", _config);
+        boost::property_tree::ini_parser::read_ini("Data\\skse\\plugins\\UDNative.ini", _config);
         _ready = true;
         LOG("UDNative.ini loaded succesfully")
     }

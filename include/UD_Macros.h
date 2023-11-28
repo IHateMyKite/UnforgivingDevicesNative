@@ -22,6 +22,7 @@
 #define LOG(...)    {if (UD::Config::GetSingleton()->GetVariable<int>("General.iLogging",1) >= 2) SKSE::log::info(__VA_ARGS__);}
 #define WARN(...)   {if (UD::Config::GetSingleton()->GetVariable<int>("General.iLogging",1) >= 1) SKSE::log::warn(__VA_ARGS__);}
 #define ERROR(...)  {SKSE::log::error(__VA_ARGS__);}
+#define DEBUG(...)  {SKSE::log::debug(__VA_ARGS__);}
 
 #define SINGLETONHEADER(cname)                          \
         public:                                         \

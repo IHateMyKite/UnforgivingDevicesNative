@@ -15,6 +15,8 @@ std::vector<ORS::HornyLevel> ORS::g_HornyLevels = {
 
 void ORS::OrgasmActorData::Update(const float& a_delta)
 {
+    UniqueLock updatelock(lock); //apply spinlock
+
     if (_actor == nullptr) return;
 
     if (_RDATA.OrgasmTimer > 0.0f)
@@ -158,7 +160,6 @@ bool ORS::OrgasmActorData::AddOrgasmChange(std::string a_key,   OrgasmMod a_mod,
 
 bool ORS::OrgasmActorData::RemoveOrgasmChange(std::string a_key)
 {
-    //std::unique_lock lock(_lock);
     //LOG("OrgasmActorData::RemoveOrgasmChange({},{})",_actor->GetName(),a_key)
     return _Sources.erase(a_key) > 0;
 }
@@ -666,9 +667,11 @@ inline float ORS::OrgasmActorData::CalculateHornyLevel(const float& a_delta)
 
 void ORS::OrgasmActorData::ElapseChanges(const float& a_delta)
 {
-    for (auto&& it : _Sources) 
+    std::vector<std::string> loc_toremove;
+
+    for (auto&& [i_key,i_oc] : _Sources) 
     {   
-        OrgasmChangeData& loc_oc = it.second;
+        OrgasmChangeData& loc_oc = i_oc;
 
         //edge mod timeout
         if ((loc_oc.Mod & (mEdgeOnly | mEdgeRandom)) && (loc_oc.EdgeRemDuration > 0.0f))
@@ -687,7 +690,8 @@ void ORS::OrgasmActorData::ElapseChanges(const float& a_delta)
             loc_oc.ElapsedDuration += a_delta;
             if (loc_oc.ElapsedDuration >= loc_oc.Duration)
             {
-                _Sources.erase(it.first);
+                loc_toremove.push_back(i_key);
+                continue;
             }
             else
             {
@@ -708,6 +712,8 @@ void ORS::OrgasmActorData::ElapseChanges(const float& a_delta)
             }
         }
     }
+
+    for (auto&& i_key : loc_toremove) _Sources.erase(i_key);
 }
 
 inline void ORS::OrgasmActorData::UpdateWidget()
