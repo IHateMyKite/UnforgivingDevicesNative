@@ -1,17 +1,18 @@
-#include <OrgasmSystem/OrgasmConfig.h>
+#include <UD_Config.h>
 
-using ORS::Config;
+using UD::Config;
 
-SINGLETONBODY(Config)
+Config * Config::_this = new Config("UD_Native");
+Config * Config::GetSingleton(){return _this;}
 
 void Config::Setup()
 {
     _config = boost::property_tree::ptree();
     try
     {
-        boost::property_tree::ini_parser::read_ini("Data\\skse\\plugins\\OrgasmSystem.ini", _config);
+        boost::property_tree::ini_parser::read_ini("Data\\skse\\plugins\\"+_filename+".ini", _config);
         _ready = true;
-        LOG("OrgasmSystem.ini loaded succesfully")
+        LOG("UDNative.ini loaded succesfully")
     }
     catch( std::exception &ex )
     {
@@ -27,7 +28,6 @@ void Config::Setup()
 std::vector<std::string> Config::GetArrayRaw(std::string a_name, std::string a_sep) const
 {
     std::vector<std::string> loc_res;
-
     try
     {
         boost::split(loc_res,_config.get<std::string>(a_name),boost::is_any_of(a_sep));
@@ -54,7 +54,6 @@ template<typename T>
 T Config::GetVariable(std::string a_name, T a_def) const
 {
     if (!_ready) return a_def;
-
     void* loc_cres = _catche[a_name];
     if (loc_cres != nullptr) return *(T*)loc_cres;
 
@@ -69,7 +68,7 @@ T Config::GetVariable(std::string a_name, T a_def) const
         ERROR("Can't get config variable {} - Returning default value",a_name)
         loc_res = a_def;
     }
-    
+
     _catche[a_name] = new T(loc_res);
 
     return loc_res;

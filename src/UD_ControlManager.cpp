@@ -5,7 +5,7 @@ SINGLETONBODY(UD::KeyEventSink)
 SINGLETONBODY(UD::CameraEventSink)
 SINGLETONBODY(UD::ControlManager)
 
-void UD::ControlManager::Setup(CONFIGFILEARG(a_ptree))
+void UD::ControlManager::Setup()
 {
     if (!_installed)
     {
@@ -15,7 +15,7 @@ void UD::ControlManager::Setup(CONFIGFILEARG(a_ptree))
         _OriginalControls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
         SaveOriginalControls();
 
-        boost::split(_hardcoreids,a_ptree.get<std::string>("Disabler.asHardcoreModeDisable"),boost::is_any_of(","));
+        _hardcoreids = Config::GetSingleton()->GetArray<std::string>("Disabler.asHardcoreModeDisable");
 
         for (auto&& it :_hardcoreids) 
         {
@@ -24,8 +24,8 @@ void UD::ControlManager::Setup(CONFIGFILEARG(a_ptree))
             it = it.substr(loc_first,loc_last - loc_first + 1);
         }
 
-        UDSKSELOG("Hardcore disable config loaded. Number = {}",_hardcoreids.size())
-        for (auto&& it : _hardcoreids) UDSKSELOG("{}",it)
+        LOG("Hardcore disable config loaded. Number = {}",_hardcoreids.size())
+        for (auto&& it : _hardcoreids) LOG("{}",it)
 
         InitControlOverride(&_HardcoreControls,_hardcoreids);
 
@@ -38,12 +38,12 @@ void UD::ControlManager::Setup(CONFIGFILEARG(a_ptree))
 
         SKSE::GetCameraEventSource()->AddEventSink(CameraEventSink::GetSingleton());
 
-        UDSKSELOG("ControlManager installed")
+        LOG("ControlManager installed")
         //DebugPrintControls(_HardcoreControls);
         //DebugPrintControls(_DisabledControls);
     }
 
-    _DisableFreeCamera = a_ptree.get<bool>("Disabler.bDisableFreeCamera");
+    _DisableFreeCamera = Config::GetSingleton()->GetVariable<bool>("Disabler.bDisableFreeCamera",true);
 }
 
 void UD::ControlManager::UpdateControl()
@@ -100,30 +100,30 @@ void UD::ControlManager::DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEve
 {
     if (a_controls == nullptr) return;
 
-    UDSKSELOG("==Printing controls , Size={}==",a_controls->size())
+    LOG("==Printing controls , Size={}==",a_controls->size())
     for (int j = 0; j <= CONTROLSDISABLE; j++)
     {
-        UDSKSELOG("=INPUT_DEVICES = {:2}",j)
+        LOG("=INPUT_DEVICES = {:2}",j)
         for (auto&& it : a_controls[j]) 
         {
-            UDSKSELOG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
+            LOG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
         }
     }
 }
 
 void UD::ControlManager::DebugPrintControls()
 {
-    UDSKSELOG("==Printing control==")
+    LOG("==Printing control==")
     for (int i = 0; i < RE::UserEvents::INPUT_CONTEXT_IDS::kTotal; i++)
     {
-        UDSKSELOG("=INPUT_CONTEXT_IDS = {:2}",i)
+        LOG("=INPUT_CONTEXT_IDS = {:2}",i)
         auto loc_control = RE::ControlMap::GetSingleton()->controlMap[i]->deviceMappings;
         for (int j = 0; j <= CONTROLSDISABLE; j++)
         {
-            UDSKSELOG("=INPUT_DEVICES = {:2}",j)
+            LOG("=INPUT_DEVICES = {:2}",j)
             for (auto&& it : loc_control[j]) 
             {
-                UDSKSELOG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
+                LOG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
             }
         }
     }
@@ -149,7 +149,7 @@ bool UD::ControlManager::HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_D
 
 void UD::ControlManager::ApplyOriginalControls()
 {
-    UDSKSELOG("ApplyOriginalControls called")
+    LOG("ApplyOriginalControls called")
     _ControlsDisabled = false;
     _HardcoreModeApplied = false;
     ApplyControls(_OriginalControls);
@@ -157,14 +157,14 @@ void UD::ControlManager::ApplyOriginalControls()
 
 void UD::ControlManager::DisableControls()
 {
-    UDSKSELOG("DisableControls called")
+    LOG("DisableControls called")
     _ControlsDisabled = true;
     ApplyControls(_DisabledControls);
 }
 
 void UD::ControlManager::DisableControlsFC()
 {
-    UDSKSELOG("DisableControlsFC called")
+    LOG("DisableControlsFC called")
     if (_DisableFreeCamera)
     {
         ApplyControls(_DisabledNoMoveControls);
@@ -177,7 +177,7 @@ void UD::ControlManager::DisableControlsFC()
 
 void UD::ControlManager::SaveOriginalControls()
 {
-    UDSKSELOG("SaveOriginalControls called")
+    LOG("SaveOriginalControls called")
     auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::UserEvents::INPUT_CONTEXT_IDS::kGameplay]->deviceMappings;
     for (int i = 0; i <= CONTROLSDISABLE; i++)
     {
@@ -251,7 +251,7 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
                 }
                 ModEvents::GetSingleton()->HMTweenMenuEvent.QueueEvent();
 
-                UDSKSELOG("Sending player tween menu event")
+                LOG("Sending player tween menu event")
 
                 std::thread([this]()
                 {
@@ -278,7 +278,7 @@ RE::BSEventNotifyControl UD::CameraEventSink::ProcessEvent(const SKSE::CameraEve
 
     if (loc_new != nullptr)
     {
-        UDSKSELOG("Camera state: new = {}",loc_new->id);
+        LOG("Camera state: new = {}",loc_new->id);
         switch(loc_new->id)
         {
         case RE::CameraState::kFree:
@@ -290,7 +290,7 @@ RE::BSEventNotifyControl UD::CameraEventSink::ProcessEvent(const SKSE::CameraEve
 
     if (loc_old != nullptr)
     {
-        UDSKSELOG("Camera state: old = {}",loc_old->id);
+        LOG("Camera state: old = {}",loc_old->id);
         switch(loc_old->id)
         {
         case RE::CameraState::kFree:

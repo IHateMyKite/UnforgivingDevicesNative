@@ -2,14 +2,14 @@
 
 SINGLETONBODY(UD::MaterialManager)
 
-void UD::MaterialManager::Setup(CONFIGFILEARG(a_cfg))
+void UD::MaterialManager::Setup()
 {
     if (!_installed)
     {
-        LoadKeywords(_steel_words,a_cfg,"asSteelKeywords");
-        LoadKeywords(_ebonite_words,a_cfg,"asEboniteKeywords");
-        LoadKeywords(_rope_words,a_cfg,"asRopeKeywords");
-        LoadKeywords(_secure_words,a_cfg,"asSecureKeywords");
+        LoadKeywords(_steel_words,"asSteelKeywords");
+        LoadKeywords(_ebonite_words,"asEboniteKeywords");
+        LoadKeywords(_rope_words,"asRopeKeywords");
+        LoadKeywords(_secure_words,"asSecureKeywords");
         _installed = true;
     }
 }
@@ -34,17 +34,17 @@ bool UD::MaterialManager::IsSecure(const RE::TESForm* a_id) const
     return IsMaterial(a_id,_secure_words);;
 }
 
-void UD::MaterialManager::LoadKeywords(std::vector<std::string>& a_words, CONFIGFILEARG(a_cfg), std::string a_cfgkey)
+void UD::MaterialManager::LoadKeywords(std::vector<std::string>& a_words, std::string a_cfgkey)
 {
-    boost::split(a_words,a_cfg.get<std::string>("Materials." + a_cfgkey),boost::is_any_of(","));
-
+    a_words = Config::GetSingleton()->GetArray<std::string>("Materials."+a_cfgkey);
+ 
     for (auto&& it : a_words) 
     {
         const auto loc_first = it.find_first_not_of(' ');
         const auto loc_last  = it.find_last_not_of(' ');
         it = it.substr(loc_first,loc_last - loc_first + 1);
         std::transform(it.begin(), it.end(), it.begin(), ::tolower);
-        UDSKSELOG("MaterialManager::LoadKeywords({}) - Loaded keyword {}",a_cfgkey,it)
+        LOG("MaterialManager::LoadKeywords({}) - Loaded keyword {}",a_cfgkey,it)
     }
 }
 

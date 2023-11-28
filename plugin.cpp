@@ -24,13 +24,13 @@ namespace logger = SKSE::log;
 #endif
 
 void InitializeSerialization() {
-    UDSKSELOG("Initializing cosave serialization...");
+    LOG("Initializing cosave serialization...");
     auto* serde = SKSE::GetSerializationInterface();
     serde->SetUniqueID(_byteswap_ulong('UDNP'));
     serde->SetSaveCallback(UD::OnGameSaved);
     serde->SetRevertCallback(UD::OnRevert);
     serde->SetLoadCallback(UD::OnGameLoaded);
-    UDSKSELOG("Cosave serialization initialized.");
+    LOG("Cosave serialization initialized.");
 }
 
 SKSEPluginLoad(const SKSE::LoadInterface *skse) {

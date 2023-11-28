@@ -17,17 +17,11 @@
     else if (val < min) val = min;      \
 }
 
-#if(UDDEBUG > 1U)
-    #define UDCONSOLELOG(...) {RE::ConsoleLog::GetSingleton()->Print(std::format(__VA_ARGS__).c_str());}
-#else
-    #define UDCONSOLELOG(...) {}
-#endif
+#define CLOG(...)    {RE::ConsoleLog::GetSingleton()->Print(std::format(__VA_ARGS__).c_str());}
 
-#if(UDDEBUG > 0U)
-    #define UDSKSELOG(...) {SKSE::log::info(__VA_ARGS__);}
-#else
-    #define UDSKSELOG(...) {}
-#endif
+#define LOG(...)    {if (UD::Config::GetSingleton()->GetVariable<int>("General.iLogging",1) >= 2) SKSE::log::info(__VA_ARGS__);}
+#define WARN(...)   {if (UD::Config::GetSingleton()->GetVariable<int>("General.iLogging",1) >= 1) SKSE::log::warn(__VA_ARGS__);}
+#define ERROR(...)  {SKSE::log::error(__VA_ARGS__);}
 
 #define SINGLETONHEADER(cname)                          \
         public:                                         \
@@ -42,7 +36,6 @@
 #define SINGLETONBODY(cname)                            \
         cname * cname::_this = new cname;               \
         cname * cname::GetSingleton(){return _this;}
-
 
 #define PLAYER RE::PlayerCharacter::GetSingleton()
 

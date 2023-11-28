@@ -35,7 +35,7 @@ namespace UD
 
         static RE::VMHandle ToVMHandle(const int a_1, const int a_2);
 
-        void Setup(CONFIGFILEARG(a_ptree));
+        void Setup();
 
         int SendRegisterDeviceScriptEvent(RE::Actor* a_actor,std::vector<RE::TESObjectARMO*>& a_devices);
         Result SendMinigameThreadEvents(RE::Actor* a_actor,RE::TESObjectARMO* a_device,RE::VMHandle a_handle,MinigameThreads a_threads);

@@ -6,7 +6,7 @@ namespace UD
     {
     SINGLETONHEADER(MaterialManager)
     public:
-        void Setup(CONFIGFILEARG(a_cfg));
+        void Setup();
 
         bool IsSteel(const RE::TESForm* a_id) const;
         bool IsEbonite(const RE::TESForm* a_id) const;
@@ -19,7 +19,7 @@ namespace UD
         std::vector<std::string> _rope_words;
         std::vector<std::string> _secure_words;
 
-        void LoadKeywords(std::vector<std::string>& a_words,CONFIGFILEARG(a_cfg),std::string a_cfgkey);
+        void LoadKeywords(std::vector<std::string>& a_words,std::string a_cfgkey);
         bool IsMaterial(const RE::TESForm* a_id,const std::vector<std::string>& a_words) const;
     };
 

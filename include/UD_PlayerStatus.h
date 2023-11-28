@@ -19,7 +19,7 @@ namespace UD
         Status GetPlayerStatus();
     private:
         bool                            _installed          = false;
-        std::vector<RE::BGSKeyword*>    _boundkeywords;
+        RE::BGSKeyword*                 _hbkeyword          = nullptr;
         RE::TESFaction*                 _minigamefaction    = nullptr;
         RE::TESFaction*                 _animationfaction   = nullptr;
         Status                          _status;

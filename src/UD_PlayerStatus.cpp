@@ -9,7 +9,7 @@ void UD::PlayerStatus::Setup()
         _installed = true;
 
         RE::TESDataHandler* loc_datahandler = RE::TESDataHandler::GetSingleton();
-        _boundkeywords.push_back(static_cast<RE::BGSKeyword*>(loc_datahandler->LookupForm(0x05226C,"Devious Devices - Integration.esm")));
+        _hbkeyword = static_cast<RE::BGSKeyword*>(loc_datahandler->LookupForm(0x05226C,"Devious Devices - Integration.esm"));
         _minigamefaction = static_cast<RE::TESFaction*>(loc_datahandler->LookupForm(0x150DA3,"UnforgivingDevices.esp"));
         _animationfaction = static_cast<RE::TESFaction*>(loc_datahandler->LookupForm(0x029567,"Devious Devices - Integration.esm"));
     }
@@ -35,19 +35,7 @@ bool UD::PlayerStatus::PlayerIsBound() const
 
     if (loc_player == nullptr) return false;
 
-    //check normal hb device (like armbinder)
-    const RE::TESObjectARMO* loc_hbdevice = loc_player->GetWornArmor(RE::BIPED_MODEL::BipedObjectSlot::kModChestPrimary);
-
-    bool loc_res = loc_hbdevice && loc_hbdevice->HasKeywordInArray(_boundkeywords,false);
-
-    if (!loc_res)
-    {
-        //check body hb (like straitjacket)
-        const RE::TESObjectARMO* locbodydevice = loc_player->GetWornArmor(RE::BIPED_MODEL::BipedObjectSlot::kBody);
-
-        loc_res = locbodydevice && locbodydevice->HasKeywordInArray(_boundkeywords,false);
-    }
-    return loc_res;
+    return Utility::GetSingleton()->WornHasKeyword(loc_player,_hbkeyword);
 }
 
 bool UD::PlayerStatus::PlayerInMinigame() const

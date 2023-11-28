@@ -13,25 +13,25 @@ RE::VMHandle UD::PapyrusDelegate::ToVMHandle(const int a_1, const int a_2)
     return (int64_t)a_1 | ((int64_t)a_2 << 32);
 }
 
-void PapyrusDelegate::Setup(CONFIGFILEARG(a_ptree))
+void PapyrusDelegate::Setup()
 {
     if (!_installed)
     {
         _udrdkw = reinterpret_cast<RE::BGSKeyword*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x11A352,"UnforgivingDevices.esp"));
         _installed = true;
-        UDSKSELOG("PapyrusDelegate::Setup - installed")
+        LOG("PapyrusDelegate::Setup - installed")
     }
     UpdateVMHandles();
 }
 
 int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices)
 {
-    UDSKSELOG("SendRegisterDeviceScriptEvent called")
+    LOG("SendRegisterDeviceScriptEvent called")
     if (a_actor == nullptr) return -1;
 
     if (!_udrdkw) 
     {
-        UDSKSELOG("ERROR: UD RD keyword is none !")
+        ERROR("ERROR: UD RD keyword is none !")
         return 0;
     }
 
@@ -44,7 +44,7 @@ int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vect
     size_t loc_tofound = a_devices.size();
     if (loc_tofound == 0) return 0;
 
-    UDSKSELOG("Finding scripts for {} devices",loc_tofound)
+    LOG("Finding scripts for {} devices",loc_tofound)
 
     const auto loc_vm = InternalVM::GetSingleton();
     loc_vm->attachedScriptsLock.Lock();
@@ -71,7 +71,7 @@ int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vect
 
 Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObjectARMO* a_device, RE::VMHandle a_handle,MinigameThreads a_threads)
 {
-    UDSKSELOG("SendMinigameThreadEvents called")
+    LOG("SendMinigameThreadEvents called")
     if (a_actor == nullptr || a_device == nullptr || a_threads == 0) return Result::rArgError;
     if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
@@ -101,7 +101,7 @@ Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObje
             if (a_threads & tCrit)      loc_vm->DispatchMethodCall(a_object,"_MinigameCritLoopThread",RE::MakeFunctionArguments(),loc_callback2);
             if (a_threads & tParalel)   loc_vm->DispatchMethodCall(a_object,"_MinigameParalelThread",RE::MakeFunctionArguments(),loc_callback3);
             if (a_threads & tAV)        loc_vm->DispatchMethodCall(a_object,"_MinigameAVCheckLoopThread",RE::MakeFunctionArguments(),loc_callback4);
-            UDSKSELOG("PapyrusDelegate::SendMinigameThreadEvents - events sent")
+            LOG("PapyrusDelegate::SendMinigameThreadEvents - events sent")
         });
         if (loc_filterres.Result) return Result::rSuccess;
     }
@@ -110,7 +110,7 @@ Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObje
 
 Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
 {
-    UDSKSELOG("SendRemoveRenderDeviceEvent called")
+    LOG("SendRemoveRenderDeviceEvent called")
     if (a_actor == nullptr || a_device == nullptr) return Result::rArgError;
     if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
@@ -131,7 +131,7 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
                 auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*>(std::forward<RE::Actor*>(a_actor));
                 //call papyrus method
                 loc_vm->DispatchMethodCall(a_object,"removeDevice",loc_args,loc_callback);
-                UDSKSELOG("PapyrusDelegate::SendRemoveRenderDeviceEvent - event sent")
+                LOG("PapyrusDelegate::SendRemoveRenderDeviceEvent - event sent")
             });
             if (loc_filterres.Result) 
             {
@@ -146,7 +146,7 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
 
 Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_name, int a_val, uint8_t a_size, uint8_t a_off)
 {
-    //UDSKSELOG("SetBitMapData called")
+    //LOG("SetBitMapData called")
     if (a_name == "" || a_size > 32 || a_off > 32 || a_device == nullptr) return Result::rArgError;
     if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
@@ -171,14 +171,14 @@ Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectAR
             {
                 if (a_object == nullptr)
                 {
-                    UDSKSELOG("Found object is none")
+                    ERROR("Found object is none")
                     return false;
                 }
                 const auto loc_var = a_object->GetVariable(a_name);
 
-                if (loc_var == nullptr) 
+                if (loc_var == nullptr)
                 {
-                    UDSKSELOG("Could not find bitmap variable {}",a_name)
+                    ERROR("Could not find bitmap variable {}",a_name)
                     return false;
                 }
                 int loc_res = Utility::GetSingleton()->CodeBit(loc_var->GetSInt(),a_val,a_size,a_off);
@@ -192,7 +192,7 @@ Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectAR
     }
     else
     {
-        UDSKSELOG("Script not found in attached script. Searching scripts for cleanup - {}",a_handle)
+        LOG("Script not found in attached script. Searching scripts for cleanup - {}",a_handle)
         RE::BSTSmartPointer<RE::BSScript::Object> loc_object;
         loc_vm->objectResetLock.Lock();
         auto loc_it = std::find_if(loc_vm->objectsAwaitingCleanup.begin(),loc_vm->objectsAwaitingCleanup.end(),[&loc_object,a_handle,this](RE::BSTSmartPointer<RE::BSScript::Object> a_object)
@@ -203,7 +203,7 @@ Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectAR
             auto loc_vmh1 = loc_vmho1->GetSInt();
             auto loc_vmh2 = loc_vmho2->GetSInt();
             auto loc_vmh = ToVMHandle(loc_vmh1,loc_vmh2);
-            UDSKSELOG("VMHandles found {}",loc_vmh)
+            LOG("VMHandles found {}",loc_vmh)
             if (loc_vmh == a_handle)
             {
                 loc_object = a_object;
@@ -218,14 +218,14 @@ Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectAR
 
         if (loc_object == nullptr)
         {
-            UDSKSELOG("Found object is none")
+            ERROR("Found object is none")
             return Result::rNotFound;
         }
         const auto loc_var = loc_object->GetVariable(a_name);
 
         if (loc_var == nullptr) 
         {
-            UDSKSELOG("Could not find bitmap variable {}",a_name)
+            ERROR("Could not find bitmap variable {}",a_name)
             return Result::rNotFound;
         }
         int loc_res = Utility::GetSingleton()->CodeBit(loc_var->GetSInt(),a_val,a_size,a_off);
@@ -240,7 +240,7 @@ Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectAR
 
 RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TESObjectARMO* a_device)
 {
-    //UDSKSELOG("PapyrusDelegate::ValidateVMHandle called")
+    //LOG("PapyrusDelegate::ValidateVMHandle called")
 
     if (a_handle != 0) return a_handle;
 
@@ -266,7 +266,7 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
                 {
                     loc_var1->SetSInt(it.first & 0xFFFFFFFF);
                     loc_var2->SetSInt((it.first >> 32) & 0xFFFFFFFF);
-                    UDSKSELOG("Handle of {} set to {} = {} | {}",a_id->GetName(),it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
+                    LOG("Handle of {} set to {} = {} | {}",a_id->GetName(),it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
                     loc_res = it.first;
                     return true;
                 }
@@ -279,7 +279,7 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
 
     if (loc_res == 0)
     {
-        UDSKSELOG("Could not find script for device {:08X}",a_device->GetFormID())
+        LOG("Could not find script for device {:08X}",a_device->GetFormID())
     }
 
     return loc_res;
@@ -339,7 +339,7 @@ FilterDeviceResult PapyrusDelegate::CheckRegisterDevice(RE::VMHandle a_handle,RE
                     //get inventory device from papyrus script
                     RE::TESObjectARMO* loc_id = GetScriptProperty<RE::TESObjectARMO>(loc_object,"DeviceInventory",RE::FormType::Armor);
                     
-                    UDSKSELOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
+                    LOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
                     
                     //ready function args
                     auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, RE::TESObjectARMO*, RE::TESObjectARMO*>(std::forward<RE::Actor*>(a_actor),std::forward<RE::TESObjectARMO*>(loc_id),std::forward<RE::TESObjectARMO*>(loc_rd));
@@ -389,7 +389,7 @@ FilterDeviceResult PapyrusDelegate::ProcessDevice(RE::VMHandle a_handle,RE::VMHa
                     
                     if (loc_id != nullptr)
                     {
-                        UDSKSELOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
+                        LOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
                     
                         //call function
                         a_fun(loc_object,loc_id,loc_rd);
@@ -429,7 +429,7 @@ FilterDeviceResult UD::PapyrusDelegate::ProcessDevice2(RE::VMHandle a_handle, RE
                     
                 if (loc_id != nullptr)
                 {
-                    //UDSKSELOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
+                    //LOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
                     
                     //call function
                     const bool loc_res = a_fun(loc_object,loc_id,loc_rd);
@@ -439,12 +439,12 @@ FilterDeviceResult UD::PapyrusDelegate::ProcessDevice2(RE::VMHandle a_handle, RE
         }
         else
         {
-            UDSKSELOG("Object doesnt have set RD")
+            LOG("Object doesnt have set RD")
         }
     }
     else
     {
-        UDSKSELOG("Cant find object with VMHandle {}",a_handle)
+        LOG("Cant find object with VMHandle {}",a_handle)
     }
     //not found, return default struct
     return {false,nullptr,nullptr};
@@ -481,7 +481,7 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
 
                     loc_var1->SetSInt(loc_handle & 0xFFFFFFFF);
                     loc_var2->SetSInt((loc_handle >> 32) & 0xFFFFFFFF);
-                    UDSKSELOG("Handle of {} set to {} = {} | {}",loc_id->GetName(),it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
+                    LOG("Handle of {} set to {} = {} | {}",loc_id->GetName(),it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
                 }
             }
         }

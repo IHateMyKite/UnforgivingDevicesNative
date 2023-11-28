@@ -25,7 +25,7 @@ namespace UD
     {
     SINGLETONHEADER(ControlManager)
     public:
-        void Setup(CONFIGFILEARG(a_ptree));
+        void Setup();
 
         void UpdateControl();
         void SyncSetting(bool a_hardcoreMode);
@@ -111,7 +111,7 @@ namespace UD
 
     inline void SyncControlSetting(PAPYRUSFUNCHANDLE, bool a_hardcoremode)
     {
-        UDSKSELOG("SyncControlSetting({}) called",a_hardcoremode)
+        LOG("SyncControlSetting({}) called",a_hardcoremode)
         ControlManager::GetSingleton()->SyncSetting(a_hardcoremode);
     }
 }

@@ -7,11 +7,46 @@ namespace UD
 {
     #define UDBITERRORVALUE 0xFFFFFFFF
 
+    //copy of RE::InventoryChanges::IItemChangeVisitor, with full definition so it can be inherited from
+    class IItemChangeVisitor
+    {
+    public:
+        virtual ~IItemChangeVisitor(){}  // 00
+
+        // add
+        virtual RE::BSContainer::ForEachResult Visit(RE::InventoryEntryData* a_entryData) {return RE::BSContainer::ForEachResult::kContinue;}; // 01
+        virtual bool ShouldVisit([[maybe_unused]] RE::InventoryEntryData* a_entryData, [[maybe_unused]] RE::TESBoundObject* a_object) { return true; }  // 02
+        virtual RE::BSContainer::ForEachResult Unk_03(RE::InventoryEntryData* a_entryData, [[maybe_unused]] void* a_arg2, bool* a_arg3) // 03
+        {
+            *a_arg3 = true;
+            return Visit(a_entryData);
+        }
+
+        RE::InventoryChanges::IItemChangeVisitor& AsNativeVisitor(){return *(RE::InventoryChanges::IItemChangeVisitor*)this;}
+    };
+    static_assert(sizeof(IItemChangeVisitor) == 0x8);
+
+    // Visitor for worn devices
+    class WornVisitor : public IItemChangeVisitor
+    {
+    public:
+        WornVisitor(std::function<RE::BSContainer::ForEachResult(RE::InventoryEntryData*)> a_fun) : _fun(a_fun) {};
+
+        virtual RE::BSContainer::ForEachResult Visit(RE::InventoryEntryData* a_entryData) override
+        {
+            return _fun(a_entryData);
+        }
+    private:
+        std::function<RE::BSContainer::ForEachResult(RE::InventoryEntryData*)> _fun;
+    };
+
     class Utility
     {
     SINGLETONHEADER(Utility)
     public:
         int CodeBit(int a_codedmap,int a_value,int a_size,int a_index) const;
+        bool WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw) const;
+        RE::TESObjectARMO* GetWornArmor(RE::Actor* a_actor,int a_mask) const;
     };
 
     inline int CodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_value,int a_size,int a_index)
@@ -72,7 +107,7 @@ namespace UD
     {
     SINGLETONHEADER(RandomGenerator)
     public:
-        void Setup(CONFIGFILEARG(a_ptree));
+        void Setup();
         //black magic random generator
         inline float    RandomNumber() const;
         float    RandomFloat(const float& a_min,const float& a_max) const;

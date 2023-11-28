@@ -69,7 +69,7 @@ namespace UD
 
         if (loc_base == nullptr) 
         {
-            UDSKSELOG("GetActorName - Actor {:08X} have no actor base!",a_actor->GetFormID())
+            LOG("GetActorName - Actor {:08X} have no actor base!",a_actor->GetFormID())
             return a_actor->GetName();
         }
 
@@ -123,7 +123,7 @@ namespace UD
 
     SINGLETONBODY(RandomGenerator)
 
-    void RandomGenerator::Setup(CONFIGFILEARG(a_ptree))
+    void RandomGenerator::Setup()
     {
         _seed = time(NULL);
     }
@@ -157,5 +157,55 @@ namespace UD
         loc_result  &= (~loc_clearmap);
         loc_result  |= a_value;
         return loc_result;
+    }
+
+    bool Utility::WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw) const
+    {
+        if ((a_actor == nullptr) || (a_kw == nullptr)) return false;
+
+        //LOG("LibFunctions::WornHasKeyword({},{}) called",a_actor->GetName(),a_kw->GetFormEditorID())
+
+        bool loc_res = false;
+        auto loc_visitor = WornVisitor([this,&loc_res,a_kw](RE::InventoryEntryData* a_entry)
+        {
+            #undef GetObject
+            auto loc_object = a_entry->GetObject();
+            RE::TESObjectARMO* loc_armor = nullptr;
+            if (loc_object != nullptr && loc_object->IsArmor()) loc_armor = static_cast<RE::TESObjectARMO*>(loc_object);
+
+            if (loc_armor != nullptr && loc_armor->HasKeyword(a_kw))
+            {
+                loc_res = true;
+                return RE::BSContainer::ForEachResult::kStop;
+            }
+            else return RE::BSContainer::ForEachResult::kContinue;
+        });
+        a_actor->GetInventoryChanges()->VisitWornItems(loc_visitor.AsNativeVisitor());
+        return loc_res;
+    }
+
+    RE::TESObjectARMO* Utility::GetWornArmor(RE::Actor* a_actor, int a_mask) const
+    {
+        if (a_actor == nullptr) return nullptr;
+
+        //LOG("LibFunctions::GetWornArmor({},{:08X}) called",a_actor->GetName(),a_mask)
+
+        RE::TESObjectARMO* loc_res = nullptr;
+        auto loc_visitor = WornVisitor([this,&loc_res,a_mask](RE::InventoryEntryData* a_entry)
+        {
+            #undef GetObject
+            auto loc_object = a_entry->GetObject();
+            RE::TESObjectARMO* loc_armor = nullptr;
+            if (loc_object != nullptr && loc_object->IsArmor()) loc_armor = static_cast<RE::TESObjectARMO*>(loc_object);
+
+            if (loc_armor != nullptr && ((int)loc_armor->GetSlotMask() & a_mask))
+            {
+                loc_res = loc_armor;
+                return RE::BSContainer::ForEachResult::kStop;
+            }
+            else return RE::BSContainer::ForEachResult::kContinue;
+        });
+        a_actor->GetInventoryChanges()->VisitWornItems(loc_visitor.AsNativeVisitor());
+        return loc_res;
     }
 }

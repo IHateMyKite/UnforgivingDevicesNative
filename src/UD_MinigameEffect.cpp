@@ -29,26 +29,26 @@ namespace UD
         float loc_mult      = f_mult; 
         float loc_toggle    = b_toggle;
 
-        //UDSKSELOG("StartMinigameEffect - health={},stamina={},magicka={}",loc_health,loc_stamina,loc_magicka);
+        //LOG("StartMinigameEffect - health={},stamina={},magicka={}",loc_health,loc_stamina,loc_magicka);
 
         MinigameEffectManager::GetSingleton()->RegisterActor(a_actor,loc_mult,loc_stamina,loc_health,loc_magicka,loc_toggle);
     }
 
     void EndMinigameEffect(PAPYRUSFUNCHANDLE, RE::Actor *a_actor) 
     {
-        //UDSKSELOG("EndMinigameEffect called")
+        //LOG("EndMinigameEffect called")
         MinigameEffectManager::GetSingleton()->RemoveActor(a_actor);
     }
 
     bool IsMinigameEffectOn(PAPYRUSFUNCHANDLE, RE::Actor *a_actor) 
     {
-        //UDSKSELOG("IsMinigameEffectOn called")
+        //LOG("IsMinigameEffectOn called")
         return MinigameEffectManager::GetSingleton()->started;
     }
 
     void UpdateMinigameEffectMult(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_mult) 
     {
-        //UDSKSELOG("UpdateMinigameEffectMult called")
+        //LOG("UpdateMinigameEffectMult called")
         if (MinigameEffectManager::GetSingleton()->IsRegistered(a_actor))
         {
             MinigameEffectManager::GetSingleton()->GetActorControl(a_actor)->mult = f_mult;
@@ -57,7 +57,7 @@ namespace UD
 
     void ToggleMinigameEffect(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, bool b_toggle) 
     {
-        //UDSKSELOG("::ToggleMinigameEffect called {}",b_toggle);
+        //LOG("::ToggleMinigameEffect called {}",b_toggle);
         if (MinigameEffectManager::GetSingleton()->IsRegistered(a_actor))
         {
             MinigameEffectManager::GetSingleton()->GetActorControl(a_actor)->toggle = b_toggle;
@@ -66,7 +66,7 @@ namespace UD
 
     bool MinigameStatsCheck(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, bool a_stamina, bool a_health, bool a_magicka) 
     {
-        //UDSKSELOG("MinigameStatsCheck called")
+        //LOG("MinigameStatsCheck called")
         if (a_actor != nullptr)
         {
             RE::ActorValueOwner* a_avowner   = a_actor->AsActorValueOwner();
@@ -81,7 +81,7 @@ namespace UD
 
     void MinigameEffectSetHealth(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_health)
     {
-        //UDSKSELOG("MinigameEffectSetHealth called")
+        //LOG("MinigameEffectSetHealth called")
         float loc_health    = -1.0f*UDCONVERTMULT*f_health/60.0f;
         if (MinigameEffectManager::GetSingleton()->IsRegistered(a_actor))
         {
@@ -90,7 +90,7 @@ namespace UD
     }
     void MinigameEffectSetStamina(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_stamina)
     {
-        //UDSKSELOG("MinigameEffectSetStamina called")
+        //LOG("MinigameEffectSetStamina called")
         float loc_stamina    = -1.0f*UDCONVERTMULT*f_stamina/60.0f;
         if (MinigameEffectManager::GetSingleton()->IsRegistered(a_actor))
         {
@@ -99,7 +99,7 @@ namespace UD
     }
     void MinigameEffectSetMagicka(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_magicka)
     {
-        //UDSKSELOG("MinigameEffectSetMagicka called")
+        //LOG("MinigameEffectSetMagicka called")
         float loc_magicka    = -1.0f*UDCONVERTMULT*f_magicka/60.0f;
         if (MinigameEffectManager::GetSingleton()->IsRegistered(a_actor))
         {
@@ -109,7 +109,7 @@ namespace UD
 
     void MinigameEffectUpdateHealth(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_health)
     {
-        //UDSKSELOG("MinigameEffectUpdateHealth called")
+        //LOG("MinigameEffectUpdateHealth called")
         float loc_health    = -1.0f*UDCONVERTMULT*f_health/60.0f;
         if (MinigameEffectManager::GetSingleton()->IsRegistered(a_actor))
         {
@@ -118,7 +118,7 @@ namespace UD
     }
     void MinigameEffectUpdateStamina(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_stamina)
     {
-        //UDSKSELOG("MinigameEffectUpdateStamina called")
+        //LOG("MinigameEffectUpdateStamina called")
         float loc_stamina    = -1.0f*UDCONVERTMULT*f_stamina/60.0f;
         if (MinigameEffectManager::GetSingleton()->IsRegistered(a_actor))
         {
@@ -127,7 +127,7 @@ namespace UD
     }
     void MinigameEffectUpdateMagicka(PAPYRUSFUNCHANDLE, RE::Actor *a_actor, float f_magicka)
     {
-        //UDSKSELOG("MinigameEffectUpdateMagicka called")
+        //LOG("MinigameEffectUpdateMagicka called")
         float loc_magicka    = -1.0f*UDCONVERTMULT*f_magicka/60.0f;
         if (MinigameEffectManager::GetSingleton()->IsRegistered(a_actor))
         {
@@ -138,7 +138,7 @@ namespace UD
     void MinigameEffectManager::RegisterActor(RE::Actor *a_actor, float f_mult, float f_stamina, float f_health, float f_magicka, bool b_toggle)
     {
         if (a_actor == nullptr) return;
-        //UDSKSELOG("::RegisterActor - actor={},new size={}",a_actor->GetName(),_actormap.size());
+        //LOG("::RegisterActor - actor={},new size={}",a_actor->GetName(),_actormap.size());
         ActorControl loc_ac = ActorControl{f_stamina,f_health,f_magicka,f_mult,b_toggle};
         _actormap[a_actor] = loc_ac;
         

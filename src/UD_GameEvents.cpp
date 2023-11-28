@@ -5,30 +5,17 @@ namespace UD
     inline void _OnGameLoad()
     {
         UD::ReloadLib();
-
-        boost::property_tree::ptree loc_pt;
-        bool loc_iniloaded = true;
-        try
-        {
-            boost::property_tree::ini_parser::read_ini("Data\\skse\\plugins\\UDNative.ini", loc_pt);
-        }
-        catch( std::exception &ex )
-        {
-            // you either print it out or have a MessageBox pop up or hide it.
-            UDSKSELOG("ERROR: {}",ex.what())
-            loc_iniloaded = false;
-        }
-
-        RandomGenerator::GetSingleton()->Setup(loc_pt);
+        UD::Config::GetSingleton()->Setup();
+        RandomGenerator::GetSingleton()->Setup();
         PlayerStatus::GetSingleton()->Setup();
         MeterManager::RemoveAll();
         KeywordManager::Reload();
         InventoryHandler::Reload();
-        ORS::OrgasmManager::GetSingleton()->Setup(loc_pt);
+        ORS::OrgasmManager::GetSingleton()->Setup();
         ActorSlotManager::GetSingleton()->Setup();
-        ControlManager::GetSingleton()->Setup(loc_pt);
-        PapyrusDelegate::GetSingleton()->Setup(loc_pt);
-        MaterialManager::GetSingleton()->Setup(loc_pt);
+        ControlManager::GetSingleton()->Setup();
+        PapyrusDelegate::GetSingleton()->Setup();
+        MaterialManager::GetSingleton()->Setup();
         //remove effect in case that user reloaded the game without exit
         if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
 
@@ -38,7 +25,7 @@ namespace UD
 
     inline void _OnPostPostLoad()
     {
-        UDSKSELOG("::_OnPostPostLoad called");
+        //LOG("::_OnPostPostLoad called");
     }
 
     void OnMessageReceived(SKSE::MessagingInterface::Message* a_msg)

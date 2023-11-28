@@ -23,7 +23,7 @@ void UD::ActorSlotManager::Update()
 
     //for (auto&& it : *_slots)
     //{
-    //    //UDSKSELOG("Updating {}",it.first->GetName())
+    //    //LOG("Updating {}",it.first->GetName())
     //    it.second.Constrains = GetActorConstrainsInter(it.first);
     //}
 }
@@ -53,7 +53,7 @@ bool UD::ActorSlotManager::RegisterSlotQuest(RE::TESQuest* a_quest)
     if (std::find(_slotquests.begin(),_slotquests.end(),a_quest) == _slotquests.end())
     {
         _slotquests.push_back(a_quest);
-        UDSKSELOG("ActorSlotManager::RegisterSlotQuest({}) - Total number = {}",a_quest->GetName(),_slotquests.size())
+        LOG("ActorSlotManager::RegisterSlotQuest({}) - Total number = {}",a_quest->GetName(),_slotquests.size())
         //ValidateAliases();
         return true;
     }
@@ -75,7 +75,7 @@ void UD::ActorSlotManager::ValidateAliases()
             RE::Actor* loc_actor = reinterpret_cast<RE::Actor*>(it2.second.get().get());
             if (loc_actor == nullptr) continue;  //skip empty slot
 
-            //UDSKSELOG("ActorSlotManager::ValidateAliases() - Checking actor {}",loc_actor->GetName())
+            //LOG("ActorSlotManager::ValidateAliases() - Checking actor {}",loc_actor->GetName())
 
             if (_slots && (_slots->find(loc_actor) == _slots->end()))
             {
