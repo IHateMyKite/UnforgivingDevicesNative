@@ -30,6 +30,7 @@ void UD::ActorSlotManager::Update()
 
 std::vector<RE::Actor*> UD::ActorSlotManager::GetRegisteredActors()
 {
+    UniqueLock lock(_lock);
     if (_slots == nullptr) return std::vector<RE::Actor*>();
     
     std::vector<RE::Actor*> loc_result;
@@ -43,13 +44,14 @@ std::vector<RE::Actor*> UD::ActorSlotManager::GetRegisteredActors()
 
 UD::ActorStorage* UD::ActorSlotManager::GetActorStorage(RE::Actor* a_actor)
 {
+    UniqueLock lock(_lock);
     return (_slots && a_actor) ? &(*_slots)[a_actor] : nullptr;
 }
 
 bool UD::ActorSlotManager::RegisterSlotQuest(RE::TESQuest* a_quest)
 {
+    UniqueLock lock(_lock);
     if (a_quest == nullptr) return false;
-    std::unique_lock lock(_lock);
     if (std::find(_slotquests.begin(),_slotquests.end(),a_quest) == _slotquests.end())
     {
         _slotquests.push_back(a_quest);
@@ -65,6 +67,7 @@ bool UD::ActorSlotManager::RegisterSlotQuest(RE::TESQuest* a_quest)
 
 void UD::ActorSlotManager::ValidateAliases()
 {
+    UniqueLock lock(_lock);
     std::unordered_map<RE::Actor*,ActorStorage>* loc_slots = new std::unordered_map<RE::Actor*,ActorStorage>();
 
     for (auto&& it1 : _slotquests)

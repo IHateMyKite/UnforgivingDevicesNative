@@ -7,7 +7,7 @@ namespace
     public:
         void Lock()
         {
-            while (_lock) {;}
+            while (_lock) {_cnt++;}
             _lock = true;
         }
         void Unlock()
@@ -15,7 +15,8 @@ namespace
             _lock = false;
         }
     private:
-        mutable bool _lock = false;
+        mutable bool        _lock   = false;
+        mutable uint64_t    _cnt    = 0U; //use counter, so the compiler doesnt ignore the while loop, because of optimization
     };
 
     class UniqueLock

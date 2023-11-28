@@ -92,6 +92,12 @@ float ORS::OrgasmActorData::GetOrgasmProgress(int a_mod) const
     else return _RDATA.OrgasmCapacity > 0.0f ? _PDATA.OrgasmProgress/_RDATA.OrgasmCapacity : 0.0f;
 }
 
+float ORS::OrgasmActorData::GetOrgasmProgressUI() const
+{ 
+    UniqueLock uiLock(lock);
+    return clamp(100.0f*_PDATA.OrgasmProgress/_RDATA.OrgasmCapacity,0.0f,100.0f);
+}
+
 void ORS::OrgasmActorData::ResetOrgasmProgress()
 {
     //LOG("OrgasmManager::ResetOrgasmProgress({})",_actor->GetName())
@@ -287,8 +293,8 @@ void ORS::OrgasmActorData::LinkActorToMeter(std::string a_path, MeterWidgetType 
 
     switch (a_type)
     {
-        case tSkyUi : UD::MeterManager::SetExtCalcSkyUi(_RDATA.LinkedWidgetPath,this,&OrgasmActorData::GetOrgasmProgressLink); break;
-        case tIWW   : UD::MeterManager::SetExtCalcIWW(a_id,this,&OrgasmActorData::GetOrgasmProgressLink); break;
+        case tSkyUi : UD::MeterManager::SetExtCalcSkyUi(_RDATA.LinkedWidgetPath,this,&OrgasmActorData::GetOrgasmProgressUI); break;
+        case tIWW   : UD::MeterManager::SetExtCalcIWW(a_id,this,&OrgasmActorData::GetOrgasmProgressUI); break;
     }
 }
 

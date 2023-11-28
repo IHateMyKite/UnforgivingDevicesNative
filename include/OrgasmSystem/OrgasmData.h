@@ -155,7 +155,7 @@ namespace ORS
         //OrgasmActorData(RE::Actor* a_actor) : _actor(a_actor){};
         void    Update(const float& a_delta);
         float   GetOrgasmProgress(int a_mod) const;
-        float   GetOrgasmProgressLink() const { return clamp(100.0f*_PDATA.OrgasmProgress/_RDATA.OrgasmCapacity,0.0f,100.0f);}
+        float   GetOrgasmProgressUI() const;
         void    ResetOrgasmProgress();
         bool    OrgasmChangeExist(std::string a_key) const;
         bool    AddOrgasmChange(std::string a_key,  OrgasmMod a_mod,
@@ -196,7 +196,7 @@ namespace ORS
         void    UpdatePosition();
 
     public:
-        Spinlock lock;
+        mutable Spinlock lock;
 
     private:
         inline float CalculateOrgasmProgress(const float& a_delta);

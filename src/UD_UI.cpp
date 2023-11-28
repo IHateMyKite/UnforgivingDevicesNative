@@ -7,9 +7,7 @@ namespace UD
     //static variables define
     std::vector<std::unique_ptr<MeterEntryIWW>>    MeterManager::_metersIWW        = std::vector<std::unique_ptr<MeterEntryIWW>>();
     std::vector<std::unique_ptr<MeterEntrySkyUi>>  MeterManager::_metersSkyUi      = std::vector<std::unique_ptr<MeterEntrySkyUi>>();
-    std::mutex                  MeterManager::_mutex            = std::mutex();
     bool                        MeterManager::updateallowed     = true;
-    
 
     MeterEntryIWW::MeterEntryIWW(std::string s_path, int i_id,std::string s_name,float f_base, float f_rate, bool b_update) :  path(s_path), id(i_id), name(s_name)
     {

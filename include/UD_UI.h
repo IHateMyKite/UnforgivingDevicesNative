@@ -23,7 +23,6 @@ namespace UD
         if (a[i]->c)                            \
         {                                       \
             x                                   \
-            _mutex.unlock();                    \
             return y;                           \
         }                                       \
     }                                           \
@@ -101,25 +100,20 @@ namespace UD
             }
             else
             {
-                //_mutex.lock();
                 _metersIWW.push_back(std::unique_ptr<MeterEntryIWW>(new MeterEntryIWW(s_path,i_id,s_name,f_base,f_rate,b_show)));
                 LOG("::AddEntryIWW - added id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
-                //_mutex.unlock();
             }
         }
         inline static bool  RemoveEntryIWW(int i_id)
         {
-            //_mutex.lock();
             for (int i = 0;i < _metersIWW.size();i++)
             {
                 if (_metersIWW[i]->id == i_id) 
                 {
                     _metersIWW.erase(_metersIWW.begin() + i);
-                    _mutex.unlock();
                     return true;
                 }
             }
-            //_mutex.unlock();
             return false;
         }
         inline static void  ToggleMeterIWW(int i_id,bool b_toggle)
@@ -184,21 +178,17 @@ namespace UD
             }
             else
             {
-                //_mutex.lock();
                 _metersSkyUi.push_back(std::unique_ptr<MeterEntrySkyUi>(new MeterEntrySkyUi(s_path,s_name,f_base,f_rate,b_show)));
                 LOG("::AddEntrySkyUi - added = id={},update={},rate={},value={}",_metersSkyUi.back()->id,_metersSkyUi.back()->update,_metersSkyUi.back()->rate,_metersSkyUi.back()->value);
-                //_mutex.unlock();
             }
         }
         inline static bool  RemoveEntrySkyUi(const std::string& s_path)
         {
-            //_mutex.lock();
             for (int i = 0;i < _metersSkyUi.size();i++)
             {
                 if (_metersSkyUi[i]->path == s_path) 
                 {
                     _metersSkyUi.erase(_metersSkyUi.begin() + i);
-                    _mutex.unlock();
                     return true;
                 }
             }
@@ -251,10 +241,6 @@ namespace UD
     protected:
         static std::vector<std::unique_ptr<MeterEntryIWW>>    _metersIWW;
         static std::vector<std::unique_ptr<MeterEntrySkyUi>>  _metersSkyUi;
-        static std::mutex                  _mutex;
-
-
-
     };
 
     //Papyrus functions
