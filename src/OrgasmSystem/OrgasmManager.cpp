@@ -34,7 +34,7 @@ void ORS::OrgasmManager::Setup()
 
 void ORS::OrgasmManager::Update(float a_delta)
 {
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
     if (a_delta <= 0.0f) return;
 
     //LOG("OrgasmManager::Update({})",a_delta)
@@ -79,10 +79,10 @@ bool ORS::OrgasmManager::AddOrgasmChange(RE::Actor* a_actor, std::string a_key, 
 {
     if (a_actor == nullptr) return false;
     //LOG("OrgasmManager::AddOrgasmChange({},{},{},{},{})",a_actor->GetName(),a_key,a_mod,a_erozones,a_orgasmRate)
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.AddOrgasmChange(a_key,a_mod,a_erozones,a_orgasmRate,a_orgasmRateMult,a_orgasmForcing,a_orgasmCapacity,a_orgasmResisten,a_orgasmResistenceMult);
 }
 
@@ -90,10 +90,10 @@ bool ORS::OrgasmManager::AddOrgasmChange(RE::Actor* a_actor, std::string a_key, 
 {
     if (a_actor == nullptr) return false;
     //LOG("OrgasmManager::AddOrgasmChange({},{},{},{},{})",a_actor->GetName(),a_key,a_mod,a_erozones,a_orgasmRate)
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.AddOrgasmChange(a_key,a_mod,(EroZone)a_erozones,a_orgasmRate,a_orgasmRateMult,a_orgasmForcing,a_orgasmCapacity,a_orgasmResisten,a_orgasmResistenceMult);
 }
 
@@ -101,10 +101,10 @@ bool ORS::OrgasmManager::RemoveOrgasmChange(RE::Actor* a_actor, std::string a_ke
 {
     if (a_actor == nullptr) return false;
     //LOG("OrgasmManager::RemoveOrgasmChange({},{})",a_actor->GetName(),a_key)
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.RemoveOrgasmChange(a_key);
 }
 
@@ -112,10 +112,10 @@ bool ORS::OrgasmManager::UpdateOrgasmChangeVar(RE::Actor* a_actor, std::string a
 {
     if (a_actor == nullptr) return false;
     //LOG("OrgasmManager::UpdateOrgasmChangeVar({},{},{},{},{})",a_actor->GetName(),a_key,a_variable,a_value,a_mod)
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.UpdateOrgasmChangeVar(a_key,a_variable,a_value,a_mod);
 }
 
@@ -123,10 +123,10 @@ float ORS::OrgasmManager::GetOrgasmChangeVar(RE::Actor* a_actor, std::string a_k
 {
     if (a_actor == nullptr) return 0.0f;
     //LOG("OrgasmManager::GetOrgasmChangeVar({},{},{})",a_actor->GetName(),a_key,a_variable)
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.GetOrgasmChangeVar(a_key,a_variable);
 }
 
@@ -134,10 +134,10 @@ bool ORS::OrgasmManager::HaveOrgasmChange(RE::Actor* a_actor, std::string a_key)
 {
     if (a_actor == nullptr) return false;
     //LOG("OrgasmManager::HaveOrgasmChange({},{})",a_actor->GetName(),a_key)
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.HaveOrgasmChange(a_key);
 }
 
@@ -145,20 +145,20 @@ float ORS::OrgasmManager::GetOrgasmProgress(RE::Actor* a_actor, int a_mod)
 {
     if (a_actor == nullptr) return 0.0f;
     //LOG("OrgasmManager::GetOrgasmProgress({},{})",a_actor->GetName(),a_mod)
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.GetOrgasmProgress(a_mod);
 }
 
 void ORS::OrgasmManager::ResetOrgasmProgress(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return;
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     loc_oc.ResetOrgasmProgress();
 }
 
@@ -166,10 +166,10 @@ float ORS::OrgasmManager::GetOrgasmVariable(RE::Actor* a_actor, OrgasmVariable a
 {
     if (a_actor == nullptr) return 0.0f;
     //LOG("OrgasmManager::GetOrgasmVariable({},{})",a_actor->GetName(),a_variable)
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
     
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.GetOrgasmVariable(a_variable);
 }
 
@@ -177,10 +177,10 @@ float ORS::OrgasmManager::GetAntiOrgasmRate(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return 0.0f;
     //LOG("OrgasmManager::GetAntiOrgasmRate({})",a_actor->GetName())
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.GetAntiOrgasmRate();
 }
 
@@ -188,10 +188,10 @@ void ORS::OrgasmManager::LinkActorToMeter(RE::Actor* a_actor, std::string a_path
 {
     if (a_actor == nullptr) return;
     //LOG("OrgasmManager::LinkActorToMeter({})",a_actor->GetName(),a_path,a_type,a_id)
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.LinkActorToMeter(a_path,a_type,a_id);
 }
 
@@ -199,10 +199,10 @@ void ORS::OrgasmManager::UnlinkActorFromMeter(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return;
     //LOG("OrgasmManager::UnlinkActorFromMeter({})",a_actor->GetName())
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.UnlinkActorFromMeter();
 }
 
@@ -210,10 +210,10 @@ std::string ORS::OrgasmManager::MakeUniqueKey(RE::Actor* a_actor,std::string a_b
 {
     if (a_actor == nullptr) return "ERROR";
     //LOG("OrgasmManager::MakeUniqueKey({},{})",a_actor->GetName(),a_base)
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.MakeUniqueKey(a_base);
 }
 
@@ -221,10 +221,10 @@ std::vector<std::string> ORS::OrgasmManager::GetAllOrgasmChanges(RE::Actor* a_ac
 {
     if (a_actor == nullptr) return std::vector<std::string>();
     //LOG("OrgasmManager::UnlinkActorFromMeter({})",a_actor->GetName())
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.GetAllOrgasmChanges();
 }
 
@@ -232,10 +232,10 @@ int ORS::OrgasmManager::RemoveAllOrgasmChanges(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return 0;
     //LOG("OrgasmManager::UnlinkActorFromMeter({})",a_actor->GetName())
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.RemoveAllOrgasmChanges();
 }
 
@@ -243,10 +243,10 @@ bool ORS::OrgasmManager::IsOrgasming(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return 0;
     //LOG("OrgasmManager::IsOrgasming({})",a_actor->GetName())
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.IsOrgasming();
 }
 
@@ -254,10 +254,10 @@ int ORS::OrgasmManager::GetOrgasmingCount(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return 0;
     //LOG("OrgasmManager::GetOrgasmingCount({})",a_actor->GetName())
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.GetOrgasmingCount();
 }
 
@@ -265,10 +265,10 @@ void ORS::OrgasmManager::Orgasm(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return;
     //LOG("OrgasmManager::GetOrgasmingCount({})",a_actor->GetName())
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     loc_oc.Orgasm();
 }
 
@@ -276,10 +276,10 @@ std::string ORS::OrgasmManager::GetHornyStatus(RE::Actor* a_actor)
 {
     if (a_actor == nullptr) return "ERROR";
     //LOG("OrgasmManager::GetHornyStatus({})",a_actor->GetName())
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
-    UniqueLock oclock(loc_oc.lock);
+    //UniqueLock oclock(loc_oc.lock);
     return loc_oc.GetHornyStatus();
 }
 
@@ -343,12 +343,14 @@ void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde)
                 {
                     WARN("ERROR: Null actor ({:08X} -> {:08X}) found in cosave -> skipping",loc_actorFormID,loc_newActorFormID)
 
-                    //read data in same way even if actor is null, so correct data are rad next time
+                    //read data in same way even if actor is null, so correct data are read next time
                     OrgasmActorData loc_data;
                     loc_data.OnGameLoaded(serde);
 
                     continue;
                 }
+
+                UniqueLock lock(_lock);
 
                 LOG("Loaded actor {} from save",loc_actor->GetName())
                 auto loc_handle = loc_actor->GetHandle().native_handle();
@@ -364,7 +366,7 @@ void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde)
 
 void ORS::OrgasmManager::OnGameSaved(SKSE::SerializationInterface* serde)
 {
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     if (!serde->OpenRecord(OrgasmSerData, 0)) {
         return;
@@ -388,7 +390,7 @@ void ORS::OrgasmManager::OnGameSaved(SKSE::SerializationInterface* serde)
 
 void ORS::OrgasmManager::OnRevert(SKSE::SerializationInterface* serde)
 {
-    std::unique_lock lock(_lock);
+    UniqueLock lock(_lock);
 
     for (auto&& it : _actors)
     {

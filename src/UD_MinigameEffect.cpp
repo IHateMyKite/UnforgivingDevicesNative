@@ -221,9 +221,8 @@ namespace UD
         }
     }
 
-    void MinigameEffectManager::UpdateMeters(RE::Actor* a_actor, const float& a_delta)
+    void MinigameEffectManager::UpdateMeters(const float& a_delta)
     {
-        if (a_actor == nullptr) return;
         float loc_timemult = a_delta/(1.0f/60.0f);
         if (loc_timemult > 0.0) MeterManager::Update(loc_timemult);
     }

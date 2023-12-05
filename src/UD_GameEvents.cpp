@@ -5,12 +5,11 @@ namespace UD
     inline void _OnGameLoad()
     {
         UD::ReloadLib();
-        UD::Config::GetSingleton()->Setup();
         RandomGenerator::GetSingleton()->Setup();
         PlayerStatus::GetSingleton()->Setup();
         MeterManager::RemoveAll();
         KeywordManager::Reload();
-        InventoryHandler::Reload();
+        InventoryHandler::GetSingleton()->Reload();
         ORS::OrgasmManager::GetSingleton()->Setup();
         ActorSlotManager::GetSingleton()->Setup();
         ControlManager::GetSingleton()->Setup();

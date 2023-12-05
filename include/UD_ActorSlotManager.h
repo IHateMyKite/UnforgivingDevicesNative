@@ -4,9 +4,8 @@ namespace UD
 {
     struct ActorStorage
     {
-        int Constrains;
+        RE::TESObjectWEAP* BestWeapon = nullptr;
     };
-
 
     class ActorSlotManager
     {
@@ -15,7 +14,6 @@ namespace UD
         void Setup();
 
         void Update();
-
 
         std::vector<RE::Actor*> GetRegisteredActors();
 

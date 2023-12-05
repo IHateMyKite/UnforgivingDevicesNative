@@ -46,7 +46,7 @@ namespace UD {
             inline ActorControl* GetActorControl(RE::Actor *a_actor);
 
             void UpdateMinigameEffect(RE::Actor* a_actor, const float& a_delta);
-            void UpdateMeters(RE::Actor* a_actor, const float& a_delta);
+            void UpdateMeters(const float& a_delta);
 
         public:
             std::atomic<bool>            started;

@@ -7,16 +7,18 @@ namespace
     public:
         void Lock()
         {
-            while (_lock) {_cnt++;}
-            _lock = true;
+            while (_lock.exchange(true))
+            {
+                //DEBUG("Lock - Waiting for free - {:016X} - {}",(uintptr_t)this,_lock)
+                ;
+            }
         }
         void Unlock()
         {
-            _lock = false;
+            _lock.store(false);
         }
     private:
-        mutable bool        _lock   = false;
-        mutable uint64_t    _cnt    = 0U; //use counter, so the compiler doesnt ignore the while loop, because of optimization
+        mutable std::atomic<bool> _lock   = false;
     };
 
     class UniqueLock
@@ -25,10 +27,12 @@ namespace
         UniqueLock(Spinlock& a_lock)
         {
             _lock = &a_lock;
+            //DEBUG("UniqueLock - {:016X} - {:016X}",(uintptr_t)this,(uintptr_t)_lock)
             _lock->Lock();
         }
         ~UniqueLock()
         {
+            //DEBUG("~UniqueLock - {:016X} - {:016X}",(uintptr_t)this,(uintptr_t)_lock)
             _lock->Unlock();
         }
     private:

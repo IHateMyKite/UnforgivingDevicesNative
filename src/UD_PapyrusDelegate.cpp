@@ -83,7 +83,11 @@ Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObje
     const auto loc_vm = InternalVM::GetSingleton();
 
     loc_vm->attachedScriptsLock.Lock();
-    auto loc_scripts = loc_vm->attachedScripts.find(loc_vmhandle);
+    auto loc_scripts = std::find_if(std::execution::seq,loc_vm->attachedScripts.begin(),loc_vm->attachedScripts.end(),[a_handle](Script& a_script)
+    {
+        return (a_script.first == a_handle);
+    });
+    //auto loc_scripts = loc_vm->attachedScripts.find(loc_vmhandle);
     loc_vm->attachedScriptsLock.Unlock();
 
     auto loc_type = IsUnforgivingDevice(loc_scripts->second);
@@ -158,7 +162,10 @@ Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectAR
 
     bool loc_found = false;
     loc_vm->attachedScriptsLock.Lock();
-    auto loc_scripts = loc_vm->attachedScripts.find(loc_vmhandle);
+    auto loc_scripts = std::find_if(std::execution::seq,loc_vm->attachedScripts.begin(),loc_vm->attachedScripts.end(),[a_handle](Script& a_script)
+    {
+        return (a_script.first == a_handle);
+    });
     loc_found = (loc_scripts != loc_vm->attachedScripts.end());
     loc_vm->attachedScriptsLock.Unlock();
     
@@ -452,17 +459,23 @@ FilterDeviceResult UD::PapyrusDelegate::ProcessDevice2(RE::VMHandle a_handle, RE
 
 void UD::PapyrusDelegate::UpdateVMHandles() const
 {
+    LOG("UpdateVMHandles called")
+
     const auto loc_vm = InternalVM::GetSingleton();
 
+    Spinlock loc_lock;
+
     loc_vm->attachedScriptsLock.Lock();
-    for (auto&& it : loc_vm->attachedScripts)
+    std::for_each(std::execution::seq,loc_vm->attachedScripts.begin(),loc_vm->attachedScripts.end(),[&](Script& a_script)
     {
-        auto loc_type = IsUnforgivingDevice(it.second);
+        auto loc_type = IsUnforgivingDevice(a_script.second);
         if (loc_type != nullptr)
         {
-            RE::VMHandle loc_handle = it.first;
+            RE::VMHandle loc_handle = a_script.first;
             //get script object
             RE::BSTSmartPointer<RE::BSScript::Object> loc_object = nullptr;
+
+            UniqueLock lock(loc_lock);
             loc_vm->FindBoundObject(loc_handle,loc_type->GetName(),loc_object);
 
             if (loc_object != nullptr)
@@ -477,15 +490,15 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
                     const auto loc_var1 = loc_object->GetVariable("_VMHandle1");
                     const auto loc_var2 = loc_object->GetVariable("_VMHandle2");
 
-                    if (loc_var1 == nullptr || loc_var2 == nullptr) continue;
+                    if (loc_var1 == nullptr || loc_var2 == nullptr) return;
 
                     loc_var1->SetSInt(loc_handle & 0xFFFFFFFF);
                     loc_var2->SetSInt((loc_handle >> 32) & 0xFFFFFFFF);
-                    LOG("Handle of {} set to {} = {} | {}",loc_id->GetName(),it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
+                    LOG("Handle of {} set to {} = {} | {}",loc_id->GetName(),a_script.first,loc_var1->GetSInt(),loc_var2->GetSInt())
                 }
             }
         }
-    }
+    });
     loc_vm->attachedScriptsLock.Unlock();
 }
 

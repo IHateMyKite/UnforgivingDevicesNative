@@ -1,10 +1,13 @@
 #pragma once
 
+#include <execution>
+
 namespace UD
 {
     #define UDBASESCRIPT "ud_customdevice_renderscript"
 
     using InternalVM = RE::BSScript::Internal::VirtualMachine;
+    using Script = RE::BSTTuple<const RE::VMHandle, RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>>;
 
     class PapyrusDelegate
     {

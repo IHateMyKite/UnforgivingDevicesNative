@@ -195,8 +195,9 @@ namespace ORS
 
         void    UpdatePosition();
 
-    public:
-        mutable Spinlock lock;
+        OrgasmActorData& operator=(const OrgasmActorData& a_oad);
+        OrgasmActorData(const OrgasmActorData& a_oad);
+        OrgasmActorData(){};
 
     private:
         inline float CalculateOrgasmProgress(const float& a_delta);
@@ -222,9 +223,6 @@ namespace ORS
 
         inline void CheckHornyLevel();
     private:
-        RE::Actor*  _actor;
-        std::map<std::string,OrgasmChangeData>  _Sources;
-
         struct PERSIST_DATA_HEADER
         {
             
@@ -232,9 +230,6 @@ namespace ORS
             uint16_t        size    = sizeof(PERSIST_DATA);
             uint16_t        ocsize  = sizeof(OrgasmChangeData);
         };
-
-        PERSIST_DATA_HEADER _PDATAH;
-
         struct PERSIST_DATA
         {
             OrgasmEroZone   EroZones[32] = 
@@ -254,11 +249,9 @@ namespace ORS
             float   HornyLevel             = 100.0f;
             uint8_t Reserved[32]; //reserved 32 bytes for future additiones
         };
-
-        PERSIST_DATA _PDATA;
-
         struct RUNTIME_DATA
         {
+            RE::Actor*  Actor = nullptr;
             float   OrgasmRate             = 0.0f;
             float   AntiOrgasmRate         = 0.0f;
             float   OrgasmRateMult         = 1.0f;
@@ -294,6 +287,9 @@ namespace ORS
             uint8_t OrgasmCount = 0;
         };
 
+        std::map<std::string,OrgasmChangeData>  _Sources;
+        PERSIST_DATA_HEADER _PDATAH;
+        PERSIST_DATA _PDATA;
         RUNTIME_DATA _RDATA;
     };
 }

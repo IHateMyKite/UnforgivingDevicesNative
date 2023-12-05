@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 # Set your project name. This will be the name of your SKSE .dll file.
-project(UDNative VERSION 0.1.2 LANGUAGES CXX)
+project(UDNative VERSION 1.0.0 LANGUAGES CXX)
 
 # === Set source files ===
 # Add new .cpp here, otherwise the build will end with link error

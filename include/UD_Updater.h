@@ -13,11 +13,14 @@ namespace UD
 
         void Hook();
         
+        void Update(float a_delta);
+
         static void ActorUpdatePatched(RE::Actor* a_this, float a_delta);
         REL::Relocation<decltype(ActorUpdatePatched)> ActorUpdate;
 
         bool t1mutex = false;
         bool t2mutex = false;
+        bool t3mutex = false;
     private:
         int _installed = false;
     };

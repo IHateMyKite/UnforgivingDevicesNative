@@ -4,8 +4,8 @@
 
 namespace UD 
 {
-    extern inline int GetActorHBConstrains(RE::Actor* a_actor,RE::TESForm* a_device);
-    extern inline int ProccessDeviceArray(RE::Actor* a_actor,const std::vector<RE::TESForm*> &a_array);
+    extern inline int GetActorHBConstrains(RE::Actor* a_actor,RE::TESObjectARMO* a_device);
+    extern inline int ProccessDeviceArray(RE::Actor* a_actor,const std::vector<RE::TESObjectARMO*> &a_array);
     extern inline int GetActorConstrainsInter(RE::Actor* a_actor);
 
     inline int GetActorConstrains(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)

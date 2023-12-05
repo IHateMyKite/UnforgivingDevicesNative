@@ -6,13 +6,6 @@ void UD::ActorSlotManager::Setup()
 {
     if (_installed) return;
     _installed = true;
-    //RE::TESDataHandler* loc_datahandler = RE::TESDataHandler::GetSingleton();
-    //if (loc_datahandler)
-    //{
-    //    _slotquests.push_back(reinterpret_cast<RE::TESQuest*>(loc_datahandler->LookupForm(0x14E7EB,"UnforgivingDevices.esp")));
-    //    _installed = true;
-    //    _slots = new std::unordered_map<RE::Actor*,ActorStorage>();
-    //}
 }
 
 void UD::ActorSlotManager::Update()
@@ -21,11 +14,12 @@ void UD::ActorSlotManager::Update()
 
     if (_slots == nullptr) return;
 
-    //for (auto&& it : *_slots)
-    //{
-    //    //LOG("Updating {}",it.first->GetName())
-    //    it.second.Constrains = GetActorConstrainsInter(it.first);
-    //}
+    UniqueLock lock(_lock);
+    for (auto&& [actor,slot] : *_slots)
+    {
+        //LOG("Updating {}",it.first->GetName())
+        slot.BestWeapon = InventoryHandler::GetSingleton()->GetSharpestWeapon(actor);
+    }
 }
 
 std::vector<RE::Actor*> UD::ActorSlotManager::GetRegisteredActors()
