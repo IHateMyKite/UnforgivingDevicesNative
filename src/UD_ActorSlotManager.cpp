@@ -22,6 +22,28 @@ void UD::ActorSlotManager::Update()
     }
 }
 
+std::vector<RE::ActorHandle::native_handle_type> UD::ActorSlotManager::GetValidActors()
+{
+    UniqueLock lock(_lock);
+    if (_slots == nullptr) return std::vector<RE::ActorHandle::native_handle_type>();
+    if (_slots->size() + _closeactors.size() == 0) return std::vector<RE::ActorHandle::native_handle_type>();
+    //combine to one result
+    std::vector<RE::ActorHandle::native_handle_type> loc_res(_slots->size() + _closeactors.size());
+
+    int loc_i = 0;
+    for (auto&& it : *_slots)
+    {
+        loc_res[loc_i] = it.first->GetHandle().native_handle();
+        loc_i++;
+    }
+    for (auto&& it : _closeactors)
+    {
+        loc_res[loc_i] = it.native_handle();
+        loc_i++;
+    }
+    return loc_res;
+}
+
 std::vector<RE::Actor*> UD::ActorSlotManager::GetRegisteredActors()
 {
     UniqueLock lock(_lock);
@@ -87,5 +109,31 @@ void UD::ActorSlotManager::ValidateAliases()
     }
     delete _slots;
     _slots = loc_slots;
+
+    static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
+
+    _closeactors.clear();
+    const int loc_distance = UD::Config::GetSingleton()->GetVariable<int>("General.iUpdateDistance",5000);
+    RE::TES::GetSingleton()->ForEachReferenceInRange(loc_player, loc_distance, [&](RE::TESObjectREFR& a_ref) {
+        auto loc_refBase    = a_ref.GetBaseObject();
+        auto loc_actor      = a_ref.As<RE::Actor>();
+        if (loc_actor && !loc_actor->IsDisabled() && 
+            loc_actor->Is3DLoaded() && 
+            loc_actor != loc_player &&
+            (a_ref.Is(RE::FormType::NPC) || (loc_refBase && loc_refBase->Is(RE::FormType::NPC)) &&
+            _slots->find(loc_actor) == _slots->end() //only if actor is not already registered
+           )
+        ) 
+        {
+            _closeactors.push_back(loc_actor->GetHandle());
+        }
+        return RE::BSContainer::ForEachResult::kContinue;
+    });
+
+    LOG("Registered actors")
+    for (auto&& it : *_slots) LOG("\t{}",it.first->GetName())
+
+    LOG("Close actors")
+    for (auto&& it : _closeactors) LOG("\t{}",it.get().get()->GetName())
 
 }

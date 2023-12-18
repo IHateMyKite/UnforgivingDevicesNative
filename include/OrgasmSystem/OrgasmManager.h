@@ -67,7 +67,7 @@ namespace ORS
         void    OnRevert(SKSE::SerializationInterface*);
 
     private:
-        bool                _installed = false;
+        bool              _installed = false;
         mutable Spinlock  _lock;
         std::unordered_map<uint32_t,OrgasmActorData> _actors;
     };
@@ -162,7 +162,7 @@ namespace ORS
         return OrgasmManager::GetSingleton()->GetOrgasmingCount(a_actor);
     }
 
-    inline void Orgasm(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    inline void ForceOrgasm(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
     {
         OrgasmManager::GetSingleton()->Orgasm(a_actor);
     }

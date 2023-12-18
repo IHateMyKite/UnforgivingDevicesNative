@@ -763,14 +763,17 @@ inline void ORS::OrgasmActorData::UpdateExpression(const float& a_delta)
     {
         _RDATA.ExpressionTimer += a_delta;
 
-        const float loc_updtime = loc_config->GetVariable<float>("Interface.fExpressionUpdateTime",2.0f);
+        const float loc_updtime = IsPlayer() ? 
+            loc_config->GetVariable<float>("Interface.fExpressionUpdateTimePlayer",2.0f) :
+            loc_config->GetVariable<float>("Interface.fExpressionUpdateTimeNPC",5.0f);
+
         if (_RDATA.OrgasmCount == 0)
         {
             const float loc_progress = GetOrgasmProgress(1);
 
             const float loc_expupdmin   = loc_config->GetVariable<float>("Interface.fExpressionThresholdMin",0.05f);
             const float loc_expupdmax   = loc_config->GetVariable<float>("Interface.fExpressionThresholdMax",0.1f);
-            if ((!_RDATA.ExpressionSet || (_RDATA.ExpressionTimer >= (IsPlayer() ? loc_updtime : 10.0f))) && ((loc_progress > loc_expupdmax)))
+            if ((!_RDATA.ExpressionSet || (_RDATA.ExpressionTimer >= loc_updtime)) && ((loc_progress > loc_expupdmax)))
             {
                 SendOrgasmExpressionEvent(eNormalSet);
                 _RDATA.ExpressionTimer = 0.0f;
@@ -780,13 +783,13 @@ inline void ORS::OrgasmActorData::UpdateExpression(const float& a_delta)
             else if (_RDATA.ExpressionSet && (loc_progress < loc_expupdmin)) 
             {
                 SendOrgasmExpressionEvent(eNormalReset);
-                _RDATA.ExpressionTimer = IsPlayer() ? loc_updtime : 10.0f;
+                _RDATA.ExpressionTimer = loc_updtime;
                 _RDATA.ExpressionSet = false;
             }
         }
         else
         {
-            if ((!_RDATA.ExpressionSet || (_RDATA.ExpressionTimer >= (IsPlayer() ? loc_updtime : 10.0f))))
+            if ((!_RDATA.ExpressionSet || (_RDATA.ExpressionTimer >= loc_updtime)))
             {
     
                 SendOrgasmExpressionEvent(eOrgasmSet);
@@ -813,11 +816,10 @@ inline void ORS::OrgasmActorData::SendOrgasmEvent()
     const PERSIST_DATA loc_pdata = _PDATA;
 
     SKSE::GetTaskInterface()->AddTask([loc_handle,loc_rdata,loc_pdata]
-        {
-            //LOG("Sending orgasm event for {}",loc_handle.get()->GetName())
-            OrgasmEvents::GetSingleton()->OrgasmEvent.QueueEvent(loc_handle.get().get(),loc_rdata.OrgasmRate,loc_rdata.Arousal,loc_pdata.HornyLevel,loc_rdata.OrgasmCount);
-        }
-    );
+    {
+        //LOG("Sending orgasm event for {}",loc_handle.get()->GetName())
+        OrgasmEvents::GetSingleton()->OrgasmEvent.QueueEvent(loc_handle.get().get(),loc_rdata.OrgasmRate,loc_rdata.Arousal,loc_pdata.HornyLevel,loc_rdata.OrgasmCount);
+    });
 }
 
 inline void ORS::OrgasmActorData::SendOrgasmExpressionEvent(ORS::ExpressionUpdateType a_type)

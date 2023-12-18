@@ -51,17 +51,18 @@ void ORS::OrgasmManager::Update(float a_delta)
     }
     for (auto&& it : loc_toremove) _actors.erase(it); //remove invalid actors
 
+    
     std::vector<std::thread> loc_threads;
-    auto loc_actors = UD::ActorSlotManager::GetSingleton()->GetRegisteredActors();
+    auto loc_actors = UD::ActorSlotManager::GetSingleton()->GetValidActors();
     for (auto&& it :_actors)
     {
         //LOG("OrgasmManager::Update({}) - Updating actor {}",a_delta,it.first->GetName())
         RE::Actor* loc_actor = RE::Actor::LookupByHandle(it.first).get();
         OrgasmActorData* loc_actororgasm = &it.second;
-        if (loc_actororgasm != nullptr && loc_actor != nullptr && (std::find(loc_actors.begin(),loc_actors.end(), loc_actor) != loc_actors.end()))
+        if (loc_actororgasm != nullptr && loc_actor != nullptr && (std::find(loc_actors.begin(),loc_actors.end(), it.first) != loc_actors.end()))
         {
             loc_actororgasm->SetActor(loc_actor);
-            //create thread for every actor
+            ////create thread for every actor
             loc_threads.push_back(std::thread(&OrgasmActorData::Update,loc_actororgasm,a_delta));
         }
         else
@@ -69,6 +70,8 @@ void ORS::OrgasmManager::Update(float a_delta)
             //error
         }
     }
+
+    
 
     for (auto&& it : loc_threads) it.join();
 
@@ -303,7 +306,7 @@ void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine 
     REGISTERPAPYRUSFUNC(RemoveAllOrgasmChanges,true)
     REGISTERPAPYRUSFUNC(IsOrgasming,true)
     REGISTERPAPYRUSFUNC(GetOrgasmingCount,true)
-    REGISTERPAPYRUSFUNC(Orgasm,true)
+    REGISTERPAPYRUSFUNC(ForceOrgasm,true)
     REGISTERPAPYRUSFUNC(GetHornyStatus,true)
     // ----
     #undef REGISTERPAPYRUSFUNC

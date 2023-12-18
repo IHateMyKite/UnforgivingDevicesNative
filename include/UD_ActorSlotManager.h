@@ -15,6 +15,8 @@ namespace UD
 
         void Update();
 
+        std::vector<RE::ActorHandle::native_handle_type> GetValidActors();
+
         std::vector<RE::Actor*> GetRegisteredActors();
 
         ActorStorage* GetActorStorage(RE::Actor* a_actor);
@@ -26,6 +28,8 @@ namespace UD
         std::vector<RE::TESQuest*> _slotquests;
 
         std::unordered_map<RE::Actor*,ActorStorage>* _slots = nullptr;
+        std::vector<RE::ActorHandle> _closeactors;
+
         bool _installed = false;
 
         void ValidateAliases();

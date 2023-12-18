@@ -49,7 +49,7 @@ namespace UD
             {
                 ActorSlotManager::GetSingleton()->Update();
             });
-            std::this_thread::sleep_for(std::chrono::milliseconds(5000)); //only once per 5s
+            std::this_thread::sleep_for(std::chrono::milliseconds(UD::Config::GetSingleton()->GetVariable<int>("General.iUpdateTime",2500))); //only once per 2.5s
             t3mutex = false;
         }).detach();
 
