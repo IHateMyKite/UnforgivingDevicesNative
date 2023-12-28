@@ -10,6 +10,8 @@ void UD::MaterialManager::Setup()
         LoadKeywords(_ebonite_words,"asEboniteKeywords");
         LoadKeywords(_rope_words,"asRopeKeywords");
         LoadKeywords(_secure_words,"asSecureKeywords");
+        LoadKeywords(_leather_words,"asLeatherKeywords");
+        
         _installed = true;
     }
 }
@@ -32,6 +34,11 @@ bool UD::MaterialManager::IsRope(const RE::TESForm* a_id) const
 bool UD::MaterialManager::IsSecure(const RE::TESForm* a_id) const
 {
     return IsMaterial(a_id,_secure_words);;
+}
+
+bool UD::MaterialManager::IsLeather(const RE::TESForm* a_id) const
+{
+    return IsMaterial(a_id,_leather_words);;
 }
 
 void UD::MaterialManager::LoadKeywords(std::vector<std::string>& a_words, std::string a_cfgkey)

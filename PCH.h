@@ -5,5 +5,3 @@
 #include "include/UD_H.h"
 
 using namespace std::literals;
-
-#define PARALLEL

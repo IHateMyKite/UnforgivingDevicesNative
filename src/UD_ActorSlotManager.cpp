@@ -22,13 +22,13 @@ void UD::ActorSlotManager::Update()
     }
 }
 
-std::vector<RE::ActorHandle::native_handle_type> UD::ActorSlotManager::GetValidActors()
+std::vector<uint32_t> UD::ActorSlotManager::GetValidActors()
 {
     UniqueLock lock(_lock);
     if (_slots == nullptr) return std::vector<RE::ActorHandle::native_handle_type>();
     if (_slots->size() + _closeactors.size() == 0) return std::vector<RE::ActorHandle::native_handle_type>();
     //combine to one result
-    std::vector<RE::ActorHandle::native_handle_type> loc_res(_slots->size() + _closeactors.size());
+    std::vector<uint32_t> loc_res(_slots->size() + _closeactors.size());
 
     int loc_i = 0;
     for (auto&& it : *_slots)
@@ -38,7 +38,7 @@ std::vector<RE::ActorHandle::native_handle_type> UD::ActorSlotManager::GetValidA
     }
     for (auto&& it : _closeactors)
     {
-        loc_res[loc_i] = it.native_handle();
+        loc_res[loc_i] = it;
         loc_i++;
     }
     return loc_res;
@@ -120,12 +120,13 @@ void UD::ActorSlotManager::ValidateAliases()
         if (loc_actor && !loc_actor->IsDisabled() && 
             loc_actor->Is3DLoaded() && 
             loc_actor != loc_player &&
+            !loc_actor->IsDead()    &&
             (a_ref.Is(RE::FormType::NPC) || (loc_refBase && loc_refBase->Is(RE::FormType::NPC)) &&
             _slots->find(loc_actor) == _slots->end() //only if actor is not already registered
            )
         ) 
         {
-            _closeactors.push_back(loc_actor->GetHandle());
+            _closeactors.push_back(loc_actor->GetHandle().native_handle());
         }
         return RE::BSContainer::ForEachResult::kContinue;
     });
@@ -134,6 +135,6 @@ void UD::ActorSlotManager::ValidateAliases()
     for (auto&& it : *_slots) LOG("\t{}",it.first->GetName())
 
     LOG("Close actors")
-    for (auto&& it : _closeactors) LOG("\t{}",it.get().get()->GetName())
+    for (auto&& it : _closeactors) LOG("\t{}",RE::Actor::LookupByHandle(it) ? RE::Actor::LookupByHandle(it)->GetName() : "NONE")
 
 }

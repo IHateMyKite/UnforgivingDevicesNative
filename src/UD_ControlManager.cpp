@@ -16,6 +16,7 @@ void UD::ControlManager::Setup()
         SaveOriginalControls();
 
         _hardcoreids = Config::GetSingleton()->GetArray<std::string>("Disabler.asHardcoreModeDisable");
+        _hardcodemessages = Config::GetSingleton()->GetArrayText("Disabler.asHardcoreMessages",false);
 
         LOG("Hardcore disable config loaded. Number = {}",_hardcoreids.size())
         for (auto&& it : _hardcoreids) LOG("{}",it)
@@ -59,6 +60,7 @@ void UD::ControlManager::UpdateControl()
         if (!_ControlsDisabled)
         {
             DisableControls();
+            _ControlsDisabled = true;
         }
     }
     else
@@ -66,17 +68,20 @@ void UD::ControlManager::UpdateControl()
         if (_ControlsDisabled)
         {
              ApplyOriginalControls();
+            _ControlsDisabled       = false;
+            _HardcoreModeApplied    = false;
         }
-        if (_hardcoreMode && !_ControlsDisabled)
+        if (!_ControlsDisabled)
         {
-            if (loc_bound && !_HardcoreModeApplied)
+            if (_hardcoreMode && loc_bound && !_HardcoreModeApplied)
             {
-                _HardcoreModeApplied = true;
                 ApplyControls(_HardcoreControls);
+                _HardcoreModeApplied = true;
             }
-            else if (!loc_bound && _HardcoreModeApplied)
+            else if ((!_hardcoreMode || !loc_bound) && _HardcoreModeApplied)
             {
                 ApplyOriginalControls();
+                _HardcoreModeApplied = false;
             }
         }
     }
@@ -146,15 +151,12 @@ bool UD::ControlManager::HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_D
 void UD::ControlManager::ApplyOriginalControls()
 {
     LOG("ApplyOriginalControls called")
-    _ControlsDisabled = false;
-    _HardcoreModeApplied = false;
     ApplyControls(_OriginalControls);
 }
 
 void UD::ControlManager::DisableControls()
 {
     LOG("DisableControls called")
-    _ControlsDisabled = true;
     ApplyControls(_DisabledControls);
 }
 
@@ -169,6 +171,11 @@ void UD::ControlManager::DisableControlsFC()
     {
         ApplyOriginalControls();
     }
+}
+
+const std::vector<std::string>& UD::ControlManager::GetHardcoreMessages() const
+{
+    return _hardcodemessages;
 }
 
 void UD::ControlManager::SaveOriginalControls()
@@ -246,7 +253,11 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
             {
                 if (loc_bound)
                 {
-                    RE::DebugNotification("You are bound and can't do anything!");
+                    auto loc_messages = ControlManager::GetSingleton()->GetHardcoreMessages();
+                    if (loc_messages.size() > 0 && loc_messages[0] != "")
+                    {
+                        RE::DebugNotification(loc_messages[RandomGenerator::GetSingleton()->RandomInt(0,(int)loc_messages.size() - 1)].c_str());
+                    }
                 }
                 ModEvents::GetSingleton()->HMTweenMenuEvent.QueueEvent();
 

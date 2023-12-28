@@ -15,7 +15,7 @@ namespace UD
 
         void Update();
 
-        std::vector<RE::ActorHandle::native_handle_type> GetValidActors();
+        std::vector<uint32_t> GetValidActors();
 
         std::vector<RE::Actor*> GetRegisteredActors();
 
@@ -28,7 +28,7 @@ namespace UD
         std::vector<RE::TESQuest*> _slotquests;
 
         std::unordered_map<RE::Actor*,ActorStorage>* _slots = nullptr;
-        std::vector<RE::ActorHandle> _closeactors;
+        std::vector<uint32_t> _closeactors;
 
         bool _installed = false;
 

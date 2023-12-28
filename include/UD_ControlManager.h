@@ -41,6 +41,8 @@ namespace UD
         void ApplyOriginalControls();
         void DisableControls();
         void DisableControlsFC();
+
+        const std::vector<std::string>& GetHardcoreMessages() const;
     private:
         
     private:
@@ -102,6 +104,7 @@ namespace UD
         bool _HardcoreModeApplied = false;
 
         bool _DisableFreeCamera = true;
+        std::vector<std::string> _hardcodemessages;
 
         void SaveOriginalControls();
         void InitControlOverride(RE::BSTArray<RE::ControlMap::UserEventMapping>** a_controls,const std::vector<std::string>& a_filter);

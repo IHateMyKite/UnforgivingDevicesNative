@@ -39,6 +39,7 @@ namespace UD
         static RE::VMHandle ToVMHandle(const int a_1, const int a_2);
 
         void Setup();
+        void Reload();
 
         int SendRegisterDeviceScriptEvent(RE::Actor* a_actor,std::vector<RE::TESObjectARMO*>& a_devices);
         Result SendMinigameThreadEvents(RE::Actor* a_actor,RE::TESObjectARMO* a_device,RE::VMHandle a_handle,MinigameThreads a_threads);
@@ -47,6 +48,7 @@ namespace UD
         void UpdateVMHandles() const;
     private:
         RE::VMHandle ValidateVMHandle(RE::VMHandle a_handle,RE::TESObjectARMO* a_device);
+        void ValidateCache() const;
         RE::BSScript::ObjectTypeInfo* IsUnforgivingDevice(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts) const;
         FilterDeviceResult CheckRegisterDevice(RE::VMHandle a_handle,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices);
         FilterDeviceResult ProcessDevice(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices,std::function<void(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
@@ -56,6 +58,15 @@ namespace UD
         RE::BGSKeyword* _udrdkw;
         template<class T> T* GetScriptVariable(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_variable,RE::FormType a_type) const;
         template<class T> T* GetScriptProperty(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_property,RE::FormType a_type) const;
+        
+        struct CachedDevice
+        {
+            RE::BSTSmartPointer<RE::BSScript::Object> object;
+            RE::TESObjectARMO* id;
+            RE::TESObjectARMO* rd;
+            RE::Actor* wearer;
+        };
+        mutable std::unordered_map<RE::VMHandle,CachedDevice> _cache;
     };
 
     inline int SendRegisterDeviceScriptEvent(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,std::vector<RE::TESObjectARMO*> a_devices)

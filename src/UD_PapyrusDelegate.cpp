@@ -21,6 +21,12 @@ void PapyrusDelegate::Setup()
         _installed = true;
         LOG("PapyrusDelegate::Setup - installed")
     }
+}
+
+void UD::PapyrusDelegate::Reload()
+{
+    Setup();
+    _cache.clear();
     UpdateVMHandles();
 }
 
@@ -47,23 +53,40 @@ int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vect
     LOG("Finding scripts for {} devices",loc_tofound)
 
     const auto loc_vm = InternalVM::GetSingleton();
-    loc_vm->attachedScriptsLock.Lock();
-    for (auto&& it : loc_vm->attachedScripts)
-    {
-        if (loc_tofound == 0) 
-        {
-            loc_vm->attachedScriptsLock.Unlock();
-            return static_cast<int>(a_devices.size());
-        }
 
-        auto loc_type = IsUnforgivingDevice(it.second);
-        if (loc_type != nullptr)
+    ValidateCache();
+
+    for (auto&& [vmhandle,cached] : _cache)
+    {
+        for(auto rd : a_devices)
         {
-            FilterDeviceResult loc_filterres = CheckRegisterDevice(it.first,loc_type,a_actor,a_devices);
-            if (loc_filterres.Result) loc_tofound--;
+            if (cached.rd == rd && rd)
+            {
+                //get wearer from script
+                const RE::Actor* loc_wearer = cached.wearer;
+
+                //check if device wearer is the same one as passed actor
+                if (loc_wearer == a_actor)
+                {
+                    //get inventory device from papyrus script
+                    RE::TESObjectARMO* loc_id = cached.id;
+                    
+                    LOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
+                    
+                    //ready function args
+                    auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, RE::TESObjectARMO*, RE::TESObjectARMO*>(std::forward<RE::Actor*>(a_actor),std::forward<RE::TESObjectARMO*>(loc_id),std::forward<RE::TESObjectARMO*>(rd));
+                    
+                    //init unused callback
+                    RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback;
+                    
+                    //call papyrus method
+                    loc_vm->DispatchMethodCall(cached.object,"RegisterDevice",loc_args,loc_callback);
+
+                    loc_tofound--;
+                }
+            }
         }
     }
-    loc_vm->attachedScriptsLock.Unlock();
 
     //some device was not found
     return  static_cast<int>(a_devices.size() - loc_tofound);
@@ -71,7 +94,7 @@ int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vect
 
 Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObjectARMO* a_device, RE::VMHandle a_handle,MinigameThreads a_threads)
 {
-    LOG("SendMinigameThreadEvents called")
+    LOG("SendMinigameThreadEvents({},{:08X},{:016X},{}) called",a_actor ? a_actor->GetName() : "NONE",a_device ? a_device->GetFormID() : 0x0,a_handle,a_threads)
     if (a_actor == nullptr || a_device == nullptr || a_threads == 0) return Result::rArgError;
     if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
@@ -82,172 +105,99 @@ Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObje
 
     const auto loc_vm = InternalVM::GetSingleton();
 
-    loc_vm->attachedScriptsLock.Lock();
-    auto loc_scripts = std::find_if(std::execution::seq,loc_vm->attachedScripts.begin(),loc_vm->attachedScripts.end(),[a_handle](Script& a_script)
+    auto loc_cacheres = _cache[a_handle];
+    if (loc_cacheres.object != nullptr)
     {
-        return (a_script.first == a_handle);
-    });
-    //auto loc_scripts = loc_vm->attachedScripts.find(loc_vmhandle);
-    loc_vm->attachedScriptsLock.Unlock();
+        LOG("Device object found in cache - using it")
 
-    auto loc_type = IsUnforgivingDevice(loc_scripts->second);
-    if (loc_type != nullptr)
-    {
-        FilterDeviceResult loc_filterres = ProcessDevice(loc_scripts->first,loc_vmhandle,loc_type,a_actor,loc_device,[&](RE::BSTSmartPointer<RE::BSScript::Object> a_object,RE::TESObjectARMO* a_id,RE::TESObjectARMO* a_rd)
-        {
-            //init unused callback
-            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback1;
-            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback2;
-            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback3;
-            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback4;
-            //call papyrus method
-            if (a_threads & tStarter)   loc_vm->DispatchMethodCall(a_object,"_MinigameStarterThread",RE::MakeFunctionArguments(),loc_callback1);
-            if (a_threads & tCrit)      loc_vm->DispatchMethodCall(a_object,"_MinigameCritLoopThread",RE::MakeFunctionArguments(),loc_callback2);
-            if (a_threads & tParalel)   loc_vm->DispatchMethodCall(a_object,"_MinigameParalelThread",RE::MakeFunctionArguments(),loc_callback3);
-            if (a_threads & tAV)        loc_vm->DispatchMethodCall(a_object,"_MinigameAVCheckLoopThread",RE::MakeFunctionArguments(),loc_callback4);
-            LOG("PapyrusDelegate::SendMinigameThreadEvents - events sent")
-        });
-        if (loc_filterres.Result) return Result::rSuccess;
+        //init unused callback
+        RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback1;
+        RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback2;
+        RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback3;
+        RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback4;
+        //call papyrus method
+        if (a_threads & tStarter)   loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameStarterThread",RE::MakeFunctionArguments(),loc_callback1);
+        if (a_threads & tCrit)      loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameCritLoopThread",RE::MakeFunctionArguments(),loc_callback2);
+        if (a_threads & tParalel)   loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameParalelThread",RE::MakeFunctionArguments(),loc_callback3);
+        if (a_threads & tAV)        loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameAVCheckLoopThread",RE::MakeFunctionArguments(),loc_callback4);
+        LOG("PapyrusDelegate::SendMinigameThreadEvents - events sent")
+
+        return Result::rSuccess;
     }
     return Result::rNotFound;
 }
 
 Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
 {
-    LOG("SendRemoveRenderDeviceEvent called")
+    LOG("SendRemoveRenderDeviceEvent({},{:08X}) called",a_actor ? a_actor->GetName() : "NONE",a_device ? a_device->GetFormID() : 0x0)
     if (a_actor == nullptr || a_device == nullptr) return Result::rArgError;
     if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
     std::vector<RE::TESObjectARMO*> loc_device = {a_device};
 
     const auto loc_vm = InternalVM::GetSingleton();
-    loc_vm->attachedScriptsLock.Lock();
 
-    for (auto&& it : loc_vm->attachedScripts)
+    ValidateCache();
+
+    for(auto&& [vmhandle,cached] : _cache)
     {
-        auto loc_type = IsUnforgivingDevice(it.second);
-        if (loc_type != nullptr)
+        if (cached.rd == a_device)
         {
-            FilterDeviceResult loc_filterres = ProcessDevice(it.first,0,loc_type,a_actor,loc_device,[&](RE::BSTSmartPointer<RE::BSScript::Object> a_object,RE::TESObjectARMO* a_id,RE::TESObjectARMO* a_rd)
+            LOG("Device object found in cache - using it")
+
+            const RE::Actor* loc_wearer = GetScriptVariable<RE::Actor>(cached.object,"Wearer",RE::FormType::ActorCharacter);
+
+            if (loc_wearer == a_actor)
             {
                 //init unused callback
                 RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback;
                 auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*>(std::forward<RE::Actor*>(a_actor));
                 //call papyrus method
-                loc_vm->DispatchMethodCall(a_object,"removeDevice",loc_args,loc_callback);
-                LOG("PapyrusDelegate::SendRemoveRenderDeviceEvent - event sent")
-            });
-            if (loc_filterres.Result) 
-            {
-                loc_vm->attachedScriptsLock.Unlock();
+                loc_vm->DispatchMethodCall(cached.object,"removeDevice",loc_args,loc_callback);
+
+                LOG("SendRemoveRenderDeviceEvent({},{:08X}) - event sent",a_actor->GetName(),a_device->GetFormID())
+
                 return Result::rSuccess;
             }
         }
     }
-    loc_vm->attachedScriptsLock.Unlock();
     return Result::rNotFound;
 }
 
 Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_name, int a_val, uint8_t a_size, uint8_t a_off)
 {
-    //LOG("SetBitMapData called")
+    LOG("SetBitMapData({:016X},{:08X},{},{},{},{}) called",a_handle,a_device ? a_device->GetFormID() : 0x0 ,a_name,a_val,a_size,a_off)
     if (a_name == "" || a_size > 32 || a_off > 32 || a_device == nullptr) return Result::rArgError;
     if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
     RE::VMHandle loc_vmhandle = a_handle;
     loc_vmhandle = ValidateVMHandle(loc_vmhandle,a_device);
-    const auto loc_vm = InternalVM::GetSingleton();
 
-    RE::BSScript::ObjectTypeInfo* loc_type = nullptr;
+    ValidateCache();
+    auto loc_cacheres = _cache[loc_vmhandle];
 
-    bool loc_found = false;
-    loc_vm->attachedScriptsLock.Lock();
-    auto loc_scripts = std::find_if(std::execution::seq,loc_vm->attachedScripts.begin(),loc_vm->attachedScripts.end(),[a_handle](Script& a_script)
+    if (loc_cacheres.object != nullptr)
     {
-        return (a_script.first == a_handle);
-    });
-    loc_found = (loc_scripts != loc_vm->attachedScripts.end());
-    loc_vm->attachedScriptsLock.Unlock();
-    
-    if (loc_found)
-    {
-        loc_type = IsUnforgivingDevice(loc_scripts->second);
-        if (loc_type != nullptr)
-        {
-            FilterDeviceResult loc_filterres = ProcessDevice2(loc_scripts->first,loc_vmhandle,loc_type,a_device,[&](RE::BSTSmartPointer<RE::BSScript::Object> a_object,RE::TESObjectARMO* a_id,RE::TESObjectARMO* a_rd) -> bool
-            {
-                if (a_object == nullptr)
-                {
-                    ERROR("Found object is none")
-                    return false;
-                }
-                const auto loc_var = a_object->GetVariable(a_name);
+        LOG("Device object found in cache - using it")
 
-                if (loc_var == nullptr)
-                {
-                    ERROR("Could not find bitmap variable {}",a_name)
-                    return false;
-                }
-                int loc_res = Utility::GetSingleton()->CodeBit(loc_var->GetSInt(),a_val,a_size,a_off);
-                loc_var->SetSInt(loc_res);
-            
-                return true;
-            });
-        
-            if (loc_filterres.Result) return Result::rSuccess;
-        }
-    }
-    else
-    {
-        LOG("Script not found in attached script. Searching scripts for cleanup - {}",a_handle)
-        RE::BSTSmartPointer<RE::BSScript::Object> loc_object;
-        loc_vm->objectResetLock.Lock();
-        auto loc_it = std::find_if(loc_vm->objectsAwaitingCleanup.begin(),loc_vm->objectsAwaitingCleanup.end(),[&loc_object,a_handle,this](RE::BSTSmartPointer<RE::BSScript::Object> a_object)
-        {
-            auto loc_vmho1 = a_object->GetVariable("_VMHandle1");
-            auto loc_vmho2 = a_object->GetVariable("_VMHandle2");
-            if (loc_vmho1 == nullptr || loc_vmho2 == nullptr) return false;
-            auto loc_vmh1 = loc_vmho1->GetSInt();
-            auto loc_vmh2 = loc_vmho2->GetSInt();
-            auto loc_vmh = ToVMHandle(loc_vmh1,loc_vmh2);
-            LOG("VMHandles found {}",loc_vmh)
-            if (loc_vmh == a_handle)
-            {
-                loc_object = a_object;
-                return true;
-            }
-            else return false;
-        });
+        const auto loc_var = loc_cacheres.object->GetVariable(a_name);
 
-        loc_found = loc_it != loc_vm->objectsAwaitingCleanup.end();
-        loc_vm->objectResetLock.Unlock();
-        if (loc_found) loc_type = loc_it->get()->type.get();
-
-        if (loc_object == nullptr)
-        {
-            ERROR("Found object is none")
-            return Result::rNotFound;
-        }
-        const auto loc_var = loc_object->GetVariable(a_name);
-
-        if (loc_var == nullptr) 
+        if (loc_var == nullptr)
         {
             ERROR("Could not find bitmap variable {}",a_name)
             return Result::rNotFound;
         }
         int loc_res = Utility::GetSingleton()->CodeBit(loc_var->GetSInt(),a_val,a_size,a_off);
         loc_var->SetSInt(loc_res);
-            
+
         return Result::rSuccess;
     }
-
-
     return Result::rNotFound;
 }
 
 RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TESObjectARMO* a_device)
 {
-    //LOG("PapyrusDelegate::ValidateVMHandle called")
+    LOG("PapyrusDelegate::ValidateVMHandle - called")
 
     if (a_handle != 0) return a_handle;
 
@@ -269,11 +219,16 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
 
                 if (loc_var1 == nullptr || loc_var2 == nullptr) return false;
 
+                _cache[it.first].object  = a_object;
+                _cache[it.first].id      = a_id;
+                _cache[it.first].rd      = a_rd;
+                _cache[it.first].wearer  = GetScriptVariable<RE::Actor>(a_object,"Wearer",RE::FormType::ActorCharacter);
+
                 if (loc_var1->GetSInt() == 0 && loc_var2->GetSInt() == 0) 
                 {
                     loc_var1->SetSInt(it.first & 0xFFFFFFFF);
                     loc_var2->SetSInt((it.first >> 32) & 0xFFFFFFFF);
-                    LOG("Handle of {} set to {} = {} | {}",a_id->GetName(),it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
+                    LOG("Handle of {} set to {:016X} = {:08X} + {:08X}",a_id->GetName(),it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
                     loc_res = it.first;
                     return true;
                 }
@@ -290,6 +245,36 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
     }
 
     return loc_res;
+}
+
+void UD::PapyrusDelegate::ValidateCache() const
+{
+    LOG("PapyrusDelegate::ValidateCache() - called")
+
+    std::vector<RE::VMHandle> loc_toremove;
+
+    for (auto&& [vmhandle,cached] : _cache)
+    {
+        if (cached.object.get() == nullptr)
+        {
+            ERROR("Device {} have null script object",cached.id->GetName())
+            continue;
+        }
+
+        if (cached.object->refCountAndHandleLock > 2) continue; //if number of references is 2, it means that no thread is currently running on the object (hopefully)
+
+        auto loc_var = cached.object->GetVariable("_deviceControlBitMap_1");
+        if (loc_var == nullptr) continue;
+
+        int32_t loc_val = loc_var->GetSInt();
+        if (loc_val & 0x04000000)
+        {
+            loc_toremove.push_back(vmhandle);
+            LOG("PapyrusDelegate::ValidateCache - {} is no longer valid - Removing from cache",cached.id->GetName())
+        }
+    }
+
+    for(auto&& it : loc_toremove) _cache.erase(it);
 }
 
 RE::BSScript::ObjectTypeInfo* PapyrusDelegate::IsUnforgivingDevice(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts) const
@@ -494,12 +479,23 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
 
                     loc_var1->SetSInt(loc_handle & 0xFFFFFFFF);
                     loc_var2->SetSInt((loc_handle >> 32) & 0xFFFFFFFF);
-                    LOG("Handle of {} set to {} = {} | {}",loc_id->GetName(),a_script.first,loc_var1->GetSInt(),loc_var2->GetSInt())
+
+                    _cache[loc_handle].object   = loc_object;
+                    _cache[loc_handle].id       = loc_id;
+                    _cache[loc_handle].rd       = GetScriptVariable<RE::TESObjectARMO>(loc_object,"_DeviceRendered",RE::FormType::Armor);
+                    _cache[loc_handle].wearer   = GetScriptVariable<RE::Actor>(loc_object,"Wearer",RE::FormType::ActorCharacter);
+
+                    LOG("Handle of {} set to 0x{:016X} = 0x{:08X} + 0x{:08X}",loc_id->GetName(),a_script.first,loc_var1->GetSInt(),loc_var2->GetSInt())
                 }
             }
         }
     });
     loc_vm->attachedScriptsLock.Unlock();
+
+    DEBUG("Cache size: {}",_cache.size())
+    for(auto&& it : _cache) DEBUG("0x{:016X} - {}(0x{:08X}) / 0x{:08X} = {} ; Wearer = {}",it.first,it.second.id->GetName(),it.second.id->GetFormID(),it.second.rd ? it.second.rd->GetFormID() : 0x0,it.second.object->type->name,it.second.wearer ? it.second.wearer->GetName() : "NONE")
+
+    ValidateCache();
 }
 
 template<class T>

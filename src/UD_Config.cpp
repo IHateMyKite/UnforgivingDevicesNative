@@ -11,7 +11,7 @@ void Config::Setup()
     {
         boost::property_tree::ini_parser::read_ini("Data\\skse\\plugins\\UDNative.ini", _config);
         _ready = true;
-        LOG("UDNative.ini loaded succesfully")
+        DEBUG("UDNative.ini loaded succesfully")
     }
     catch( std::exception &ex )
     {
@@ -24,7 +24,7 @@ void Config::Setup()
     _catche.clear();
 }
 
-std::vector<std::string> Config::GetArrayRaw(std::string a_name, std::string a_sep) const
+std::vector<std::string> Config::GetArrayRaw(std::string a_name, bool a_tolower, std::string a_sep) const
 {
     std::vector<std::string> loc_res;
     try
@@ -43,7 +43,7 @@ std::vector<std::string> Config::GetArrayRaw(std::string a_name, std::string a_s
         const auto loc_first = it.find_first_not_of(' ');
         const auto loc_last  = it.find_last_not_of(' ');
         it = it.substr(loc_first,loc_last - loc_first + 1);
-        std::transform(it.begin(), it.end(), it.begin(), ::tolower);
+        if (a_tolower) std::transform(it.begin(), it.end(), it.begin(), ::tolower);
     }
 
     return loc_res;
@@ -81,7 +81,7 @@ std::vector<T> Config::GetArray(std::string a_name, std::string a_sep) const
     void* loc_cres = _catche[a_name];
     if (loc_cres != nullptr) return *(std::vector<T>*)loc_cres;
 
-    std::vector<std::string> loc_raw = GetArrayRaw(a_name,a_sep);
+    std::vector<std::string> loc_raw = GetArrayRaw(a_name,true,a_sep);
     std::vector<T> loc_res;
 
     for (auto&&it : loc_raw)
@@ -101,6 +101,21 @@ std::vector<T> Config::GetArray(std::string a_name, std::string a_sep) const
     }
 
     _catche[a_name] = new std::vector<T>(loc_res);
+
+    return loc_res;
+}
+
+
+std::vector<std::string> Config::GetArrayText(std::string a_name, bool a_lowercase, std::string a_sep) const
+{
+    if (!_ready) return std::vector<std::string>();
+
+    void* loc_cres = _catche[a_name];
+    if (loc_cres != nullptr) return *(std::vector<std::string>*)loc_cres;
+
+    std::vector<std::string> loc_res = GetArrayRaw(a_name,a_lowercase,a_sep);
+
+    _catche[a_name] = new std::vector<std::string>(loc_res);
 
     return loc_res;
 }

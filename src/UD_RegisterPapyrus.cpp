@@ -99,6 +99,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(IsEbonite,true)
         REGISTERPAPYRUSFUNC(IsRope,true)
         REGISTERPAPYRUSFUNC(IsSecure,true)
+        REGISTERPAPYRUSFUNC(IsLeather,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

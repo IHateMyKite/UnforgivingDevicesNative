@@ -133,10 +133,12 @@ namespace UD
     }
     float RandomGenerator::RandomFloat(const float& a_min, const float& a_max) const
     {
+        if (a_min == a_max) return a_min;
         return a_min + RandomNumber()*(a_max - a_min);
     }
     int RandomGenerator::RandomInt(const int& a_min,const int& a_max) const
     {
+        if (a_min == a_max) return a_min;
         return a_min + boost::math::lround(RandomNumber()*static_cast<float>(a_max - a_min));
     }
     uint32_t RandomGenerator::MWC64X() const

@@ -4,8 +4,6 @@ namespace UD
 {
     void OnGameLoaded(SKSE::SerializationInterface* serde)
     {
-        UD::Config::GetSingleton()->Setup();
-
         LoadMode loc_LoadMode = (LoadMode)UD::Config::GetSingleton()->GetVariable<int>("General.iLoadMode",0);
 
         switch(loc_LoadMode)
@@ -19,6 +17,8 @@ namespace UD
                 // do nothing
                 break;
         }
+
+        PapyrusDelegate::GetSingleton()->Reload();
     }
     void OnGameSaved(SKSE::SerializationInterface* serde)
     {

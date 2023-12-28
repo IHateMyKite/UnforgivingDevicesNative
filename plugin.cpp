@@ -32,8 +32,11 @@ void InitializeSerialization() {
 
 SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     SKSE::Init(skse);
-    UD::Config::GetSingleton()->Setup();
     SetupLog();
+
+    UD::Config::GetSingleton()->Setup();
+    ORS::Config::GetSingleton()->Setup();
+
     SKSE::GetPapyrusInterface()->Register(UD::RegisterPapyrusFunctions);
     SKSE::GetMessagingInterface()->RegisterListener(UD::OnMessageReceived);
     InitializeSerialization();

@@ -10,7 +10,6 @@ namespace ORS
 
 void ORS::OrgasmManager::Setup()
 {
-    ORS::Config::GetSingleton()->Setup();
     if (!_installed)
     {
         //g_ArousalFaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x1579C0,"UnforgivingDevices.esp"));
