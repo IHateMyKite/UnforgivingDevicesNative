@@ -44,9 +44,17 @@ namespace UD
     {
     SINGLETONHEADER(Utility)
     public:
-        int CodeBit(int a_codedmap,int a_value,int a_size,int a_index) const;
+        int     CodeBit(int a_codedmap,int a_value,int a_size,int a_index) const;
+        int     DecodeBit(int i_codedMap,int i_size,int i_index) const;
+        int     Round(float a_value) const;
+        int     iRange(int a_value,int a_min,int a_max) const;
+        float   fRange(float a_value,float a_min,float a_max) const;
+        bool    iInRange(int a_value,int a_min,int a_max) const;
+        bool    fInRange(float a_value,float a_min,float a_max) const;
+
         bool WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw) const;
         RE::TESObjectARMO* GetWornArmor(RE::Actor* a_actor,int a_mask) const;
+        RE::TESObjectARMO* CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_device) const;
     };
 
     inline int CodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_value,int a_size,int a_index)
@@ -54,16 +62,39 @@ namespace UD
         return Utility::GetSingleton()->CodeBit(a_codedmap,a_value,a_size,a_index);
     }
 
-    int     DecodeBit(PAPYRUSFUNCHANDLE,int i_codedMap,int i_size,int i_index);
-    int     Round(PAPYRUSFUNCHANDLE,float a_value);
-    int     iRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max);
-    float   fRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max);
-    bool    iInRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max);
-    bool    fInRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max);
+    inline int DecodeBit(PAPYRUSFUNCHANDLE,int a_codedMap,int a_size,int a_index)
+    {
+        return Utility::GetSingleton()->DecodeBit(a_codedMap,a_size,a_index);
+    }
+    inline int Round(PAPYRUSFUNCHANDLE,float a_value)
+    {
+        return Utility::GetSingleton()->Round(a_value);
+    }
+    inline int iRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max)
+    {
+        return Utility::GetSingleton()->iRange(a_value,a_min,a_max);
+    }
+    inline float fRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max)
+    {
+        return Utility::GetSingleton()->fRange(a_value,a_min,a_max);
+    }
+    inline bool iInRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max)
+    {
+        return Utility::GetSingleton()->iInRange(a_value,a_min,a_max);
+    }
+    inline bool fInRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max)
+    {
+        return Utility::GetSingleton()->fInRange(a_value,a_min,a_max);
+    }
+
+    inline RE::TESObjectARMO* CheckArmorEquipped(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, RE::TESObjectARMO* a_armor)
+    {
+        return Utility::GetSingleton()->CheckArmorEquipped(a_actor,a_armor);
+    }
 
     std::string FormatFloat(PAPYRUSFUNCHANDLE,float a_value,int a_floatpoints);
 
-    int     FloatToInt(PAPYRUSFUNCHANDLE,float a_value);
+    int FloatToInt(PAPYRUSFUNCHANDLE,float a_value);
 
     bool IsPlayer(PAPYRUSFUNCHANDLE,RE::Actor* a_actor);
     std::string GetActorName(PAPYRUSFUNCHANDLE,RE::Actor* a_actor);

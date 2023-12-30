@@ -86,7 +86,9 @@ namespace UD
 
     inline int SetBitMapData(PAPYRUSFUNCHANDLE,int a_handle1,int a_handle2,RE::TESObjectARMO* a_device,std::string a_name,int a_val,int a_size,int a_off)
     {
-        return static_cast<int>(PapyrusDelegate::GetSingleton()->SetBitMapData(PapyrusDelegate::ToVMHandle(a_handle1,a_handle2),a_device,a_name,a_val,a_size,a_off));
+        const auto loc_handle = PapyrusDelegate::ToVMHandle(a_handle1,a_handle2);
+        LOG("SetBitMapData({} + {} = 0x{:016X},0x{:08X},{},{},{},{}) called",a_handle1,a_handle2,loc_handle,a_device ? a_device->GetFormID() : 0x0 ,a_name,a_val,a_size,a_off)
+        return static_cast<int>(PapyrusDelegate::GetSingleton()->SetBitMapData(loc_handle,a_device,a_name,a_val,a_size,a_off));
     }
 
     inline void UpdateVMHandles(PAPYRUSFUNCHANDLE)

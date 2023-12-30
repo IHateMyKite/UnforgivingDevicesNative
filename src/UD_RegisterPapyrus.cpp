@@ -37,6 +37,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(RandomFloat,true)
         REGISTERPAPYRUSFUNC(RandomInt,true)
         REGISTERPAPYRUSFUNC(PluginInstalled,true)
+        REGISTERPAPYRUSFUNC(CheckArmorEquipped,true)
 
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
@@ -100,6 +101,9 @@ namespace UD
         REGISTERPAPYRUSFUNC(IsRope,true)
         REGISTERPAPYRUSFUNC(IsSecure,true)
         REGISTERPAPYRUSFUNC(IsLeather,true)
+
+        //diagnosis
+        REGISTERPAPYRUSFUNC(CheckPatchedDevices,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

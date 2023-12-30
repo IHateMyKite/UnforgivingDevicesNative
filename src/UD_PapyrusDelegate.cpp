@@ -10,7 +10,9 @@ typedef PapyrusDelegate::FilterDeviceResult FilterDeviceResult;
 
 RE::VMHandle UD::PapyrusDelegate::ToVMHandle(const int a_1, const int a_2)
 {
-    return (int64_t)a_1 | ((int64_t)a_2 << 32);
+    const uint64_t loc_fir =  (*(uint32_t*)&a_1);
+    const uint64_t loc_sec = ((uint64_t)(*(uint32_t*)&a_2) << 32);
+    return loc_fir | loc_sec;
 }
 
 void PapyrusDelegate::Setup()
@@ -166,7 +168,6 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
 
 Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_name, int a_val, uint8_t a_size, uint8_t a_off)
 {
-    LOG("SetBitMapData({:016X},{:08X},{},{},{},{}) called",a_handle,a_device ? a_device->GetFormID() : 0x0 ,a_name,a_val,a_size,a_off)
     if (a_name == "" || a_size > 32 || a_off > 32 || a_device == nullptr) return Result::rArgError;
     if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
@@ -178,7 +179,7 @@ Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectAR
 
     if (loc_cacheres.object != nullptr)
     {
-        LOG("Device object found in cache - using it")
+        LOG("Device object found in cache - using it - Wearer = {}",loc_cacheres.wearer->GetName())
 
         const auto loc_var = loc_cacheres.object->GetVariable(a_name);
 
@@ -224,11 +225,11 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
                 _cache[it.first].rd      = a_rd;
                 _cache[it.first].wearer  = GetScriptVariable<RE::Actor>(a_object,"Wearer",RE::FormType::ActorCharacter);
 
-                if (loc_var1->GetSInt() == 0 && loc_var2->GetSInt() == 0) 
+                if (loc_var1->GetUInt() == 0 && loc_var2->GetUInt() == 0) 
                 {
-                    loc_var1->SetSInt(it.first & 0xFFFFFFFF);
-                    loc_var2->SetSInt((it.first >> 32) & 0xFFFFFFFF);
-                    LOG("Handle of {} set to {:016X} = {:08X} + {:08X}",a_id->GetName(),it.first,loc_var1->GetSInt(),loc_var2->GetSInt())
+                    loc_var1->SetUInt(it.first & 0xFFFFFFFF);
+                    loc_var2->SetUInt((it.first >> 32) & 0xFFFFFFFF);
+                    LOG("Handle of {} set to 0x{:016X} = 0x{:08X} + 0x{:08X} ; Wearer = {}",a_id->GetName(),it.first,loc_var1->GetUInt(),loc_var2->GetUInt(),_cache[it.first].wearer->GetName())
                     loc_res = it.first;
                     return true;
                 }
@@ -477,15 +478,15 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
 
                     if (loc_var1 == nullptr || loc_var2 == nullptr) return;
 
-                    loc_var1->SetSInt(loc_handle & 0xFFFFFFFF);
-                    loc_var2->SetSInt((loc_handle >> 32) & 0xFFFFFFFF);
+                    loc_var1->SetUInt(loc_handle & 0xFFFFFFFF);
+                    loc_var2->SetUInt((loc_handle >> 32) & 0xFFFFFFFF);
 
                     _cache[loc_handle].object   = loc_object;
                     _cache[loc_handle].id       = loc_id;
                     _cache[loc_handle].rd       = GetScriptVariable<RE::TESObjectARMO>(loc_object,"_DeviceRendered",RE::FormType::Armor);
                     _cache[loc_handle].wearer   = GetScriptVariable<RE::Actor>(loc_object,"Wearer",RE::FormType::ActorCharacter);
 
-                    LOG("Handle of {} set to 0x{:016X} = 0x{:08X} + 0x{:08X}",loc_id->GetName(),a_script.first,loc_var1->GetSInt(),loc_var2->GetSInt())
+                    LOG("Handle of {} set to 0x{:016X} = 0x{:08X} + 0x{:08X} - Wearer = {}",loc_id->GetName(),a_script.first,loc_var1->GetUInt(),loc_var2->GetUInt(),_cache[loc_handle].wearer ? _cache[loc_handle].wearer->GetName() : "NONE")
                 }
             }
         }

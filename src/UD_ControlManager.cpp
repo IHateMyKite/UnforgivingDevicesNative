@@ -34,10 +34,10 @@ void UD::ControlManager::Setup()
         SKSE::GetCameraEventSource()->AddEventSink(CameraEventSink::GetSingleton());
 
         LOG("ControlManager installed")
-        DebugPrintControls(_OriginalControls);
-        DebugPrintControls(_HardcoreControls);
-        DebugPrintControls(_DisabledControls);
-        DebugPrintControls(_DisabledNoMoveControls);
+        //DebugPrintControls(_OriginalControls);
+        //DebugPrintControls(_HardcoreControls);
+        //DebugPrintControls(_DisabledControls);
+        //DebugPrintControls(_DisabledNoMoveControls);
     }
 
     _DisableFreeCamera = Config::GetSingleton()->GetVariable<bool>("Disabler.bDisableFreeCamera",true);
@@ -166,10 +166,13 @@ void UD::ControlManager::DisableControlsFC()
     if (_DisableFreeCamera)
     {
         ApplyControls(_DisabledNoMoveControls);
+        _ControlsDisabled = true;
     }
     else
     {
         ApplyOriginalControls();
+        _ControlsDisabled       = false;
+        _HardcoreModeApplied    = false;
     }
 }
 

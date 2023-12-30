@@ -31,6 +31,7 @@
     #include <UD_PlayerStatus.h>
     #include <UD_PapyrusDelegate.h>
     #include <UD_Materials.h>
+    #include <UD_Diagnosis.h>
     #include <OrgasmSystem/OrgasmEvents.h>
     #include <OrgasmSystem/OrgasmData.h>
     #include <OrgasmSystem/OrgasmManager.h>

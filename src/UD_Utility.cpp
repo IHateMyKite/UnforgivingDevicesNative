@@ -1,34 +1,34 @@
 #include <UD_Utility.h>
 namespace UD 
 {
-    int DecodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_size,int a_index)
+    int Utility::DecodeBit(int a_codedmap,int a_size,int a_index) const
     {
         a_codedmap >>= a_index;
         a_codedmap &= ((0x00000001 << a_size) - 1);
         return a_codedmap;
     }
 
-    int Round(PAPYRUSFUNCHANDLE, float a_value)
+    int Utility::Round(float a_value) const
     {
         return boost::math::lround(a_value);
     }
 
-    int iRange(PAPYRUSFUNCHANDLE, int a_value,int a_min,int a_max)
+    int Utility::iRange(int a_value,int a_min,int a_max) const
     {
         return boost::algorithm::clamp(a_value,a_min,a_max);
     }
 
-    float fRange(PAPYRUSFUNCHANDLE, float a_value,float a_min,float a_max)
+    float Utility::fRange(float a_value,float a_min,float a_max) const
     {
         return boost::algorithm::clamp(a_value,a_min,a_max);
     }
 
-    bool iInRange(PAPYRUSFUNCHANDLE, int a_value, int a_min, int a_max)
+    bool Utility::iInRange(int a_value, int a_min, int a_max) const
     {
         return (a_value >= a_min && a_value <= a_max);
     }
 
-    bool fInRange(PAPYRUSFUNCHANDLE, float a_value, float a_min, float a_max)
+    bool Utility::fInRange(float a_value, float a_min, float a_max) const
     {
         return (a_value >= a_min && a_value <= a_max);
     }
@@ -112,8 +112,8 @@ namespace UD
         HINSTANCE dllHandle = LoadLibraryA(a_dll.c_str());
         if (dllHandle != NULL)
         {
+            FreeLibrary(dllHandle);
             return true;
-            //FreeLibrary(dllHandle);
         }
         else
         {
@@ -209,5 +209,32 @@ namespace UD
         });
         a_actor->GetInventoryChanges()->VisitWornItems(loc_visitor.AsNativeVisitor());
         return loc_res;
+    }
+
+    RE::TESObjectARMO* Utility::CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_armor) const
+    {
+        if (a_actor == nullptr || a_armor == nullptr) return nullptr;
+        
+        uint32_t loc_mask = 0x00000001;
+        const uint32_t loc_devicemask = (uint32_t)a_armor->GetSlotMask();
+
+        for (loc_mask = 0x00000001; loc_mask < loc_devicemask; loc_mask <<= 1)
+        {
+            if (loc_mask > loc_devicemask) break;
+
+            if (loc_mask & loc_devicemask)
+            {
+                RE::TESObjectARMO* loc_armor = GetWornArmor(a_actor,loc_mask);
+                if (loc_armor != nullptr)
+                {
+                    if (loc_armor == a_armor) return nullptr;
+                    else
+                    {
+                        return loc_armor;
+                    }
+                }
+            }
+        }
+        return nullptr;
     }
 }
