@@ -15,6 +15,7 @@ void UD::Diagnosis::Setup()
             FARPROC pGetDatabase = GetProcAddress(HMODULE (dllHandle),"GetDatabase");
             DDNGGetDatabase = GetDatabase(pGetDatabase);
             DEBUG("Disagnosis::Setup() - GetDatabase imported - addrs = 0x{:016X}",(uintptr_t)DDNGGetDatabase)
+            _imported = DDNGGetDatabase != NULL;
             //FreeLibrary(dllHandle);
         }
         else
@@ -28,6 +29,11 @@ void UD::Diagnosis::Setup()
 int UD::Diagnosis::CheckPatchedDevices()
 {
     DEBUG("CheckPatchedDevices called")
+    if (!_imported) 
+    {
+        ERROR("Cant check database because it was impossible to import the functions")
+        return 0;
+    }
     auto loc_db = DDNGGetDatabase();
     DEBUG("Database size = {}",loc_db.size())
 
@@ -67,7 +73,7 @@ int UD::Diagnosis::CheckPatchedDevices()
         {
             if (!unit.deviceInventory->HasKeyword(_udid))
             {
-                ERROR("Device ID=0x{:08X} ({}) / RD=0x{:08X} is patched incorrectly. ID keyword is missing",
+                ERROR("Device ID=0x{:08X} ({}) / RD=0x{:08X} is patched incorrectly. !!ID keyword is missing!!",
                 unit.deviceInventory->GetFormID(),
                 unit.deviceInventory->GetName(),
                 unit.deviceRendered->GetFormID())

@@ -283,11 +283,10 @@ RE::BSEventNotifyControl UD::CameraEventSink::ProcessEvent(const SKSE::CameraEve
 {                      
     if (eventPtr == nullptr) return RE::BSEventNotifyControl::kContinue;
     
-    
-
     RE::TESCameraState* loc_new = eventPtr->newState;
     RE::TESCameraState* loc_old = eventPtr->oldState;
     
+    _state = loc_new;
 
     if (loc_new != nullptr)
     {
@@ -314,4 +313,10 @@ RE::BSEventNotifyControl UD::CameraEventSink::ProcessEvent(const SKSE::CameraEve
     }
 
     return RE::BSEventNotifyControl::kContinue;
+}
+
+int UD::CameraEventSink::GetCameraState() const
+{
+    if (_state) return _state->id;
+    return -1;
 }

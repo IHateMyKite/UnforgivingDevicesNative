@@ -62,6 +62,7 @@ namespace UD
         int CheckPatchedDevices();
     private:
         bool _installed = false;
+        bool _imported  = false;
         RE::BGSKeyword* _udid;
         RE::BGSKeyword* _udrd;
         GetDatabase DDNGGetDatabase;

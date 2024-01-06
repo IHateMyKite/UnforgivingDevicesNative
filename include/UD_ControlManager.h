@@ -19,6 +19,9 @@ namespace UD
     SINGLETONHEADER(CameraEventSink)
     public:
         RE::BSEventNotifyControl ProcessEvent(const SKSE::CameraEvent* eventPtr,RE::BSTEventSource<SKSE::CameraEvent>*);
+        int GetCameraState() const;
+    private:
+        RE::TESCameraState* _state = nullptr;
     };
 
     class ControlManager
@@ -116,5 +119,10 @@ namespace UD
     {
         LOG("SyncControlSetting({}) called",a_hardcoremode)
         ControlManager::GetSingleton()->SyncSetting(a_hardcoremode);
+    }
+
+    inline int GetCameraState(PAPYRUSFUNCHANDLE)
+    {
+        return CameraEventSink::GetSingleton()->GetCameraState();
     }
 }

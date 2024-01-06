@@ -84,6 +84,7 @@ namespace UD
 
         //player control
         REGISTERPAPYRUSFUNC(SyncControlSetting,true)
+        REGISTERPAPYRUSFUNC(GetCameraState,true)
 
         //events
         REGISTERPAPYRUSFUNC(RegisterForHMTweenMenu,true)

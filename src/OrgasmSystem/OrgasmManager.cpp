@@ -354,7 +354,7 @@ void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde)
 
                 UniqueLock lock(_lock);
 
-                LOG("Loaded actor {} from save",loc_actor->GetName())
+                DEBUG("Loaded actor {} from save",loc_actor->GetName())
                 auto loc_handle = loc_actor->GetHandle().native_handle();
                 _actors[loc_handle] = OrgasmActorData();
                 _actors[loc_handle].SetActor(loc_actor);
