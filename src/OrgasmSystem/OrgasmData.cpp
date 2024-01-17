@@ -44,9 +44,9 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
     bool loc_sendarousalevent = false;
     if (_RDATA.ArousalEventTimer <= 0.0f && (_RDATA.ArousalEventLastValue != _RDATA.Arousal))
     {
-        static Config* loc_config = Config::GetSingleton();
-        const float loc_updnpc = loc_config->GetVariable<float>("Arousal.fArousalEventTimeNPC",5.0f);
-        const float loc_updplayer = loc_config->GetVariable<float>("Arousal.fArousalEventTimePlayer",1.0f);
+        static Config*      loc_config      = Config::GetSingleton();
+        static const float  loc_updnpc      = loc_config->GetVariable<float>("Arousal.fArousalEventTimeNPC",5.0f);
+        static const float  loc_updplayer   = loc_config->GetVariable<float>("Arousal.fArousalEventTimePlayer",1.0f);
         if (_RDATA.Actor->IsPlayerRef()) _RDATA.ArousalEventTimer = loc_updplayer;
         else _RDATA.ArousalEventTimer = loc_updnpc;
 
@@ -351,10 +351,10 @@ int ORS::OrgasmActorData::RemoveAllOrgasmChanges()
 void ORS::OrgasmActorData::Orgasm(void)
 {
     static Config* loc_config = Config::GetSingleton();
-    const float loc_durmin  = loc_config->GetVariable<float>("Orgasm.fOrgasmDurationMin",15.0f);
-    const float loc_durmax  = loc_config->GetVariable<float>("Orgasm.fOrgasmDurationMax",40.0f);
-    const float loc_duradd  = loc_config->GetVariable<float>("Orgasm.fOrgasmDurationAdd",5.0f);
-    const int   loc_timeout = loc_config->GetVariable<int>("Orgasm.iOrgasmTimeout",10);
+    static const float loc_durmin  = loc_config->GetVariable<float>("Orgasm.fOrgasmDurationMin",15.0f);
+    static const float loc_durmax  = loc_config->GetVariable<float>("Orgasm.fOrgasmDurationMax",40.0f);
+    static const float loc_duradd  = loc_config->GetVariable<float>("Orgasm.fOrgasmDurationAdd",5.0f);
+    static const int   loc_timeout = loc_config->GetVariable<int>("Orgasm.iOrgasmTimeout",10);
 
     if (_RDATA.OrgasmTimer == 0.0f) 
     {
@@ -506,11 +506,18 @@ float ORS::OrgasmActorData::CalculateOrgasmRate(const float& a_delta)
 {
     static Config* loc_config = Config::GetSingleton();
     float loc_res = 0.0f;
+
+    static const float loc_arousalths = ORS::Config::GetSingleton()->GetVariable<float>("Arousal.fOrgasmThreshold",35.0f);
+    const bool loc_canincrease = (_RDATA.Arousal >= loc_arousalths);
+
     for (auto&& it1 : _Sources) 
     {   
         OrgasmChangeData& loc_ocd = it1.second;
         const float& loc_or = loc_ocd.OrgasmRate;
         if (loc_or == 0.0f) continue;
+
+        //check if actor doesnt have enought arousal for orgasm rate to increase
+        if (!loc_canincrease && loc_or > 0.0f) continue;
 
         float           loc_mult        = 0.0f;
         const uint32_t& loc_erozones    = loc_ocd.EroZones;
@@ -529,7 +536,7 @@ float ORS::OrgasmActorData::CalculateOrgasmRate(const float& a_delta)
             {
                 const auto loc_currentpos = _RDATA.Actor->GetPosition();
                 const float loc_distance = loc_currentpos.GetSquaredDistance(_RDATA.lastpos);
-                const float loc_basedistance = loc_config->GetVariable<float>("Orgasm.fBaseDistance",2500.0f)*a_delta;
+                static const float loc_basedistance = loc_config->GetVariable<float>("Orgasm.fBaseDistance",2500.0f)*a_delta;
 
                 if (loc_basedistance > 0.0f) loc_mult *= clamp(loc_distance/loc_basedistance,0.0f,10.0f);
 
@@ -616,7 +623,7 @@ inline float ORS::OrgasmActorData::CalculateArousalRate(const float& a_delta)
         {
             const auto loc_currentpos = _RDATA.Actor->GetPosition();
             const float loc_distance = loc_currentpos.GetSquaredDistance(_RDATA.lastpos);
-            const float loc_basedistance = loc_config->GetVariable<float>("Orgasm.fBaseDistance",2500.0f)*a_delta;
+            static const float loc_basedistance = loc_config->GetVariable<float>("Orgasm.fBaseDistance",2500.0f)*a_delta;
 
             if (loc_basedistance > 0.0f) loc_mult *= clamp(loc_distance/loc_basedistance,0.0f,2.0f);
         }
@@ -739,10 +746,9 @@ void ORS::OrgasmActorData::ElapseChanges(const float& a_delta)
 
 inline void ORS::OrgasmActorData::UpdateWidget()
 {
-    static Config* loc_config = Config::GetSingleton();
     if (_RDATA.LinkedWidgetUsed)
     {
-        const float loc_widgetshow = loc_config->GetVariable<float>("Interface.fWidgetShowThreshold",0.025f);
+        static const float loc_widgetshow = Config::GetSingleton()->GetVariable<float>("Interface.fWidgetShowThreshold",0.025f);
         if (_RDATA.LinkedWidgetShown && (GetOrgasmProgress(1) < loc_widgetshow))
         {
             SendLinkedMeterEvent(wHide);
@@ -759,20 +765,21 @@ inline void ORS::OrgasmActorData::UpdateWidget()
 inline void ORS::OrgasmActorData::UpdateExpression(const float& a_delta)
 {
     static Config* loc_config = Config::GetSingleton();
+    static const float loc_updtimePlayer = loc_config->GetVariable<float>("Interface.fExpressionUpdateTimePlayer",2.0f);
+    static const float loc_updtimeNPC    = loc_config->GetVariable<float>("Interface.fExpressionUpdateTimeNPC",5.0f);
+
     if (_RDATA.Actor->Is3DLoaded())
     {
         _RDATA.ExpressionTimer += a_delta;
 
-        const float loc_updtime = IsPlayer() ? 
-            loc_config->GetVariable<float>("Interface.fExpressionUpdateTimePlayer",2.0f) :
-            loc_config->GetVariable<float>("Interface.fExpressionUpdateTimeNPC",5.0f);
+        const float loc_updtime = IsPlayer() ? loc_updtimePlayer : loc_updtimeNPC;
 
         if (_RDATA.OrgasmCount == 0)
         {
             const float loc_progress = GetOrgasmProgress(1);
 
-            const float loc_expupdmin   = loc_config->GetVariable<float>("Interface.fExpressionThresholdMin",0.05f);
-            const float loc_expupdmax   = loc_config->GetVariable<float>("Interface.fExpressionThresholdMax",0.1f);
+            static const float loc_expupdmin   = loc_config->GetVariable<float>("Interface.fExpressionThresholdMin",0.05f);
+            static const float loc_expupdmax   = loc_config->GetVariable<float>("Interface.fExpressionThresholdMax",0.1f);
             if ((!_RDATA.ExpressionSet || (_RDATA.ExpressionTimer >= loc_updtime)) && ((loc_progress > loc_expupdmax)))
             {
                 SendOrgasmExpressionEvent(eNormalSet);
@@ -873,7 +880,7 @@ inline bool ORS::OrgasmActorData::IsPlayer()
 
 inline void ORS::OrgasmActorData::CheckHornyLevel()
 {
-    const bool loc_showmsg = Config::GetSingleton()->GetVariable<bool>("Interface.bHornyMessages",true);
+    static const bool loc_showmsg = Config::GetSingleton()->GetVariable<bool>("Interface.bHornyMessages",true);
     if (!loc_showmsg) return;
 
     const float loc_hornylevel = _PDATA.HornyLevel;

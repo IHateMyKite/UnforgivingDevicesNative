@@ -105,10 +105,11 @@ namespace ORS
     {
     public:
         char        Alias[6];
-        char        DispleyName[12];
+        char        DispleyName[14];
         EroZone     EroZoneSlot = eNone;
         float       Multiplier  = 1.0f;
     };
+    static_assert(sizeof(OrgasmEroZone) == 28);
 
     struct HornyLevel
     {
@@ -123,9 +124,8 @@ namespace ORS
 
     // === Classes
 
-    class OrgasmChangeData
+    struct OrgasmChangeData
     {
-    public:
         char        Key[64]                 = "";
         float       OrgasmRateOriginal      = 0.0f;
         float       OrgasmRate              = 0.0f;
@@ -135,8 +135,10 @@ namespace ORS
         float       OrgasmResistence        = 0.0f;
         float       OrgasmResistenceMult    = 0.0f;
         uint16_t    Duration                = -1;
+        uint8_t     Padd1[2];
         float       ElapsedDuration         = 0.0f;
         uint8_t     Mod                     = 0x00;
+        uint8_t     Padd2[3];
         uint32_t    EroZones                = 0x00000000; //up to 32 ero zones. Should be more than enought
         float       EdgeDuration            = 0.0f;
         float       EdgeRemDuration         = 0.0f;
@@ -148,6 +150,7 @@ namespace ORS
 
         uint8_t     _reserved[16];
     };
+    static_assert(sizeof(OrgasmChangeData) == (64+(14*4)+3+16 + 5));
 
     class OrgasmActorData
     {
@@ -225,11 +228,13 @@ namespace ORS
     private:
         struct PERSIST_DATA_HEADER
         {
-            
             uint8_t         version = PDATAVERSION; //always change when data structure is changed !!!
+            uint8_t         Padd1   = 0x00;
             uint16_t        size    = sizeof(PERSIST_DATA);
             uint16_t        ocsize  = sizeof(OrgasmChangeData);
         };
+        static_assert(sizeof(PERSIST_DATA_HEADER) == 6);
+
         struct PERSIST_DATA
         {
             OrgasmEroZone   EroZones[32] = 
@@ -249,6 +254,8 @@ namespace ORS
             float   HornyLevel             = 100.0f;
             uint8_t Reserved[32]; //reserved 32 bytes for future additiones
         };
+        static_assert(sizeof(PERSIST_DATA) == (32*sizeof(OrgasmEroZone)+8+32));
+
         struct RUNTIME_DATA
         {
             RE::Actor*  Actor = nullptr;

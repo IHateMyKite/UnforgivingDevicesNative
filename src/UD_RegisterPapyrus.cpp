@@ -38,7 +38,8 @@ namespace UD
         REGISTERPAPYRUSFUNC(RandomInt,true)
         REGISTERPAPYRUSFUNC(PluginInstalled,true)
         REGISTERPAPYRUSFUNC(CheckArmorEquipped,true)
-
+        REGISTERPAPYRUSFUNC(ToggleDetection,true)
+            
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
         REGISTERPAPYRUSFUNC(RemoveMeterEntryIWW,true)

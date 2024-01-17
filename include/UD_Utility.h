@@ -161,4 +161,6 @@ namespace UD
     std::vector<int> DivadeToParts(int a_number, int a_parts);
 
     bool PluginInstalled(PAPYRUSFUNCHANDLE,std::string a_dll);
+
+    void ToggleDetection(PAPYRUSFUNCHANDLE, bool a_val);
 }

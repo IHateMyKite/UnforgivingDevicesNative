@@ -121,6 +121,12 @@ namespace UD
         }
     }
 
+    void ToggleDetection(PAPYRUSFUNCHANDLE, bool a_val)
+    {
+        if (RE::ProcessLists::GetSingleton() == nullptr) return;
+        RE::ProcessLists::GetSingleton()->runDetection = a_val;
+    }
+
     SINGLETONBODY(RandomGenerator)
 
     void RandomGenerator::Setup()
