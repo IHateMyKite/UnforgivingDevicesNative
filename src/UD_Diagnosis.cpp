@@ -29,9 +29,9 @@ void UD::Diagnosis::Setup()
 int UD::Diagnosis::CheckPatchedDevices()
 {
     DEBUG("CheckPatchedDevices called")
-    if (!_imported) 
+    if (!_imported || (DDNGGetDatabase == nullptr)) 
     {
-        ERROR("Cant check database because it was impossible to import the functions")
+        ERROR("Cant check database because it was impossible to import the functions!!!!!!!!!!!")
         return 0;
     }
     auto loc_db = DDNGGetDatabase();
