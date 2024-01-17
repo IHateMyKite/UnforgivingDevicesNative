@@ -163,4 +163,7 @@ namespace UD
     bool PluginInstalled(PAPYRUSFUNCHANDLE,std::string a_dll);
 
     void ToggleDetection(PAPYRUSFUNCHANDLE, bool a_val);
+    
+    void ForEachReferenceInRange(RE::TESObjectREFR* origin, float radius,
+                                 std::function<RE::BSContainer::ForEachResult(RE::TESObjectREFR& ref)> callback);
 }

@@ -114,7 +114,7 @@ void UD::ActorSlotManager::ValidateAliases()
 
     _closeactors.clear();
     const int loc_distance = UD::Config::GetSingleton()->GetVariable<int>("General.iUpdateDistance",5000);
-    RE::TES::GetSingleton()->ForEachReferenceInRange(loc_player, loc_distance, [&](RE::TESObjectREFR& a_ref) {
+    UD::ForEachReferenceInRange(loc_player, loc_distance, [&](RE::TESObjectREFR& a_ref) {
         auto loc_refBase    = a_ref.GetBaseObject();
         auto loc_actor      = a_ref.As<RE::Actor>();
         if (loc_actor && !loc_actor->IsDisabled() && 
