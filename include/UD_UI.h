@@ -4,6 +4,12 @@
 
 namespace UD 
 {
+    enum Formula : uint8_t
+    {
+        tLin = 0,
+        tLinRepeat = 1
+    };
+
     //macro to make the code more readable
     #define PROCESSMETER(a,x,c)                 \
     {                                           \
@@ -32,7 +38,7 @@ namespace UD
     class MeterEntryIWW 
     {
     public:
-        MeterEntryIWW(std::string s_path, int i_id,std::string s_name,float f_base, float f_rate, bool b_update);
+        MeterEntryIWW(std::string s_path, int i_id,std::string s_name, Formula aFormula,float f_base, float f_rate, bool b_update);
         bool                update      = false;
         const int           id          = -1;
         const std::string   name        = "error";
@@ -40,17 +46,18 @@ namespace UD
         float               value       = 0.0;
         float               mult        = 1.0;
         const std::string   path;
+        Formula             formula     = Formula::tLin;
         MeterEntryIWW& operator=(const MeterEntryIWW& source);
         void Process(const float& f_timemult);
 
-        ORS::OrgasmActorData* extclass;
+        ORS::OrgasmActorData* extclass = nullptr;
         std::function<float(const ORS::OrgasmActorData&)> extcalc = nullptr; 
     };
 
     class MeterEntrySkyUi : public MeterEntryIWW
     {
     public:
-        MeterEntrySkyUi(std::string s_path, std::string s_name,float f_base, float f_rate, bool b_update);
+        MeterEntrySkyUi(std::string s_path, std::string s_name, Formula a_formula,float f_base, float f_rate, bool b_update);
         void Process(const float& f_timemult);
     };
 
@@ -88,7 +95,7 @@ namespace UD
                             false,
                             id == i_id)
         }
-        inline static void  AddEntryIWW(std::string s_path, int i_id, std::string s_name, float f_base, float f_rate, bool b_show)
+        inline static void  AddEntryIWW(std::string s_path, int i_id, std::string s_name, Formula a_formula, float f_base, float f_rate, bool b_show)
         {
             LOG("::AddEntryIWW called - path={},i_id={},value={},rate={},show={}",s_path,i_id,f_base,f_rate,b_show);
             if (IsRegisteredIWW(i_id)) 
@@ -100,7 +107,7 @@ namespace UD
             }
             else
             {
-                _metersIWW.push_back(std::unique_ptr<MeterEntryIWW>(new MeterEntryIWW(s_path,i_id,s_name,f_base,f_rate,b_show)));
+                _metersIWW.push_back(std::unique_ptr<MeterEntryIWW>(new MeterEntryIWW(s_path,i_id,s_name,a_formula,f_base,f_rate,b_show)));
                 LOG("::AddEntryIWW - added id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
             }
         }
@@ -165,7 +172,7 @@ namespace UD
                             false,
                             path == s_path)
         }
-        inline static void  AddEntrySkyUi(std::string s_path, std::string s_name, float f_base, float f_rate, bool b_show)
+        inline static void  AddEntrySkyUi(std::string s_path, std::string s_name, Formula a_formula, float f_base, float f_rate, bool b_show)
         {
             LOG("::AddEntrySkyUi called - path={},value={},rate={},update={}",s_path,f_base,f_rate,b_show);
             if (IsRegisteredSkyUi(s_path)) 
@@ -178,7 +185,7 @@ namespace UD
             }
             else
             {
-                _metersSkyUi.push_back(std::unique_ptr<MeterEntrySkyUi>(new MeterEntrySkyUi(s_path,s_name,f_base,f_rate,b_show)));
+                _metersSkyUi.push_back(std::unique_ptr<MeterEntrySkyUi>(new MeterEntrySkyUi(s_path,s_name,a_formula,f_base,f_rate,b_show)));
                 LOG("::AddEntrySkyUi - added = id={},update={},rate={},value={}",_metersSkyUi.back()->id,_metersSkyUi.back()->update,_metersSkyUi.back()->rate,_metersSkyUi.back()->value);
             }
         }
@@ -244,9 +251,9 @@ namespace UD
     };
 
     //Papyrus functions
-    inline void AddMeterEntryIWW(PAPYRUSFUNCHANDLE, std::string s_path, int i_id, std::string s_name, float f_base, float f_rate, bool b_show)
+    inline void AddMeterEntryIWW(PAPYRUSFUNCHANDLE, std::string s_path, int i_id, std::string s_name, int a_formula, float f_base, float f_rate, bool b_show)
     {
-        MeterManager::AddEntryIWW(s_path,i_id,s_name,f_base,f_rate,b_show);
+        MeterManager::AddEntryIWW(s_path,i_id,s_name,(Formula)a_formula,f_base,f_rate,b_show);
     }
     inline void RemoveMeterEntryIWW(PAPYRUSFUNCHANDLE, int i_id)
     {
@@ -277,9 +284,9 @@ namespace UD
         return MeterManager::GetMeterValueIWW(i_id);
     }
     
-    inline void AddMeterEntrySkyUi(PAPYRUSFUNCHANDLE, std::string s_path, std::string s_name, float f_base, float f_rate, bool b_show)
+    inline void AddMeterEntrySkyUi(PAPYRUSFUNCHANDLE, std::string s_path, std::string s_name, int a_formula, float f_base, float f_rate, bool b_show)
     {
-        MeterManager::AddEntrySkyUi(s_path,s_name,f_base,f_rate,b_show);
+        MeterManager::AddEntrySkyUi(s_path,s_name,(Formula)a_formula,f_base,f_rate,b_show);
     }
     inline void RemoveMeterEntrySkyUi(PAPYRUSFUNCHANDLE, std::string s_path)
     {

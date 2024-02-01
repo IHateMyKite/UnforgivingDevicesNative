@@ -29,6 +29,7 @@
     #include <UD_ControlManager.h>
     #include <UD_ModEvents.h>
     #include <UD_PlayerStatus.h>
+    #include <UD_Input.h>
     #include <UD_PapyrusDelegate.h>
     #include <UD_Materials.h>
     #include <UD_Diagnosis.h>

@@ -86,6 +86,9 @@ namespace UD
         //player control
         REGISTERPAPYRUSFUNC(SyncControlSetting,true)
         REGISTERPAPYRUSFUNC(GetCameraState,true)
+        REGISTERPAPYRUSFUNC(RegisterDeviceCallback,true)
+        REGISTERPAPYRUSFUNC(UnregisterDeviceCallbacks,true)
+        REGISTERPAPYRUSFUNC(UnregisterAllDeviceCallbacks,true)
 
         //events
         REGISTERPAPYRUSFUNC(RegisterForHMTweenMenu,true)

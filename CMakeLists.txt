@@ -26,6 +26,7 @@ set(source_files ${source_files}
     src/UD_ControlManager.cpp
     src/UD_ModEvents.cpp
     src/UD_PlayerStatus.cpp
+    src/UD_Input.cpp
     src/UD_PapyrusDelegate.cpp
     src/UD_Materials.cpp
     src/UD_Diagnosis.cpp

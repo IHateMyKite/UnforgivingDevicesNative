@@ -9,6 +9,14 @@ namespace UD
     using InternalVM = RE::BSScript::Internal::VirtualMachine;
     using Script = RE::BSTTuple<const RE::VMHandle, RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>>;
 
+    struct Device
+    {
+        RE::BSTSmartPointer<RE::BSScript::Object> object;
+        RE::TESObjectARMO* id;
+        RE::TESObjectARMO* rd;
+        RE::Actor* wearer;
+    };
+
     class PapyrusDelegate
     {
     SINGLETONHEADER(PapyrusDelegate)
@@ -46,6 +54,7 @@ namespace UD
         Result SendRemoveRenderDeviceEvent(RE::Actor* a_actor,RE::TESObjectARMO* a_device);
         Result SetBitMapData(RE::VMHandle a_handle,RE::TESObjectARMO* a_device,std::string a_name,int a_val,uint8_t a_size,uint8_t a_off);
         void UpdateVMHandles() const;
+        Device GetDeviceScript(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
     private:
         RE::VMHandle ValidateVMHandle(RE::VMHandle a_handle,RE::TESObjectARMO* a_device);
         void ValidateCache() const;
@@ -59,14 +68,8 @@ namespace UD
         template<class T> T* GetScriptVariable(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_variable,RE::FormType a_type) const;
         template<class T> T* GetScriptProperty(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_property,RE::FormType a_type) const;
         
-        struct CachedDevice
-        {
-            RE::BSTSmartPointer<RE::BSScript::Object> object;
-            RE::TESObjectARMO* id;
-            RE::TESObjectARMO* rd;
-            RE::Actor* wearer;
-        };
-        mutable std::unordered_map<RE::VMHandle,CachedDevice> _cache;
+
+        mutable std::unordered_map<RE::VMHandle,Device> _cache;
     };
 
     inline int SendRegisterDeviceScriptEvent(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,std::vector<RE::TESObjectARMO*> a_devices)

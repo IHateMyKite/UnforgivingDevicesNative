@@ -499,6 +499,17 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
     ValidateCache();
 }
 
+UD::Device UD::PapyrusDelegate::GetDeviceScript(int a_handle1, int a_handle2, RE::TESObjectARMO* a_device)
+{
+    RE::VMHandle loc_vmhandle = ToVMHandle(a_handle1,a_handle2);
+    loc_vmhandle = ValidateVMHandle(loc_vmhandle,a_device);
+
+    ValidateCache();
+    auto loc_cacheres = _cache[loc_vmhandle];
+
+    return loc_cacheres;
+}
+
 template<class T>
 T* PapyrusDelegate::GetScriptVariable(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_variable, RE::FormType a_type) const
 {

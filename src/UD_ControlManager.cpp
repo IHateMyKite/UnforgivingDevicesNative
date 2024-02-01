@@ -181,6 +181,51 @@ const std::vector<std::string>& UD::ControlManager::GetHardcoreMessages() const
     return _hardcodemessages;
 }
 
+bool UD::ControlManager::RegisterDeviceCallback(int a_handle1, int a_handle2, RE::TESObjectARMO* a_device, int a_dxkeycode, std::string a_callbackfun)
+{
+    DEBUG("RegisterDeviceCallback({},{},{},{},{}) called",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0,a_dxkeycode,a_callbackfun)
+
+    if (a_device == nullptr || (a_handle1 == 0 && a_handle2 == 0) || a_callbackfun == "" || a_dxkeycode == 0) return false;
+    auto loc_device = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_handle1,a_handle2,a_device);
+
+    if (loc_device.object == nullptr || loc_device.id == nullptr || loc_device.rd == nullptr) return false;
+    _DeviceCallbacks[a_dxkeycode] = {loc_device,a_callbackfun};
+
+    DEBUG("RegisterDeviceCallback({},{},{},{},{}) - Callback registered!",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0,a_dxkeycode,a_callbackfun)
+
+    return true;
+}
+
+bool UD::ControlManager::UnregisterDeviceCallbacks(int a_handle1, int a_handle2, RE::TESObjectARMO* a_device)
+{
+    DEBUG("UnregisterDeviceCallbacks({},{},{:08X}) called",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
+
+    if (a_device == nullptr || (a_handle1 == 0 && a_handle2 == 0)) return false;
+    auto loc_device = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_handle1,a_handle2,a_device);
+
+    if (loc_device.object == nullptr || loc_device.id == nullptr || loc_device.rd == nullptr) return false;
+
+    std::erase_if(_DeviceCallbacks,[&](std::pair<const uint32_t,DeviceCallback> a_val)
+    {
+        auto const& [dxcode, devicecallback] = a_val;
+        return devicecallback.device.object.get() == loc_device.object.get();
+    });
+
+    DEBUG("UnregisterDeviceCallbacks({},{},{:08X}) - Callbacks removed",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
+
+    return true;
+}
+
+void UD::ControlManager::UnregisterAllDeviceCallbacks()
+{
+    _DeviceCallbacks.clear();
+}
+
+const std::unordered_map<uint32_t, UD::DeviceCallback>& UD::ControlManager::GetDeviceCallbacks()
+{
+    return _DeviceCallbacks;
+}
+
 void UD::ControlManager::SaveOriginalControls()
 {
     LOG("SaveOriginalControls called")
@@ -243,12 +288,29 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
         const auto*       loc_buttonEvent = event->AsButtonEvent();
         const uint32_t    loc_dxScanCode  = loc_buttonEvent->GetIDCode();
         if (loc_buttonEvent->IsRepeating()) return RE::BSEventNotifyControl::kContinue;
+        DEBUG("KeyEventSink::ProcessEvent(...) dxkeycode = {}",loc_dxScanCode)
+
+        auto loc_callbacks = ControlManager::GetSingleton()->GetDeviceCallbacks();
+        const auto loc_callback = loc_callbacks.find(loc_dxScanCode);
+        if (loc_callback != loc_callbacks.end())
+        {
+            DEBUG("KeyEventSink::ProcessEvent(...) Device callback found - Calling function",loc_dxScanCode)
+            ////init unused callback
+            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_funcallback;
+            //
+            static const auto loc_vm = InternalVM::GetSingleton();
+            //
+            ////call papyrus method
+            loc_vm->DispatchMethodCall(loc_callback->second.device.object,loc_callback->second.callback,RE::MakeFunctionArguments(),loc_funcallback);
+
+            return RE::BSEventNotifyControl::kContinue;
+        }
 
         typedef UD::PlayerStatus::Status Status;
         const Status loc_status = PlayerStatus::GetSingleton()->GetPlayerStatus();
 
         const bool loc_bound = loc_status & Status::sBound;
-        if ( loc_bound && !(loc_status & Status::sMinigame)  && !(loc_status & Status::sAnimation))
+        if ( loc_bound && !(loc_status & Status::sMinigame) && !(loc_status & Status::sAnimation))
         {
             const RE::INPUT_DEVICE loc_Device = loc_buttonEvent->GetDevice();
             const bool loc_hmbuttonpress = ControlManager::GetSingleton()->HardcoreButtonPressed(loc_dxScanCode,loc_Device);

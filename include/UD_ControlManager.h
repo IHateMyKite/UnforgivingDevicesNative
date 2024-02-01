@@ -1,5 +1,7 @@
 #pragma once
 
+#include "UD_PapyrusDelegate.h"
+
 namespace UD
 {
     #define CONTROLSDISABLE RE::INPUT_DEVICES::kGamepad
@@ -24,6 +26,12 @@ namespace UD
         RE::TESCameraState* _state = nullptr;
     };
 
+    struct DeviceCallback
+    {
+        Device device;
+        std::string callback;
+    };
+
     class ControlManager
     {
     SINGLETONHEADER(ControlManager)
@@ -46,6 +54,11 @@ namespace UD
         void DisableControlsFC();
 
         const std::vector<std::string>& GetHardcoreMessages() const;
+
+        bool RegisterDeviceCallback(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device, int a_dxkeycode, std::string a_callbackfun);
+        bool UnregisterDeviceCallbacks(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
+        void UnregisterAllDeviceCallbacks();
+        const std::unordered_map<uint32_t,DeviceCallback>& GetDeviceCallbacks();
     private:
         
     private:
@@ -54,6 +67,8 @@ namespace UD
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _HardcoreControls;
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _DisabledControls;
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _DisabledNoMoveControls;
+
+        std::unordered_map<uint32_t,DeviceCallback> _DeviceCallbacks;
 
         //can be found in clibs UserEvents.h
         std::vector<std::string> _hardcoreids;
@@ -113,6 +128,7 @@ namespace UD
         void InitControlOverride(RE::BSTArray<RE::ControlMap::UserEventMapping>** a_controls,const std::vector<std::string>& a_filter);
         void DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
         void ApplyControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
+        
     };
 
     inline void SyncControlSetting(PAPYRUSFUNCHANDLE, bool a_hardcoremode)
@@ -124,5 +140,20 @@ namespace UD
     inline int GetCameraState(PAPYRUSFUNCHANDLE)
     {
         return CameraEventSink::GetSingleton()->GetCameraState();
+    }
+
+    inline bool RegisterDeviceCallback(PAPYRUSFUNCHANDLE, int a_handle1,int a_handle2,RE::TESObjectARMO* a_device, int a_dxkeycode, std::string a_callbackfun)
+    {
+        return ControlManager::GetSingleton()->RegisterDeviceCallback(a_handle1,a_handle2,a_device,a_dxkeycode,a_callbackfun);
+    }
+
+    inline bool UnregisterDeviceCallbacks(PAPYRUSFUNCHANDLE, int a_handle1,int a_handle2,RE::TESObjectARMO* a_device)
+    {
+        return ControlManager::GetSingleton()->UnregisterDeviceCallbacks(a_handle1,a_handle2,a_device);
+    }
+
+    inline void UnregisterAllDeviceCallbacks(PAPYRUSFUNCHANDLE)
+    {
+        return ControlManager::GetSingleton()->UnregisterAllDeviceCallbacks();
     }
 }
