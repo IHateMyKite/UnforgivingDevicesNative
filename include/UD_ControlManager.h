@@ -26,10 +26,75 @@ namespace UD
         RE::TESCameraState* _state = nullptr;
     };
 
+    enum CallbackArgFuns : uint8_t
+    {
+        fWidgetValue = 0
+    };
+
+    enum CallbackArgType : uint8_t
+    {
+        tInt    = 0,
+        tFloat  = 1,
+        tString = 2,
+        tForm   = 3
+    };
+
+    struct DeviceCallbackArg
+    {
+        CallbackArgFuns funtype;
+        CallbackArgType type;
+        std::string argStr; 
+        RE::TESForm* argForm;
+        std::function<void*(std::string a_argStr, RE::TESForm* a_argForm)> fun;
+    };
+
     struct DeviceCallback
     {
         Device device;
         std::string callback;
+        std::vector<DeviceCallbackArg> args;
+        void Send();
+    };
+
+    using RE::BSScript::Variable;
+
+    class VarFunctionArguments : public RE::BSScript::ZeroFunctionArguments
+    {
+        public:
+            // override (IFunctionArguments)
+            bool operator()(RE::BSScrapArray<Variable>& a_dst) const
+            {
+                a_dst.resize(_args.size());
+                for (int i = 0; i < _args.size(); i++)
+                {
+                    auto loc_callback = _args[i];
+
+                    void* loc_res = loc_callback.fun(loc_callback.argStr,loc_callback.argForm);
+                    RE::BSScript::Variable loc_var;
+                    switch(loc_callback.type)
+                    {
+                    case tInt:
+                        a_dst[i].SetSInt(*(int*)loc_res);
+                        break;
+                    case tFloat:
+                        a_dst[i].SetFloat(*(float*)loc_res);
+                        break;
+                    case tString:
+                        a_dst[i].SetString(*(std::string*)loc_res);
+                        break;
+                    case tForm:
+                        break;
+                    }
+                    delete loc_res;
+                }
+                return true;
+            }
+            void SetArgs(std::vector<DeviceCallbackArg>& a_args)
+            {
+                _args = a_args;
+            }
+        private:
+            std::vector<DeviceCallbackArg> _args;
     };
 
     class ControlManager
@@ -56,11 +121,13 @@ namespace UD
         const std::vector<std::string>& GetHardcoreMessages() const;
 
         bool RegisterDeviceCallback(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device, int a_dxkeycode, std::string a_callbackfun);
+        bool AddDeviceCallbackArgument(int a_dxkeycode, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm);
         bool UnregisterDeviceCallbacks(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
         void UnregisterAllDeviceCallbacks();
         const std::unordered_map<uint32_t,DeviceCallback>& GetDeviceCallbacks();
+        void SendCallback(DeviceCallback* a_callback);
     private:
-        
+        void AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm);
     private:
         bool _installed = false;
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _OriginalControls;
@@ -155,5 +222,10 @@ namespace UD
     inline void UnregisterAllDeviceCallbacks(PAPYRUSFUNCHANDLE)
     {
         return ControlManager::GetSingleton()->UnregisterAllDeviceCallbacks();
+    }
+
+    inline bool AddDeviceCallbackArgument(PAPYRUSFUNCHANDLE, int a_dxkeycode, int a_type, std::string a_argStr, RE::TESForm* a_argForm)
+    {
+        return ControlManager::GetSingleton()->AddDeviceCallbackArgument(a_dxkeycode,(CallbackArgFuns)a_type,a_argStr,a_argForm);
     }
 }

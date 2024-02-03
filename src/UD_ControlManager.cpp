@@ -5,6 +5,8 @@ SINGLETONBODY(UD::KeyEventSink)
 SINGLETONBODY(UD::CameraEventSink)
 SINGLETONBODY(UD::ControlManager)
 
+using RE::BSScript::Variable;
+
 void UD::ControlManager::Setup()
 {
     if (!_installed)
@@ -183,7 +185,7 @@ const std::vector<std::string>& UD::ControlManager::GetHardcoreMessages() const
 
 bool UD::ControlManager::RegisterDeviceCallback(int a_handle1, int a_handle2, RE::TESObjectARMO* a_device, int a_dxkeycode, std::string a_callbackfun)
 {
-    DEBUG("RegisterDeviceCallback({},{},{},{},{}) called",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0,a_dxkeycode,a_callbackfun)
+    LOG("RegisterDeviceCallback({},{},{},{},{}) called",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0,a_dxkeycode,a_callbackfun)
 
     if (a_device == nullptr || (a_handle1 == 0 && a_handle2 == 0) || a_callbackfun == "" || a_dxkeycode == 0) return false;
     auto loc_device = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_handle1,a_handle2,a_device);
@@ -191,7 +193,24 @@ bool UD::ControlManager::RegisterDeviceCallback(int a_handle1, int a_handle2, RE
     if (loc_device.object == nullptr || loc_device.id == nullptr || loc_device.rd == nullptr) return false;
     _DeviceCallbacks[a_dxkeycode] = {loc_device,a_callbackfun};
 
-    DEBUG("RegisterDeviceCallback({},{},{},{},{}) - Callback registered!",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0,a_dxkeycode,a_callbackfun)
+    LOG("RegisterDeviceCallback({},{},{},{},{}) - Callback registered!",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0,a_dxkeycode,a_callbackfun)
+
+    return true;
+}
+
+bool UD::ControlManager::AddDeviceCallbackArgument(int a_dxkeycode, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm)
+{
+    LOG("AddDeviceCallbackArgument({}) called",a_dxkeycode)
+
+    if (a_dxkeycode == 0) return false;
+
+    auto loc_it = _DeviceCallbacks.find(a_dxkeycode);
+    
+    if (loc_it == _DeviceCallbacks.end()) return false;
+
+    DeviceCallback* loc_callback = &loc_it->second;
+
+    AddArgument(loc_callback,a_type,a_argStr,a_argForm);
 
     return true;
 }
@@ -224,6 +243,35 @@ void UD::ControlManager::UnregisterAllDeviceCallbacks()
 const std::unordered_map<uint32_t, UD::DeviceCallback>& UD::ControlManager::GetDeviceCallbacks()
 {
     return _DeviceCallbacks;
+}
+
+void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_funtype, std::string a_argStr, RE::TESForm* a_argForm)
+{
+    if (a_callback == nullptr) return;
+
+    CallbackArgType loc_atype;
+    std::function<void*(std::string a_argStr, RE::TESForm* a_argForm)> loc_fun;
+    switch(a_funtype)
+    {
+    case fWidgetValue:
+        loc_atype = tFloat;
+        loc_fun = [](std::string a_argStr, RE::TESForm* a_argForm) -> void*
+        {
+            float* loc_res = new float(MeterManager::GetMeterValueIWW(std::stoi(a_argStr)));
+            MeterManager::SetMeterValueIWW(std::stoi(a_argStr),0.0f);
+            return loc_res;
+        };
+        break;
+    default:
+        return;
+        break;
+    }
+
+    a_callback->args.push_back({a_funtype,loc_atype,a_argStr,a_argForm,loc_fun});
+}
+
+void UD::ControlManager::SendCallback(DeviceCallback* a_callback)
+{
 }
 
 void UD::ControlManager::SaveOriginalControls()
@@ -288,21 +336,14 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
         const auto*       loc_buttonEvent = event->AsButtonEvent();
         const uint32_t    loc_dxScanCode  = loc_buttonEvent->GetIDCode();
         if (loc_buttonEvent->IsRepeating()) return RE::BSEventNotifyControl::kContinue;
-        DEBUG("KeyEventSink::ProcessEvent(...) dxkeycode = {}",loc_dxScanCode)
+        LOG("KeyEventSink::ProcessEvent(...) dxkeycode = {}",loc_dxScanCode)
 
         auto loc_callbacks = ControlManager::GetSingleton()->GetDeviceCallbacks();
         const auto loc_callback = loc_callbacks.find(loc_dxScanCode);
         if (loc_callback != loc_callbacks.end())
         {
-            DEBUG("KeyEventSink::ProcessEvent(...) Device callback found - Calling function",loc_dxScanCode)
-            ////init unused callback
-            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_funcallback;
-            //
-            static const auto loc_vm = InternalVM::GetSingleton();
-            //
-            ////call papyrus method
-            loc_vm->DispatchMethodCall(loc_callback->second.device.object,loc_callback->second.callback,RE::MakeFunctionArguments(),loc_funcallback);
-
+            LOG("KeyEventSink::ProcessEvent(...) Device callback found - Calling function",loc_dxScanCode)
+            loc_callback->second.Send();
             return RE::BSEventNotifyControl::kContinue;
         }
 
@@ -381,4 +422,18 @@ int UD::CameraEventSink::GetCameraState() const
 {
     if (_state) return _state->id;
     return -1;
+}
+
+void UD::DeviceCallback::Send()
+{
+    ////init unused callback
+    RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_funcallback;
+    static const auto loc_vm = InternalVM::GetSingleton();
+
+    auto loc_args = new VarFunctionArguments();
+    loc_args->SetArgs(args);
+
+    ////call papyrus method
+    loc_vm->DispatchMethodCall(device.object,callback,loc_args,loc_funcallback);
+    delete loc_args;
 }

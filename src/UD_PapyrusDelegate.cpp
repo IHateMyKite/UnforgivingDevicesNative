@@ -65,14 +65,21 @@ int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vect
             if (cached.rd == rd && rd)
             {
                 //get wearer from script
-                const RE::Actor* loc_wearer = cached.wearer;
+                RE::Actor* loc_wearer = cached.wearer;
 
                 //check if device wearer is the same one as passed actor
                 if (loc_wearer == a_actor)
                 {
                     //get inventory device from papyrus script
                     RE::TESObjectARMO* loc_id = cached.id;
-                    
+
+                    //check if actor really wears the device
+                    if (!Utility::GetSingleton()->CheckArmorEquipped(loc_wearer,rd)) 
+                    {
+                        LOG("Device {} found, but actor is not wearing it. Skipping!",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
+                        continue;
+                    }
+
                     LOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
                     
                     //ready function args
@@ -83,6 +90,7 @@ int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vect
                     
                     //call papyrus method
                     loc_vm->DispatchMethodCall(cached.object,"RegisterDevice",loc_args,loc_callback);
+                    delete loc_args;
 
                     loc_tofound--;
                 }
@@ -117,11 +125,14 @@ Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObje
         RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback2;
         RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback3;
         RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback4;
+        auto loc_arg = RE::MakeFunctionArguments();
         //call papyrus method
-        if (a_threads & tStarter)   loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameStarterThread",RE::MakeFunctionArguments(),loc_callback1);
-        if (a_threads & tCrit)      loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameCritLoopThread",RE::MakeFunctionArguments(),loc_callback2);
-        if (a_threads & tParalel)   loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameParalelThread",RE::MakeFunctionArguments(),loc_callback3);
-        if (a_threads & tAV)        loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameAVCheckLoopThread",RE::MakeFunctionArguments(),loc_callback4);
+        if (a_threads & tStarter)   loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameStarterThread",loc_arg,loc_callback1);
+        if (a_threads & tCrit)      loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameCritLoopThread",loc_arg,loc_callback2);
+        if (a_threads & tParalel)   loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameParalelThread",loc_arg,loc_callback3);
+        if (a_threads & tAV)        loc_vm->DispatchMethodCall(loc_cacheres.object,"_MinigameAVCheckLoopThread",loc_arg,loc_callback4);
+        delete loc_arg;
+
         LOG("PapyrusDelegate::SendMinigameThreadEvents - events sent")
 
         return Result::rSuccess;
@@ -156,6 +167,7 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
                 auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*>(std::forward<RE::Actor*>(a_actor));
                 //call papyrus method
                 loc_vm->DispatchMethodCall(cached.object,"removeDevice",loc_args,loc_callback);
+                delete loc_args;
 
                 LOG("SendRemoveRenderDeviceEvent({},{:08X}) - event sent",a_actor->GetName(),a_device->GetFormID())
 
@@ -342,6 +354,8 @@ FilterDeviceResult PapyrusDelegate::CheckRegisterDevice(RE::VMHandle a_handle,RE
                     
                     //call papyrus method
                     loc_vm->DispatchMethodCall(loc_object,"RegisterDevice",loc_args,loc_callback);
+                    delete loc_args;
+
                     return {true,loc_id,loc_rd};
                 }
             }

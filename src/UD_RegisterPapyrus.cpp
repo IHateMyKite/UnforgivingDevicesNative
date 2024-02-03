@@ -89,6 +89,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(RegisterDeviceCallback,true)
         REGISTERPAPYRUSFUNC(UnregisterDeviceCallbacks,true)
         REGISTERPAPYRUSFUNC(UnregisterAllDeviceCallbacks,true)
+        REGISTERPAPYRUSFUNC(AddDeviceCallbackArgument,true)
 
         //events
         REGISTERPAPYRUSFUNC(RegisterForHMTweenMenu,true)
