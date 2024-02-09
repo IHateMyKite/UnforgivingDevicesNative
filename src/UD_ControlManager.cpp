@@ -200,7 +200,7 @@ bool UD::ControlManager::RegisterDeviceCallback(int a_handle1, int a_handle2, RE
 
 bool UD::ControlManager::AddDeviceCallbackArgument(int a_dxkeycode, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm)
 {
-    LOG("AddDeviceCallbackArgument({}) called",a_dxkeycode)
+    LOG("AddDeviceCallbackArgument({},{},{},0x{:08X}) called",a_dxkeycode,(int)a_type,a_argStr,a_argForm ? a_argForm->GetFormID() : 0)
 
     if (a_dxkeycode == 0) return false;
 
@@ -217,7 +217,7 @@ bool UD::ControlManager::AddDeviceCallbackArgument(int a_dxkeycode, CallbackArgF
 
 bool UD::ControlManager::UnregisterDeviceCallbacks(int a_handle1, int a_handle2, RE::TESObjectARMO* a_device)
 {
-    DEBUG("UnregisterDeviceCallbacks({},{},{:08X}) called",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
+    LOG("UnregisterDeviceCallbacks({},{},{:08X}) called",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
 
     if (a_device == nullptr || (a_handle1 == 0 && a_handle2 == 0)) return false;
     auto loc_device = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_handle1,a_handle2,a_device);
@@ -230,7 +230,7 @@ bool UD::ControlManager::UnregisterDeviceCallbacks(int a_handle1, int a_handle2,
         return devicecallback.device.object.get() == loc_device.object.get();
     });
 
-    DEBUG("UnregisterDeviceCallbacks({},{},{:08X}) - Callbacks removed",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
+    LOG("UnregisterDeviceCallbacks({},{},{:08X}) - Callbacks removed",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
 
     return true;
 }
@@ -248,7 +248,6 @@ const std::unordered_map<uint32_t, UD::DeviceCallback>& UD::ControlManager::GetD
 void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_funtype, std::string a_argStr, RE::TESForm* a_argForm)
 {
     if (a_callback == nullptr) return;
-
     CallbackArgType loc_atype;
     std::function<void*(std::string a_argStr, RE::TESForm* a_argForm)> loc_fun;
     switch(a_funtype)
@@ -257,8 +256,19 @@ void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns
         loc_atype = tFloat;
         loc_fun = [](std::string a_argStr, RE::TESForm* a_argForm) -> void*
         {
-            float* loc_res = new float(MeterManager::GetMeterValueIWW(std::stoi(a_argStr)));
-            MeterManager::SetMeterValueIWW(std::stoi(a_argStr),0.0f);
+            auto loc_param = GetStringParamAllInter<std::string>(a_argStr,",");
+            if (loc_param.size() != 2) return nullptr;
+            float* loc_res = nullptr;
+            if (loc_param[0] == "0") 
+            {
+                loc_res = new float(MeterManager::GetMeterValueSkyUi(loc_param[1]));
+                MeterManager::SetMeterValueSkyUi(loc_param[1],0.0f);
+            }
+            else if (loc_param[0] == "1") 
+            {
+                loc_res = new float(MeterManager::GetMeterValueIWW(std::stoi(loc_param[1])));
+                MeterManager::SetMeterValueIWW(std::stoi(loc_param[1]),0.0f);
+            }
             return loc_res;
         };
         break;
@@ -268,10 +278,6 @@ void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns
     }
 
     a_callback->args.push_back({a_funtype,loc_atype,a_argStr,a_argForm,loc_fun});
-}
-
-void UD::ControlManager::SendCallback(DeviceCallback* a_callback)
-{
 }
 
 void UD::ControlManager::SaveOriginalControls()
@@ -436,4 +442,34 @@ void UD::DeviceCallback::Send()
     ////call papyrus method
     loc_vm->DispatchMethodCall(device.object,callback,loc_args,loc_funcallback);
     delete loc_args;
+}
+
+bool UD::VarFunctionArguments::operator()(RE::BSScrapArray<Variable>& a_dst) const
+{
+    a_dst.resize(_args.size());
+    for (int i = 0; i < _args.size(); i++)
+    {
+        auto loc_callback = _args[i];
+
+        void* loc_res = loc_callback.fun(loc_callback.argStr,loc_callback.argForm);
+        if (loc_res == nullptr) continue;
+
+        RE::BSScript::Variable loc_var;
+        switch(loc_callback.type)
+        {
+        case tInt:
+            a_dst[i].SetSInt(*(int*)loc_res);
+            break;
+        case tFloat:
+            a_dst[i].SetFloat(*(float*)loc_res);
+            break;
+        case tString:
+            a_dst[i].SetString(*(std::string*)loc_res);
+            break;
+        case tForm:
+            break;
+        }
+        delete loc_res;
+    }
+    return true;
 }

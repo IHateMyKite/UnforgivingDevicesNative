@@ -191,7 +191,7 @@ Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectAR
 
     if (loc_cacheres.object != nullptr)
     {
-        LOG("Device object found in cache - using it - Wearer = {}",loc_cacheres.wearer->GetName())
+        LOG("Device object found in cache - using it - Wearer = {}",loc_cacheres.wearer ? loc_cacheres.wearer->GetName() : "NONE")
 
         const auto loc_var = loc_cacheres.object->GetVariable(a_name);
 
@@ -235,13 +235,15 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
                 _cache[it.first].object  = a_object;
                 _cache[it.first].id      = a_id;
                 _cache[it.first].rd      = a_rd;
-                _cache[it.first].wearer  = GetScriptVariable<RE::Actor>(a_object,"Wearer",RE::FormType::ActorCharacter);
+                auto loc_wearer = GetScriptVariable<RE::Actor>(a_object,"Wearer",RE::FormType::ActorCharacter);
+                _cache[it.first].wearer  = loc_wearer;
+                
 
                 if (loc_var1->GetUInt() == 0 && loc_var2->GetUInt() == 0) 
                 {
                     loc_var1->SetUInt(it.first & 0xFFFFFFFF);
                     loc_var2->SetUInt((it.first >> 32) & 0xFFFFFFFF);
-                    LOG("Handle of {} set to 0x{:016X} = 0x{:08X} + 0x{:08X} ; Wearer = {}",a_id->GetName(),it.first,loc_var1->GetUInt(),loc_var2->GetUInt(),_cache[it.first].wearer->GetName())
+                    LOG("Handle of {} set to 0x{:016X} = 0x{:08X} + 0x{:08X} ; Wearer = {}",a_id ? a_id->GetName() : "None",it.first,loc_var1->GetUInt(),loc_var2->GetUInt(),loc_wearer ? loc_wearer->GetName() : "NONE")
                     loc_res = it.first;
                     return true;
                 }
@@ -271,7 +273,14 @@ void UD::PapyrusDelegate::ValidateCache() const
         if (cached.object.get() == nullptr)
         {
             ERROR("Device {} have null script object",cached.id->GetName())
+            loc_toremove.push_back(vmhandle);
             continue;
+        }
+
+        //sometimes the device can be  cached before wearer is set, so we check it now
+        if (cached.wearer == nullptr)
+        {
+            cached.wearer = GetScriptVariable<RE::Actor>(cached.object,"Wearer",RE::FormType::ActorCharacter);
         }
 
         if (cached.object->refCountAndHandleLock > 2) continue; //if number of references is 2, it means that no thread is currently running on the object (hopefully)

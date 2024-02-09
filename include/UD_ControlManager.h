@@ -62,33 +62,7 @@ namespace UD
     {
         public:
             // override (IFunctionArguments)
-            bool operator()(RE::BSScrapArray<Variable>& a_dst) const
-            {
-                a_dst.resize(_args.size());
-                for (int i = 0; i < _args.size(); i++)
-                {
-                    auto loc_callback = _args[i];
-
-                    void* loc_res = loc_callback.fun(loc_callback.argStr,loc_callback.argForm);
-                    RE::BSScript::Variable loc_var;
-                    switch(loc_callback.type)
-                    {
-                    case tInt:
-                        a_dst[i].SetSInt(*(int*)loc_res);
-                        break;
-                    case tFloat:
-                        a_dst[i].SetFloat(*(float*)loc_res);
-                        break;
-                    case tString:
-                        a_dst[i].SetString(*(std::string*)loc_res);
-                        break;
-                    case tForm:
-                        break;
-                    }
-                    delete loc_res;
-                }
-                return true;
-            }
+            bool operator()(RE::BSScrapArray<Variable>& a_dst) const;
             void SetArgs(std::vector<DeviceCallbackArg>& a_args)
             {
                 _args = a_args;
@@ -125,7 +99,6 @@ namespace UD
         bool UnregisterDeviceCallbacks(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
         void UnregisterAllDeviceCallbacks();
         const std::unordered_map<uint32_t,DeviceCallback>& GetDeviceCallbacks();
-        void SendCallback(DeviceCallback* a_callback);
     private:
         void AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm);
     private:

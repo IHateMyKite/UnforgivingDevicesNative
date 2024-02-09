@@ -286,4 +286,85 @@ namespace UD
         }
         return nullptr;
     }
+
+    int GetStringParamInt(PAPYRUSFUNCHANDLE, std::string a_DataStr, int a_Index, int a_DefaultValue)
+    {
+        //LOG("GetStringParamInt({},{},{})",a_DataStr,a_Index,a_DefaultValue)
+        return GetStringParam<int>(a_DataStr,a_Index,a_DefaultValue);
+    }
+
+    float GetStringParamFloat(PAPYRUSFUNCHANDLE, std::string a_DataStr, int a_Index, float a_DefaultValue)
+    {
+        //LOG("GetStringParamFloat({},{},{})",a_DataStr,a_Index,a_DefaultValue)
+        return GetStringParam<float>(a_DataStr,a_Index,a_DefaultValue);
+    }
+
+    std::string GetStringParamString(PAPYRUSFUNCHANDLE, std::string a_DataStr, int a_Index, std::string a_DefaultValue)
+    {
+        //LOG("GetStringParamString({},{},{})",a_DataStr,a_Index,a_DefaultValue)
+        return GetStringParam<std::string>(a_DataStr,a_Index,a_DefaultValue);
+    }
+
+    std::vector<std::string> GetStringParamAll(PAPYRUSFUNCHANDLE, std::string a_param)
+    {
+        //LOG("GetModifierAllParam({})",a_param)
+        return GetStringParamAllInter<std::string>(a_param,",");
+    }
+
+    template<class T>
+    T GetStringParam(const std::string& a_param, int a_Index, T a_DefaultValue)
+    {
+        const std::vector<std::string> loc_para = GetStringParamAllInter<std::string>(a_param,",");
+
+        if (a_Index < loc_para.size() && a_Index >= 0)
+        {
+            try
+            {
+                return ((loc_para[a_Index] != "") ? boost::lexical_cast<T>(loc_para[a_Index]) : a_DefaultValue);
+            }
+            catch(boost::bad_lexical_cast &)
+            {
+                LOG("_GetModifierParam({},{}) - Error casting {} to {}",a_param,a_Index,a_DefaultValue,a_param,typeid(T).name())
+                return a_DefaultValue;
+            }
+        }
+        else
+        {
+            return a_DefaultValue;
+        }
+    }
+
+    template<class T>
+    std::vector<T> GetStringParamAllInter(const std::string& a_param, const std::string& a_del)
+    {
+        //separete parameters
+        std::vector<std::string> loc_params;
+        boost::split(loc_params,a_param,boost::is_any_of(a_del));
+    
+        std::vector<T> loc_res;
+        for (auto&& it : loc_params)
+        {
+            try
+            {
+                loc_res.push_back(boost::lexical_cast<T>(it));
+            }
+            catch(boost::bad_lexical_cast &)
+            {
+                ERROR("_GetModifierAllParam({}) - Error casting {} to {}",a_param,a_param,typeid(T).name())
+                loc_res.push_back(T());
+                continue;
+            }
+        }
+        return loc_res;
+    }
+
+    template std::string   GetStringParam(const std::string& a_param, int a_Index, std::string a_DefaultValue);
+    template int           GetStringParam(const std::string& a_param, int a_Index, int a_DefaultValue);
+    template float         GetStringParam(const std::string& a_param, int a_Index, float a_DefaultValue);
+    template bool          GetStringParam(const std::string& a_param, int a_Index, bool a_DefaultValue);
+
+    template std::vector<std::string>   GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
+    template std::vector<int>           GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
+    template std::vector<float>         GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
+    template std::vector<bool>          GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
 }

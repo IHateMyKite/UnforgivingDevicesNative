@@ -20,7 +20,7 @@ namespace UD
         
     private:
         bool _installed = false;
-        RE::TESDataHandler*                             _datahandler;
+        RE::TESDataHandler*             _datahandler;
         std::vector<RE::BGSKeyword*>    _idkw;
         std::vector<RE::BGSKeyword*>    _rdkw;
         std::vector<RE::BGSKeyword*>    _inviskw;

@@ -39,7 +39,11 @@ namespace UD
         REGISTERPAPYRUSFUNC(PluginInstalled,true)
         REGISTERPAPYRUSFUNC(CheckArmorEquipped,true)
         REGISTERPAPYRUSFUNC(ToggleDetection,true)
-            
+        REGISTERPAPYRUSFUNC(GetStringParamAll,true)
+        REGISTERPAPYRUSFUNC(GetStringParamInt,true)
+        REGISTERPAPYRUSFUNC(GetStringParamFloat,true)
+        REGISTERPAPYRUSFUNC(GetStringParamString,true)
+
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
         REGISTERPAPYRUSFUNC(RemoveMeterEntryIWW,true)
@@ -72,12 +76,6 @@ namespace UD
 
         //skill
         REGISTERPAPYRUSFUNC(CalculateSkillFromPerks,true)
-
-        //modifiers
-        REGISTERPAPYRUSFUNC(GetModifierAllParam,true)
-        REGISTERPAPYRUSFUNC(GetStringParamInt,true)
-        REGISTERPAPYRUSFUNC(GetStringParamFloat,true)
-        REGISTERPAPYRUSFUNC(GetStringParamString,true)
 
         //actor slot manager
         REGISTERPAPYRUSFUNC(RegisterSlotQuest,true)

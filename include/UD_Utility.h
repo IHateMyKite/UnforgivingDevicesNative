@@ -2,6 +2,9 @@
 
 #include <boost/algorithm/clamp.hpp>
 #include <boost/math/special_functions/round.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace UD 
 {
@@ -166,4 +169,12 @@ namespace UD
     
     void ForEachReferenceInRange(RE::TESObjectREFR* origin, float radius,
                                  std::function<RE::BSContainer::ForEachResult(RE::TESObjectREFR& ref)> callback);
+
+    int                         GetStringParamInt(PAPYRUSFUNCHANDLE, std::string a_DataStr,int a_Index,int a_DefaultValue);
+    float                       GetStringParamFloat(PAPYRUSFUNCHANDLE, std::string a_DataStr,int a_Index,float a_DefaultValue);
+    std::string                 GetStringParamString(PAPYRUSFUNCHANDLE, std::string a_DataStr,int a_Index,std::string a_DefaultValue);
+    std::vector<std::string>    GetStringParamAll(PAPYRUSFUNCHANDLE,std::string a_param);
+
+    template<class T> T GetStringParam(const std::string& a_param,int a_Index,T a_DefaultValue);
+    template<class T> std::vector<T> GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
 }
