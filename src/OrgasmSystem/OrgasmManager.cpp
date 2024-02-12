@@ -43,7 +43,7 @@ void ORS::OrgasmManager::Update(float a_delta)
     {
         RE::Actor* loc_actor = RE::Actor::LookupByHandle(it.first).get();
         //check if actor is dead. If yes, unregister it
-        if (loc_actor && loc_actor->IsDead())
+        if (loc_actor == nullptr || loc_actor && loc_actor->IsDead())
         {
             loc_toremove.push_back(it.first);
         }
