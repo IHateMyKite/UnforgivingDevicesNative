@@ -4,6 +4,8 @@
 
 namespace UD 
 {
+    #define FRAMESKIP_LINREPEAT 1U
+
     enum Formula : uint8_t
     {
         tLin = 0,
@@ -24,15 +26,15 @@ namespace UD
 
     #define PROCESSMETERRET(a, x, y, z, c)      \
     {                                           \
-    for (int i = 0;i < a.size();i++)            \
-    {                                           \
-        if (a[i]->c)                            \
+        for (int i = 0;i < a.size();i++)        \
         {                                       \
-            x                                   \
-            return y;                           \
+            if (a[i]->c)                        \
+            {                                   \
+                x                               \
+                return y;                       \
+            }                                   \
         }                                       \
-    }                                           \
-    return z;                                   \
+        return z;                               \
     }
 
     class MeterEntryIWW 
@@ -44,9 +46,12 @@ namespace UD
         const std::string   name        = "error";
         float               rate        = 0.0;
         float               value       = 0.0;
+        bool                newvalueset = false;
+        float               newvalue    = 0.0;
         float               mult        = 1.0;
         const std::string   path;
         Formula             formula     = Formula::tLin;
+        uint8_t             frameskip = 0;
         MeterEntryIWW& operator=(const MeterEntryIWW& source);
         void Process(const float& f_timemult);
 
@@ -137,7 +142,7 @@ namespace UD
         }
         inline static void  SetMeterValueIWW(int i_id, float f_newvalue)
         {
-            PROCESSMETER(_metersIWW, _metersIWW[i]->value = f_newvalue;,id == i_id)
+            PROCESSMETER(_metersIWW, _metersIWW[i]->newvalueset = true; _metersIWW[i]->newvalue = f_newvalue;,id == i_id)
         }
         inline static float UpdateMeterValueIWW(int i_id, float f_diffvalue)
         {
@@ -151,7 +156,7 @@ namespace UD
         {
             PROCESSMETERRET(_metersIWW ,
                              , 
-                            _metersIWW[i]->value , 
+                            _metersIWW[i]->newvalueset ? _metersIWW[i]->newvalue : _metersIWW[i]->value , 
                             0.0f , 
                             id == i_id)
         }
@@ -216,7 +221,7 @@ namespace UD
         }
         inline static void  SetMeterValueSkyUi(const std::string& s_path, float f_newvalue)
         {
-            PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->value = f_newvalue;,path == s_path)
+            PROCESSMETER(_metersSkyUi,_metersSkyUi[i]->newvalueset = true; _metersSkyUi[i]->newvalue = f_newvalue;,path == s_path)
         }
         inline static float UpdateMeterValueSkyUi(const std::string& s_path, float f_diffvalue)
         {
@@ -230,7 +235,7 @@ namespace UD
         {
             PROCESSMETERRET(_metersSkyUi, 
                             , 
-                            _metersSkyUi[i]->value ,
+                            _metersSkyUi[i]->newvalueset ? _metersSkyUi[i]->newvalue : _metersSkyUi[i]->value ,
                             0.0f,
                             path == s_path)
         }

@@ -33,27 +33,63 @@ namespace UD
 
     void MeterEntryIWW::Process(const float& f_timemult)
     {
+        if (newvalueset && frameskip <= 0)
+        {
+            value = newvalue;
+            newvalueset = false;
+        }
         if (update)
         {
-            if (extcalc == nullptr || extclass == nullptr)
+            if (frameskip <= 0)
             {
-                switch (formula)
+                if (extcalc == nullptr || extclass == nullptr)
                 {
-                case tLin:
-                    value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
-                    if      (value > 100.0f)    value = 100.0f;
-                    else if (value < 0.0f)      value = 0.0f;
-                    break;
-                case tLinRepeat:
-                    value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
-                    if      (value > 100.0f)    value = 0.0f;
-                    else if (value < 0.0f)      value = 100.0f;
-                    break;
+                    switch (formula)
+                    {
+                    case tLin:
+                        value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
+                        if      (value > 100.0f)    value = 100.0f;
+                        else if (value < 0.0f)      value = 0.0f;
+                        break;
+                    case tLinRepeat:
+                        value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
+                        if      (value >=   100.0f) 
+                        {
+                            value       =   100.0f;
+                            frameskip   =   FRAMESKIP_LINREPEAT;
+                        }
+                        else if (value <=   0.0f)
+                        {
+                            value       =   0.0f;
+                            frameskip   =   FRAMESKIP_LINREPEAT;
+                        }
+                        break;
+                    }
+                }
+                else
+                {
+                    value = extcalc(*extclass);
                 }
             }
-            else
+            else 
             {
-                value = extcalc(*extclass);
+                frameskip--;
+                if (frameskip <= 0)
+                {
+                    switch (formula)
+                    {
+                    case tLinRepeat:
+                        if (value == 100.0f) 
+                        {
+                            value =  0.0f;
+                        }
+                        else if (value == 0.0f)
+                        {
+                            value =  100.0f;
+                        }
+                        break;
+                    }
+                }
             }
 
             RE::UI* loc_ui = nullptr;
@@ -89,29 +125,64 @@ namespace UD
 
     void MeterEntrySkyUi::Process(const float& f_timemult)
     {
+        if (newvalueset && frameskip <= 0)
+        {
+            value = newvalue;
+            newvalueset = false;
+        }
         if (update)
         {
-            if (extcalc == nullptr || extclass == nullptr)
+            if (frameskip <= 0)
             {
-                switch (formula)
+                if (extcalc == nullptr || extclass == nullptr)
                 {
-                case tLin:
-                    value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
-                    if      (value > 100.0f)    value = 100.0f;
-                    else if (value < 0.0f)      value = 0.0f;
-                    break;
-                case tLinRepeat:
-                    value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
-                    if      (value > 100.0f)    value = 0.0f;
-                    else if (value < 0.0f)      value = 100.0f;
-                    break;
+                    switch (formula)
+                    {
+                    case tLin:
+                        value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
+                        if      (value > 100.0f)    value = 100.0f;
+                        else if (value < 0.0f)      value = 0.0f;
+                        break;
+                    case tLinRepeat:
+                        value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
+                        if      (value >=   100.0f) 
+                        {
+                            value       =   100.0f;
+                            frameskip   =   FRAMESKIP_LINREPEAT;
+                        }
+                        else if (value <=   0.0f)
+                        {
+                            value       =   0.0f;
+                            frameskip   =   FRAMESKIP_LINREPEAT;
+                        }
+                        break;
+                    }
+                }
+                else
+                {
+                    value = extcalc(*extclass);
                 }
             }
             else
             {
-                value = extcalc(*extclass);
+                frameskip--;
+                if (frameskip <= 0) //frame skip end
+                {
+                    switch (formula)
+                    {
+                    case tLinRepeat:
+                        if (value == 100.0f) 
+                        {
+                            value =  0.0f;
+                        }
+                        else if (value == 0.0f)
+                        {
+                            value =  100.0f;
+                        }
+                        break;
+                    }
+                }
             }
-
 
             RE::UI* loc_ui = nullptr;
             if (loc_ui == nullptr) loc_ui = RE::UI::GetSingleton();

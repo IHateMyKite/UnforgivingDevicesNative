@@ -55,12 +55,12 @@ int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vect
     LOG("Finding scripts for {} devices",loc_tofound)
 
     const auto loc_vm = InternalVM::GetSingleton();
-
+    
     ValidateCache();
 
-    for (auto&& [vmhandle,cached] : _cache)
+    for(auto rd : a_devices)
     {
-        for(auto rd : a_devices)
+        for (auto&& [vmhandle,cached] : _cache)
         {
             if (cached.rd == rd && rd)
             {
@@ -74,11 +74,11 @@ int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vect
                     RE::TESObjectARMO* loc_id = cached.id;
 
                     //check if actor really wears the device
-                    if (!Utility::GetSingleton()->CheckArmorEquipped(loc_wearer,rd)) 
-                    {
-                        LOG("Device {} found, but actor is not wearing it. Skipping!",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
-                        continue;
-                    }
+                    //if (!Utility::GetSingleton()->CheckArmorEquipped(loc_wearer,rd)) 
+                    //{
+                    //    LOG("Device {} found, but actor is not wearing it. Skipping!",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
+                    //    continue;
+                    //}
 
                     LOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
                     
