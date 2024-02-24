@@ -43,6 +43,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetStringParamInt,true)
         REGISTERPAPYRUSFUNC(GetStringParamFloat,true)
         REGISTERPAPYRUSFUNC(GetStringParamString,true)
+        REGISTERPAPYRUSFUNC(GetRandomDevice,true)
 
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)

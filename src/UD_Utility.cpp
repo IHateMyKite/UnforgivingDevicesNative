@@ -311,6 +311,80 @@ namespace UD
         return GetStringParamAllInter<std::string>(a_param,",");
     }
 
+    #define GetRandomDevice_UpdateForms                                             \
+    {                                                                               \
+        if (loc_form && loc_form->GetFormType() == RE::FormType::LeveledItem)            \
+        {                                                                           \
+            loc_nestedLL = reinterpret_cast<RE::TESLevItem*>(loc_form);             \
+            if (loc_nestedLL) loc_nestedLLArr = loc_nestedLL->GetContainedForms();  \
+        }                                                                           \
+        else                                                                        \
+        {                                                                           \
+            loc_nestedLL = nullptr;                                                 \
+            loc_nestedLLArr = std::vector<RE::TESForm*>();                          \
+        }                                                                           \
+        if (loc_form && loc_form->GetFormType() == RE::FormType::Armor) loc_armor = reinterpret_cast<RE::TESObjectARMO*>(loc_form);  \
+        else loc_armor = nullptr;                                                                                               \
+    }
+
+    RE::TESObjectARMO* GetRandomDevice(PAPYRUSFUNCHANDLE,RE::TESLevItem* a_list)
+    {
+        LOG("GetRandomDevice(0x{:08X})",a_list ? a_list->formID : 0x0U)
+
+        if (a_list == nullptr) return nullptr;
+
+        RE::TESForm* loc_form = nullptr;
+        
+        std::vector<RE::TESForm*> loc_startLeveledList = a_list->GetContainedForms();
+
+        LOG("GetRandomDevice(0x{:08X}) - Number of forms = {}",a_list->formID,loc_startLeveledList.size())
+
+        if (loc_startLeveledList.size() < 0) return nullptr;
+
+        RE::TESForm* loc_prevForm = reinterpret_cast<RE::TESForm*>(a_list);
+
+        loc_form = loc_startLeveledList[(RandomInt(NULL,0, (int)loc_startLeveledList.size() - 1))];
+
+        LOG("GetRandomDevice(0x{:08X}) - Selected form = 0x{:08X}, Type = {}",a_list->formID,loc_form ? loc_form->formID : 0x0U,loc_form ? (uint8_t)loc_form->GetFormType() : 0)
+
+        std::vector<RE::TESForm*>   loc_nestedLLArr;
+        RE::TESLevItem*             loc_nestedLL        = nullptr;
+        RE::TESObjectARMO*          loc_armor           = nullptr;
+
+        GetRandomDevice_UpdateForms;
+
+        int loc_stepsBacks = 6;
+
+        while (!loc_armor && loc_nestedLL) //check if form is not armor, and is LL, otherwise do nothing
+        {
+            if (loc_nestedLLArr.size() > 0)
+            {
+                loc_prevForm    = reinterpret_cast<RE::TESForm*>(loc_form);
+                loc_form        = loc_nestedLLArr[(RandomInt(NULL,0, (int)loc_nestedLLArr.size() - 1))];
+            }
+            else
+            {
+                if (loc_stepsBacks > 0)
+                {
+                    WARN("GetRandomDevice(0x{:08X}) - Stepping back to 0x{:08X}",a_list->formID,loc_prevForm->formID)
+                    loc_stepsBacks--;
+                    loc_form = loc_prevForm;
+                }
+                else
+                {
+                    //no more chances, return none
+                    WARN("GetRandomDevice(0x{:08X}) - No device found even after multiple tries",a_list->formID)
+                    return nullptr;
+                }
+            }
+            GetRandomDevice_UpdateForms;
+        }
+
+        LOG("GetRandomDevice(0x{:08X}) - Returning 0x{:08X}",a_list->formID,loc_armor ? loc_armor->formID : 0x0U)
+        return loc_armor;
+    }
+    #undef GetRandomDevice_UpdateForms
+
     template<class T>
     T GetStringParam(const std::string& a_param, int a_Index, T a_DefaultValue)
     {

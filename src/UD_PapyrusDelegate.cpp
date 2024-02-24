@@ -146,8 +146,6 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
     if (a_actor == nullptr || a_device == nullptr) return Result::rArgError;
     if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
-    std::vector<RE::TESObjectARMO*> loc_device = {a_device};
-
     const auto loc_vm = InternalVM::GetSingleton();
 
     ValidateCache();
@@ -158,15 +156,32 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
         {
             LOG("Device object found in cache - using it")
 
-            const RE::Actor* loc_wearer = GetScriptVariable<RE::Actor>(cached.object,"Wearer",RE::FormType::ActorCharacter);
+            auto loc_device = cached.object;
+
+            const bool loc_isremoved = (loc_device->GetVariable("_deviceControlBitMap_1")->GetSInt() & 0x04000000U);
+
+            if (loc_isremoved) continue; //every device can be only removed once
+
+            const RE::Actor* loc_wearer = GetScriptVariable<RE::Actor>(loc_device,"Wearer",RE::FormType::ActorCharacter);
 
             if (loc_wearer == a_actor)
             {
+                RE::VMHandle loc_newhandle = _RemovedCounter++;
+
+                //set new unique VMHandle
+                const auto loc_var1 = loc_device->GetVariable("_VMHandle1");
+                const auto loc_var2 = loc_device->GetVariable("_VMHandle2");
+                loc_var1->SetUInt(loc_newhandle & 0xFFFFFFFF);
+                loc_var2->SetUInt((loc_newhandle >> 32) & 0xFFFFFFFF);
+
+                _cache[loc_newhandle] = cached;
+                _cache.erase(vmhandle);
+
                 //init unused callback
                 RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback;
                 auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*>(std::forward<RE::Actor*>(a_actor));
                 //call papyrus method
-                loc_vm->DispatchMethodCall(cached.object,"removeDevice",loc_args,loc_callback);
+                loc_vm->DispatchMethodCall(loc_device,"removeDevice",loc_args,loc_callback);
                 delete loc_args;
 
                 LOG("SendRemoveRenderDeviceEvent({},{:08X}) - event sent",a_actor->GetName(),a_device->GetFormID())
@@ -530,6 +545,16 @@ UD::Device UD::PapyrusDelegate::GetDeviceScript(int a_handle1, int a_handle2, RE
     ValidateCache();
     auto loc_cacheres = _cache[loc_vmhandle];
 
+    return loc_cacheres;
+}
+
+UD::Device UD::PapyrusDelegate::GetCachedDevice(RE::VMHandle a_handle, RE::Actor* a_actor, RE::TESObjectARMO* a_device)
+{
+    RE::VMHandle loc_vmhandle = a_handle;
+    loc_vmhandle = ValidateVMHandle(loc_vmhandle,a_device);
+
+    ValidateCache();
+    Device loc_cacheres = _cache[loc_vmhandle];
     return loc_cacheres;
 }
 

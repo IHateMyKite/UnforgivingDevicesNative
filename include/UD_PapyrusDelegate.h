@@ -55,6 +55,7 @@ namespace UD
         Result SetBitMapData(RE::VMHandle a_handle,RE::TESObjectARMO* a_device,std::string a_name,int a_val,uint8_t a_size,uint8_t a_off);
         void UpdateVMHandles() const;
         Device GetDeviceScript(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
+        Device GetCachedDevice(RE::VMHandle,RE::Actor* a_actor, RE::TESObjectARMO* a_device);
     private:
         RE::VMHandle ValidateVMHandle(RE::VMHandle a_handle,RE::TESObjectARMO* a_device);
         void ValidateCache() const;
@@ -68,7 +69,7 @@ namespace UD
         template<class T> T* GetScriptVariable(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_variable,RE::FormType a_type) const;
         template<class T> T* GetScriptProperty(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_property,RE::FormType a_type) const;
         
-
+        mutable RE::VMHandle _RemovedCounter = 0x0000FFFFFFFFFFFF; //removed devices counter
         mutable std::unordered_map<RE::VMHandle,Device> _cache;
     };
 

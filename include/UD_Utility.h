@@ -177,4 +177,6 @@ namespace UD
 
     template<class T> T GetStringParam(const std::string& a_param,int a_Index,T a_DefaultValue);
     template<class T> std::vector<T> GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
+
+    RE::TESObjectARMO* GetRandomDevice(PAPYRUSFUNCHANDLE,RE::TESLevItem* a_list);
 }
