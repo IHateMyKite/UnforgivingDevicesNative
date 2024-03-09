@@ -14,7 +14,7 @@ namespace UD
         RE::BSTSmartPointer<RE::BSScript::Object> object;
         RE::TESObjectARMO* id;
         RE::TESObjectARMO* rd;
-        RE::Actor* wearer;
+        uint32_t           wearer;
     };
 
     class PapyrusDelegate
@@ -69,7 +69,7 @@ namespace UD
         template<class T> T* GetScriptVariable(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_variable,RE::FormType a_type) const;
         template<class T> T* GetScriptProperty(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_property,RE::FormType a_type) const;
         
-        mutable RE::VMHandle _RemovedCounter = 0x0000FFFFFFFFFFFF; //removed devices counter
+        mutable uint64_t _RemovedCounter = 0x0; //removed devices counter
         mutable std::unordered_map<RE::VMHandle,Device> _cache;
     };
 

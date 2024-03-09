@@ -54,7 +54,7 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
         _RDATA.ArousalEventLastValue = _RDATA.Arousal;
     }
 
-    if (OSLAModifyArousal != nullptr) _RDATA.Arousal = OSLAModifyArousal(_RDATA.Actor,loc_da,loc_sendarousalevent);
+    if (OSLAModifyArousal != nullptr && loc_da != 0.0f) _RDATA.Arousal = OSLAModifyArousal(_RDATA.Actor,loc_da,loc_sendarousalevent);
 
     _RDATA.OrgasmRate             = CalculateOrgasmRate(a_delta);
     _RDATA.OrgasmRateMult         = CalculateOrgasmRateMult();

@@ -65,7 +65,7 @@ int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vect
             if (cached.rd == rd && rd)
             {
                 //get wearer from script
-                RE::Actor* loc_wearer = cached.wearer;
+                RE::Actor* loc_wearer = RE::Actor::LookupByHandle(cached.wearer).get();
 
                 //check if device wearer is the same one as passed actor
                 if (loc_wearer == a_actor)
@@ -142,7 +142,7 @@ Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObje
 
 Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
 {
-    LOG("SendRemoveRenderDeviceEvent({},{:08X}) called",a_actor ? a_actor->GetName() : "NONE",a_device ? a_device->GetFormID() : 0x0)
+    LOG("SendRemoveRenderDeviceEvent({},0x{:08X}) called",a_actor ? a_actor->GetName() : "NONE",a_device ? a_device->GetFormID() : 0x0)
     if (a_actor == nullptr || a_device == nullptr) return Result::rArgError;
     if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 
@@ -166,13 +166,15 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
 
             if (loc_wearer == a_actor)
             {
-                RE::VMHandle loc_newhandle = _RemovedCounter++;
+                const RE::VMHandle loc_newhandle = (static_cast<RE::VMHandle>(_RemovedCounter++ << 48U) | 0x0000FFFFFFFFFFFFUL);
 
                 //set new unique VMHandle
                 const auto loc_var1 = loc_device->GetVariable("_VMHandle1");
                 const auto loc_var2 = loc_device->GetVariable("_VMHandle2");
                 loc_var1->SetUInt(loc_newhandle & 0xFFFFFFFF);
                 loc_var2->SetUInt((loc_newhandle >> 32) & 0xFFFFFFFF);
+
+                LOG("New VMHandle = 0x{:016X}",loc_newhandle)
 
                 _cache[loc_newhandle] = cached;
                 _cache.erase(vmhandle);
@@ -184,7 +186,7 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
                 loc_vm->DispatchMethodCall(loc_device,"removeDevice",loc_args,loc_callback);
                 delete loc_args;
 
-                LOG("SendRemoveRenderDeviceEvent({},{:08X}) - event sent",a_actor->GetName(),a_device->GetFormID())
+                LOG("SendRemoveRenderDeviceEvent({},0x{:08X}) - event sent",a_actor->GetName(),a_device->GetFormID())
 
                 return Result::rSuccess;
             }
@@ -206,7 +208,8 @@ Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectAR
 
     if (loc_cacheres.object != nullptr)
     {
-        LOG("Device object found in cache - using it - Wearer = {}",loc_cacheres.wearer ? loc_cacheres.wearer->GetName() : "NONE")
+        RE::Actor* loc_wearer = RE::Actor::LookupByHandle(loc_cacheres.wearer).get();
+        LOG("Device object found in cache - using it - Wearer = {}",loc_wearer ? loc_wearer->GetName() : "NONE")
 
         const auto loc_var = loc_cacheres.object->GetVariable(a_name);
 
@@ -251,7 +254,7 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
                 _cache[it.first].id      = a_id;
                 _cache[it.first].rd      = a_rd;
                 auto loc_wearer = GetScriptVariable<RE::Actor>(a_object,"Wearer",RE::FormType::ActorCharacter);
-                _cache[it.first].wearer  = loc_wearer;
+                _cache[it.first].wearer  = loc_wearer ? loc_wearer->GetHandle().native_handle() : 0x0U;
                 
 
                 if (loc_var1->GetUInt() == 0 && loc_var2->GetUInt() == 0) 
@@ -293,9 +296,11 @@ void UD::PapyrusDelegate::ValidateCache() const
         }
 
         //sometimes the device can be  cached before wearer is set, so we check it now
-        if (cached.wearer == nullptr)
+        auto loc_wearer = RE::Actor::LookupByHandle(cached.wearer).get();
+        if (loc_wearer == nullptr)
         {
-            cached.wearer = GetScriptVariable<RE::Actor>(cached.object,"Wearer",RE::FormType::ActorCharacter);
+            loc_wearer = GetScriptVariable<RE::Actor>(cached.object,"Wearer",RE::FormType::ActorCharacter);
+            cached.wearer = loc_wearer ? loc_wearer->GetHandle().native_handle() : 0x0U;
         }
 
         if (cached.object->refCountAndHandleLock > 2) continue; //if number of references is 2, it means that no thread is currently running on the object (hopefully)
@@ -522,9 +527,10 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
                     _cache[loc_handle].object   = loc_object;
                     _cache[loc_handle].id       = loc_id;
                     _cache[loc_handle].rd       = GetScriptVariable<RE::TESObjectARMO>(loc_object,"_DeviceRendered",RE::FormType::Armor);
-                    _cache[loc_handle].wearer   = GetScriptVariable<RE::Actor>(loc_object,"Wearer",RE::FormType::ActorCharacter);
+                    auto loc_wearer = GetScriptVariable<RE::Actor>(loc_object,"Wearer",RE::FormType::ActorCharacter);
+                    _cache[loc_handle].wearer   = loc_wearer ? loc_wearer->GetHandle().native_handle() : 0x0U;
 
-                    LOG("Handle of {} set to 0x{:016X} = 0x{:08X} + 0x{:08X} - Wearer = {}",loc_id->GetName(),a_script.first,loc_var1->GetUInt(),loc_var2->GetUInt(),_cache[loc_handle].wearer ? _cache[loc_handle].wearer->GetName() : "NONE")
+                    LOG("Handle of {} set to 0x{:016X} = 0x{:08X} + 0x{:08X} - Wearer = {}",loc_id->GetName(),a_script.first,loc_var1->GetUInt(),loc_var2->GetUInt(),loc_wearer ? loc_wearer->GetName() : "NONE")
                 }
             }
         }
@@ -532,8 +538,11 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
     loc_vm->attachedScriptsLock.Unlock();
 
     DEBUG("Cache size: {}",_cache.size())
-    for(auto&& it : _cache) DEBUG("0x{:016X} - {}(0x{:08X}) / 0x{:08X} = {} ; Wearer = {}",it.first,it.second.id->GetName(),it.second.id->GetFormID(),it.second.rd ? it.second.rd->GetFormID() : 0x0,it.second.object->type->name,it.second.wearer ? it.second.wearer->GetName() : "NONE")
-
+    for(auto&& [vmhandle,device] : _cache) 
+    {
+        RE::Actor* loc_wearer = RE::Actor::LookupByHandle(device.wearer).get();
+        DEBUG("0x{:016X} - {}(0x{:08X}) / 0x{:08X} = {} ; Wearer = {}",vmhandle,device.id->GetName(),device.id->GetFormID(),device.rd ? device.rd->GetFormID() : 0x0,device.object->type->name,loc_wearer ? loc_wearer->GetName() : "NONE")
+    }
     ValidateCache();
 }
 
