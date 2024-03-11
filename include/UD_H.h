@@ -1,6 +1,7 @@
 //we dont give a f*ck about lint or other static code analysis 
 #pragma warning( disable : 4100 )
 #pragma warning( disable : 4244 )
+#pragma warning( disable : 4267 )
 
 //include some usefull macros
 #include <UD_Macros.h>
@@ -33,6 +34,7 @@
     #include <UD_PapyrusDelegate.h>
     #include <UD_Materials.h>
     #include <UD_Diagnosis.h>
+    #include <UD_Lockpick.h>
     #include <OrgasmSystem/OrgasmEvents.h>
     #include <OrgasmSystem/OrgasmData.h>
     #include <OrgasmSystem/OrgasmManager.h>

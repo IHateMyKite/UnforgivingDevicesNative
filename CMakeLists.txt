@@ -30,6 +30,7 @@ set(source_files ${source_files}
     src/UD_PapyrusDelegate.cpp
     src/UD_Materials.cpp
     src/UD_Diagnosis.cpp
+    src/UD_Lockpick.cpp
     src/OrgasmSystem/OrgasmEvents.cpp
     src/OrgasmSystem/OrgasmManager.cpp
     src/OrgasmSystem/OrgasmData.cpp
@@ -42,6 +43,3 @@ add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${source_files} plugin.cpp) # <-
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 standard
 target_precompile_headers(${PROJECT_NAME} PRIVATE PCH.h) # <--- PCH.h is required!
 target_include_directories(${PROJECT_NAME} PRIVATE include)
-
-#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
-#set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")

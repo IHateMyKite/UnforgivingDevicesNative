@@ -16,6 +16,7 @@ namespace UD
         PapyrusDelegate::GetSingleton()->Setup();
         MaterialManager::GetSingleton()->Setup();
         Diagnosis::GetSingleton()->Setup();
+        LockpickManager::GetSingleton()->Setup();
         //remove effect in case that user reloaded the game without exit
         if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
 

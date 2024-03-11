@@ -12,15 +12,17 @@ void UD::PlayerStatus::Setup()
         _hbkeyword = static_cast<RE::BGSKeyword*>(loc_datahandler->LookupForm(0x05226C,"Devious Devices - Integration.esm"));
         _minigamefaction = static_cast<RE::TESFaction*>(loc_datahandler->LookupForm(0x150DA3,"UnforgivingDevices.esp"));
         _animationfaction = static_cast<RE::TESFaction*>(loc_datahandler->LookupForm(0x029567,"Devious Devices - Integration.esm"));
+        _telekinesis      = static_cast<RE::SpellItem*>(loc_datahandler->LookupForm(0x01A4CC,"Skyrim.esm"));
     }
 }
 
 void UD::PlayerStatus::Update()
 {
     uint8_t loc_res = 0x00;
-    loc_res |= PlayerIsBound() ? sBound : 0x00;
-    loc_res |= PlayerInMinigame() ? sMinigame : 0x00;
-    loc_res |= PlayerInZadAnimation() ? sAnimation : 0x00;
+    loc_res |= PlayerIsBound()          ? sBound            : 0x00;
+    loc_res |= PlayerInMinigame()       ? sMinigame         : 0x00;
+    loc_res |= PlayerInZadAnimation()   ? sAnimation        : 0x00;
+    loc_res |= PlayerHaveTelekinesis()  ? sHaveTelekinesis  : 0x00;
     _status = static_cast<Status>(loc_res);
 }
 
@@ -42,8 +44,6 @@ bool UD::PlayerStatus::PlayerInMinigame() const
 {
     RE::Actor* loc_player = RE::PlayerCharacter::GetSingleton();
 
-    if (loc_player == nullptr) return false;
-
     if (loc_player == nullptr || _minigamefaction == nullptr) return false;
 
     return loc_player->IsInFaction(_minigamefaction);
@@ -53,9 +53,16 @@ bool UD::PlayerStatus::PlayerInZadAnimation() const
 {
     RE::Actor* loc_player = RE::PlayerCharacter::GetSingleton();
 
-    if (loc_player == nullptr) return false;
-
     if (loc_player == nullptr || _animationfaction == nullptr) return false;
 
     return loc_player->IsInFaction(_animationfaction);
+}
+
+inline bool UD::PlayerStatus::PlayerHaveTelekinesis() const
+{
+    RE::Actor* loc_player = RE::PlayerCharacter::GetSingleton();
+
+    if (loc_player == nullptr || _telekinesis == nullptr) return false;
+
+    return loc_player->HasSpell(_telekinesis);
 }

@@ -8,9 +8,10 @@ namespace UD
     public:
         enum Status : uint8_t
         {
-            sBound      = 0x01,
-            sMinigame   = 0x02,
-            sAnimation  = 0x04
+            sBound              = 0x01,
+            sMinigame           = 0x02,
+            sAnimation          = 0x04,
+            sHaveTelekinesis    = 0x08
         };
         void Setup();
 
@@ -22,10 +23,12 @@ namespace UD
         RE::BGSKeyword*                 _hbkeyword          = nullptr;
         RE::TESFaction*                 _minigamefaction    = nullptr;
         RE::TESFaction*                 _animationfaction   = nullptr;
+        RE::SpellItem*                  _telekinesis        = nullptr;
         Status                          _status;
 
         inline bool PlayerIsBound() const;
         inline bool PlayerInMinigame() const;
         inline bool PlayerInZadAnimation() const;
+        inline bool PlayerHaveTelekinesis() const;
     };
 }

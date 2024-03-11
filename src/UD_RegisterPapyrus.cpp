@@ -110,6 +110,12 @@ namespace UD
         //diagnosis
         REGISTERPAPYRUSFUNC(CheckPatchedDevices,true)
 
+        //lockpick
+        REGISTERPAPYRUSFUNC(GetDestroyedLockpicks,true)
+        REGISTERPAPYRUSFUNC(SetLockpickIsCrime,true)
+        REGISTERPAPYRUSFUNC(GetLockpickVariable,true)
+        REGISTERPAPYRUSFUNC(SetLockpickVariable,true)
+
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 
         return true;

@@ -56,6 +56,7 @@ namespace UD
         bool    fInRange(float a_value,float a_min,float a_max) const;
 
         bool WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw) const;
+        bool WornHasKeyword(RE::Actor* a_actor, std::string a_kw) const;
         RE::TESObjectARMO* GetWornArmor(RE::Actor* a_actor,int a_mask) const;
         RE::TESObjectARMO* CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_device) const;
     };

@@ -4,6 +4,7 @@
 
 SINGLETONBODY(UD::UpdateManager)
 
+
 namespace UD
 {
     void UpdateManager::UpdateThread1(const float& a_delta)
@@ -55,7 +56,7 @@ namespace UD
 
         MinigameEffectManager::GetSingleton()->UpdateMinigameEffect(loc_player,a_delta);
         MinigameEffectManager::GetSingleton()->UpdateMeters(a_delta);
-            
+
         //ControlManager::GetSingleton()->UpdateControl();
     }
 
