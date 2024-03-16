@@ -217,7 +217,7 @@ bool UD::ControlManager::AddDeviceCallbackArgument(int a_dxkeycode, CallbackArgF
 
 bool UD::ControlManager::UnregisterDeviceCallbacks(int a_handle1, int a_handle2, RE::TESObjectARMO* a_device)
 {
-    LOG("UnregisterDeviceCallbacks({},{},{:08X}) called",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
+    LOG("UnregisterDeviceCallbacks({},{},0x{:08X}) called",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
 
     if (a_device == nullptr || (a_handle1 == 0 && a_handle2 == 0)) return false;
     auto loc_device = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_handle1,a_handle2,a_device);
@@ -230,7 +230,7 @@ bool UD::ControlManager::UnregisterDeviceCallbacks(int a_handle1, int a_handle2,
         return devicecallback.device.object.get() == loc_device.object.get();
     });
 
-    LOG("UnregisterDeviceCallbacks({},{},{:08X}) - Callbacks removed",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
+    LOG("UnregisterDeviceCallbacks({},{},0x{:08X}) - Callbacks removed",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
 
     return true;
 }

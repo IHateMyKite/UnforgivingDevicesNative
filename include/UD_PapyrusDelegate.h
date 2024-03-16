@@ -17,6 +17,23 @@ namespace UD
         uint32_t           wearer;
     };
 
+    class ThreadLock
+    {
+    public:
+        ThreadLock()
+        {
+            assert(_used == false);
+            _used = true;
+        };
+        ~ThreadLock()
+        {
+            _used = false;
+        };
+    private:
+        static bool _used;
+    };
+    #define THREADLOCK auto CHECKTHREAD_var = ThreadLock()
+
     class PapyrusDelegate
     {
     SINGLETONHEADER(PapyrusDelegate)
@@ -75,21 +92,25 @@ namespace UD
 
     inline int SendRegisterDeviceScriptEvent(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,std::vector<RE::TESObjectARMO*> a_devices)
     {
+        THREADLOCK;
         return PapyrusDelegate::GetSingleton()->SendRegisterDeviceScriptEvent(a_actor,a_devices);
     }
 
     inline int SendMinigameThreadEvents(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,RE::TESObjectARMO* a_device,int a_handle1,int a_handle2, int a_mode)
     {
+        THREADLOCK;
         return static_cast<int>(PapyrusDelegate::GetSingleton()->SendMinigameThreadEvents(a_actor,a_device,PapyrusDelegate::ToVMHandle(a_handle1,a_handle2),(PapyrusDelegate::MinigameThreads)a_mode));
     }
 
     inline int SendRemoveRenderDeviceEvent(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,RE::TESObjectARMO* a_device)
     {
+        THREADLOCK;
         return static_cast<int>(PapyrusDelegate::GetSingleton()->SendRemoveRenderDeviceEvent(a_actor,a_device));
     }
 
     inline int SetBitMapData(PAPYRUSFUNCHANDLE,int a_handle1,int a_handle2,RE::TESObjectARMO* a_device,std::string a_name,int a_val,int a_size,int a_off)
     {
+        THREADLOCK;
         const auto loc_handle = PapyrusDelegate::ToVMHandle(a_handle1,a_handle2);
         LOG("SetBitMapData({} + {} = 0x{:016X},0x{:08X},{},{},{},{}) called",a_handle1,a_handle2,loc_handle,a_device ? a_device->GetFormID() : 0x0 ,a_name,a_val,a_size,a_off)
         return static_cast<int>(PapyrusDelegate::GetSingleton()->SetBitMapData(loc_handle,a_device,a_name,a_val,a_size,a_off));
@@ -97,6 +118,7 @@ namespace UD
 
     inline void UpdateVMHandles(PAPYRUSFUNCHANDLE)
     {
+        THREADLOCK;
         PapyrusDelegate::GetSingleton()->UpdateVMHandles();
     }
 }

@@ -8,6 +8,8 @@ using UD::PapyrusDelegate;
 typedef PapyrusDelegate::Result Result;
 typedef PapyrusDelegate::FilterDeviceResult FilterDeviceResult;
 
+bool UD::ThreadLock::_used = false;
+
 RE::VMHandle UD::PapyrusDelegate::ToVMHandle(const int a_1, const int a_2)
 {
     const uint64_t loc_fir =  (*(uint32_t*)&a_1);
