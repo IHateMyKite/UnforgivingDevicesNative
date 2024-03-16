@@ -14,13 +14,13 @@ void UD::Diagnosis::Setup()
         {
             FARPROC pGetDatabase = GetProcAddress(HMODULE (dllHandle),"GetDatabase");
             DDNGGetDatabase = GetDatabase(pGetDatabase);
-            DEBUG("Disagnosis::Setup() - GetDatabase imported - addrs = 0x{:016X}",(uintptr_t)DDNGGetDatabase)
+            DEBUG("Diagnosis::Setup() - GetDatabase imported - addrs = 0x{:016X}",(uintptr_t)DDNGGetDatabase)
             _imported = DDNGGetDatabase != NULL;
             //FreeLibrary(dllHandle);
         }
         else
         {
-            ERROR("Disagnosis::Setup() - ERROR: Cant find DeviousDevices.dll!!")
+            ERROR("Diagnosis::Setup() - ERROR: Cant find DeviousDevices.dll!!")
         }
         _installed = true;
     }

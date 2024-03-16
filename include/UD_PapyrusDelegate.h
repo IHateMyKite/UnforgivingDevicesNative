@@ -34,6 +34,8 @@ namespace UD
     };
     #define THREADLOCK auto CHECKTHREAD_var = ThreadLock()
 
+    typedef RE::TESObjectARMO*(* GetDeviceRender)(RE::TESObjectARMO*);
+
     class PapyrusDelegate
     {
     SINGLETONHEADER(PapyrusDelegate)
@@ -80,6 +82,7 @@ namespace UD
         FilterDeviceResult CheckRegisterDevice(RE::VMHandle a_handle,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices);
         FilterDeviceResult ProcessDevice(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices,std::function<void(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
         FilterDeviceResult ProcessDevice2(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::TESObjectARMO* a_device,std::function<bool(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
+        GetDeviceRender DDNGGetDeviceRender;
     private:
         bool _installed = false;
         RE::BGSKeyword* _udrdkw;

@@ -22,6 +22,20 @@ void PapyrusDelegate::Setup()
     if (!_installed)
     {
         _udrdkw = reinterpret_cast<RE::BGSKeyword*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x11A352,"UnforgivingDevices.esp"));
+
+        HINSTANCE dllHandle = LoadLibrary(TEXT("DeviousDevices.dll"));
+        if (dllHandle != NULL)
+        {
+            FARPROC pGetDeviceRender = GetProcAddress(HMODULE (dllHandle),"GetDeviceRender");
+            DDNGGetDeviceRender = GetDeviceRender(pGetDeviceRender);
+            DEBUG("PapyrusDelegate::Setup() - DDNGGetDeviceRender imported - addrs = 0x{:016X}",(uintptr_t)DDNGGetDeviceRender)
+            //FreeLibrary(dllHandle);
+        }
+        else
+        {
+            ERROR("PapyrusDelegate::Setup() - ERROR: Cant find DeviousDevices.dll!!")
+            DDNGGetDeviceRender = nullptr;
+        }
         _installed = true;
         LOG("PapyrusDelegate::Setup - installed")
     }
@@ -230,7 +244,9 @@ Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectAR
 
 RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TESObjectARMO* a_device)
 {
-    LOG("PapyrusDelegate::ValidateVMHandle - called")
+    LOG("PapyrusDelegate::ValidateVMHandle(0x{:016X},0x{:08X}) - called",a_handle,a_device ? a_device->GetFormID() : 0U)
+
+    if (a_device == nullptr) return a_handle;
 
     if (a_handle != 0) return a_handle;
 
@@ -276,7 +292,7 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
 
     if (loc_res == 0)
     {
-        LOG("Could not find script for device {:08X}",a_device->GetFormID())
+        LOG("Could not find script for device 0x{:08X}",a_device->GetFormID())
     }
 
     return loc_res;
@@ -292,7 +308,7 @@ void UD::PapyrusDelegate::ValidateCache() const
     {
         if (cached.object.get() == nullptr)
         {
-            ERROR("Device {} have null script object",cached.id->GetName())
+            ERROR("Device {} have null script object",cached.id ? cached.id->GetName() : "NONE")
             loc_toremove.push_back(vmhandle);
             continue;
         }
@@ -303,6 +319,17 @@ void UD::PapyrusDelegate::ValidateCache() const
         {
             loc_wearer = GetScriptVariable<RE::Actor>(cached.object,"Wearer",RE::FormType::ActorCharacter);
             cached.wearer = loc_wearer ? loc_wearer->GetHandle().native_handle() : 0x0U;
+        }
+
+        if (!cached.rd && cached.id)
+        {
+            auto loc_rd = DDNGGetDeviceRender(cached.id);
+            cached.rd = loc_rd;
+
+            LOG("Getting render device from DD database => 0x{:08X}",loc_rd ? loc_rd->GetFormID() : 0)
+
+            auto loc_objvar = cached.object->GetVariable("_DeviceRendered");
+            RE::BSScript::PackHandle(loc_objvar,loc_rd,(RE::VMTypeID)RE::FormType::Armor);
         }
 
         if (cached.object->refCountAndHandleLock > 2) continue; //if number of references is 2, it means that no thread is currently running on the object (hopefully)
@@ -367,6 +394,7 @@ FilterDeviceResult PapyrusDelegate::CheckRegisterDevice(RE::VMHandle a_handle,RE
         {
             //get render device from script
             RE::TESObjectARMO* loc_rd = GetScriptVariable<RE::TESObjectARMO>(loc_object,"_DeviceRendered",RE::FormType::Armor);
+
             if (loc_rd != nullptr)
             {
                 //check if current device is one in passed array
@@ -529,6 +557,17 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
                     _cache[loc_handle].object   = loc_object;
                     _cache[loc_handle].id       = loc_id;
                     _cache[loc_handle].rd       = GetScriptVariable<RE::TESObjectARMO>(loc_object,"_DeviceRendered",RE::FormType::Armor);
+                    if (!_cache[loc_handle].rd && loc_id)
+                    {
+                        auto loc_rd = DDNGGetDeviceRender(loc_id);
+                        _cache[loc_handle].rd = loc_rd;
+
+                        LOG("Getting render device from DD database => 0x{:08X}",loc_rd ? loc_rd->GetFormID() : 0)
+
+                        auto loc_objvar = loc_object->GetVariable("_DeviceRendered");
+                        RE::BSScript::PackHandle(loc_objvar,loc_rd,(RE::VMTypeID)RE::FormType::Armor);
+                    }
+
                     auto loc_wearer = GetScriptVariable<RE::Actor>(loc_object,"Wearer",RE::FormType::ActorCharacter);
                     _cache[loc_handle].wearer   = loc_wearer ? loc_wearer->GetHandle().native_handle() : 0x0U;
 
