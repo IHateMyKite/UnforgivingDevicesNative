@@ -47,7 +47,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE include)
 # Copy localy compiled dll to bin folder
 add_custom_command(TARGET UDNative POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy
-                       ${CMAKE_SOURCE_DIR}/build/release/UDNative.dll ${CMAKE_SOURCE_DIR}/bin)
+                       ${CMAKE_SOURCE_DIR}/build/release/UDNative.dll ${CMAKE_SOURCE_DIR}/SKSE/plugins)
 
 # Copy pdb to bin folder. For now disabled as even ziped, this file is too big
 #add_custom_command(TARGET UDNative POST_BUILD
@@ -57,4 +57,4 @@ add_custom_command(TARGET UDNative POST_BUILD
 # Copy pdb to bin folder. This file is no under SC. Only reason for this is so its on the same place s dll after build
 add_custom_command(TARGET UDNative POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy
-                       ${CMAKE_SOURCE_DIR}/build/release/UDNative.pdb ${CMAKE_SOURCE_DIR}/bin)
+                       ${CMAKE_SOURCE_DIR}/build/release/UDNative.pdb ${CMAKE_SOURCE_DIR}/SKSE/plugins)
