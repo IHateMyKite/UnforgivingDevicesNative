@@ -1,6 +1,6 @@
 #include <UD_MinigameEffect.h>
-#include <Windows.h>
 #include <UD_Updater.h>
+#include <UD_UI.h>
 
 SINGLETONBODY(UD::MinigameEffectManager)
 

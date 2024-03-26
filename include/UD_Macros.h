@@ -38,3 +38,5 @@
 #define PLAYER RE::PlayerCharacter::GetSingleton()
 
 #define CONFIGFILEARG(arg) const boost::property_tree::ptree& arg
+
+#define WIN32_LEAN_AND_MEAN

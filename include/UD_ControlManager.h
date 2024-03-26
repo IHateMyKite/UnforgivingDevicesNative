@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UD_PapyrusDelegate.h"
+#include <UD_PapyrusDelegate.h>
 
 namespace UD
 {
@@ -173,7 +173,6 @@ namespace UD
 
     inline void SyncControlSetting(PAPYRUSFUNCHANDLE, bool a_hardcoremode)
     {
-        LOG("SyncControlSetting({}) called",a_hardcoremode)
         ControlManager::GetSingleton()->SyncSetting(a_hardcoremode);
     }
 

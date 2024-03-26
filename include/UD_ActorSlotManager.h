@@ -1,5 +1,7 @@
 #pragma once
 
+#include <UD_Spinlock.h>
+
 namespace UD
 {
     struct ActorStorage

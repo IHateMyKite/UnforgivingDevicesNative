@@ -2,7 +2,7 @@
 
 namespace UD 
 {
-    static class KeywordManager
+    class KeywordManager
     {
         public:
             static void Reload()

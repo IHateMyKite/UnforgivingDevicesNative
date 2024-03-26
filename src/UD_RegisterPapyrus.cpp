@@ -3,6 +3,16 @@
 #include <UD_Utility.h>
 #include <UD_UI.h>
 #include <UD_Inventory.h>
+#include <UD_ControlManager.h>
+#include <UD_PapyrusDelegate.h>
+#include <UD_ModEvents.h>
+#include <UD_Animation.h>
+#include <UD_Skill.h>
+#include <UD_ActorSlotManager.h>
+#include <UD_Materials.h>
+#include <UD_Diagnosis.h>
+#include <UD_Lockpick.h>
+#include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
 {
@@ -111,8 +121,6 @@ namespace UD
         REGISTERPAPYRUSFUNC(CheckPatchedDevices,true)
 
         //lockpick
-        REGISTERPAPYRUSFUNC(GetDestroyedLockpicks,true)
-        REGISTERPAPYRUSFUNC(SetLockpickIsCrime,true)
         REGISTERPAPYRUSFUNC(GetLockpickVariable,true)
         REGISTERPAPYRUSFUNC(SetLockpickVariable,true)
 

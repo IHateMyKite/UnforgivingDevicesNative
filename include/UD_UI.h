@@ -1,5 +1,7 @@
 #pragma once
 
+#include <UD_Utility.h>
+#include <UD_Config.h>
 #include <OrgasmSystem/OrgasmData.h>
 
 namespace UD 
@@ -102,18 +104,18 @@ namespace UD
         }
         inline static void  AddEntryIWW(std::string s_path, int i_id, std::string s_name, Formula a_formula, float f_base, float f_rate, bool b_show)
         {
-            LOG("::AddEntryIWW called - path={},i_id={},value={},rate={},show={}",s_path,i_id,f_base,f_rate,b_show);
+            LOG("UI::AddEntryIWW called - path={},i_id={},value={},rate={},show={}",s_path,i_id,f_base,f_rate,b_show);
             if (IsRegisteredIWW(i_id)) 
             {
                 SetMeterValueIWW(i_id,f_base);
                 SetMeterRateIWW(i_id,f_rate);
                 ToggleMeterIWW(i_id,b_show);
-                LOG("::AddEntryIWW - Entry already exist = updating");
+                LOG("UI::AddEntryIWW - Entry already exist = updating");
             }
             else
             {
                 _metersIWW.push_back(std::unique_ptr<MeterEntryIWW>(new MeterEntryIWW(s_path,i_id,s_name,a_formula,f_base,f_rate,b_show)));
-                LOG("::AddEntryIWW - added id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
+                LOG("UI::AddEntryIWW - added id={},update={},rate={},value={}",_metersIWW.back()->id,_metersIWW.back()->update,_metersIWW.back()->rate,_metersIWW.back()->value);
             }
         }
         inline static bool  RemoveEntryIWW(int i_id)
@@ -179,19 +181,19 @@ namespace UD
         }
         inline static void  AddEntrySkyUi(std::string s_path, std::string s_name, Formula a_formula, float f_base, float f_rate, bool b_show)
         {
-            LOG("::AddEntrySkyUi called - path={},value={},rate={},update={}",s_path,f_base,f_rate,b_show);
+            LOG("UI::AddEntrySkyUi called - path={},value={},rate={},update={}",s_path,f_base,f_rate,b_show);
             if (IsRegisteredSkyUi(s_path)) 
             {
-                LOG("::AddEntrySkyUi - Entry already exist = updating");
+                LOG("UI::AddEntrySkyUi - Entry already exist = updating");
                 SetMeterValueSkyUi(s_path,f_base);
                 SetMeterRateSkyUi(s_path,f_rate);
                 ToggleMeterSkyUi(s_path,b_show);
-                LOG("::AddEntrySkyUi - Entry already exist = updated");
+                LOG("UI::AddEntrySkyUi - Entry already exist = updated");
             }
             else
             {
                 _metersSkyUi.push_back(std::unique_ptr<MeterEntrySkyUi>(new MeterEntrySkyUi(s_path,s_name,a_formula,f_base,f_rate,b_show)));
-                LOG("::AddEntrySkyUi - added = id={},update={},rate={},value={}",_metersSkyUi.back()->id,_metersSkyUi.back()->update,_metersSkyUi.back()->rate,_metersSkyUi.back()->value);
+                LOG("UI::AddEntrySkyUi - added = id={},update={},rate={},value={}",_metersSkyUi.back()->id,_metersSkyUi.back()->update,_metersSkyUi.back()->rate,_metersSkyUi.back()->value);
             }
         }
         inline static bool  RemoveEntrySkyUi(const std::string& s_path)

@@ -1,9 +1,13 @@
 #include <UD_Updater.h>
 
-#include <Windows.h>
+#include <UD_Config.h>
+#include <UD_ControlManager.h>
+#include <UD_MinigameEffect.h>
+#include <UD_ActorSlotManager.h>
+#include <UD_PlayerStatus.h>
+#include <OrgasmSystem/OrgasmManager.h>
 
 SINGLETONBODY(UD::UpdateManager)
-
 
 namespace UD
 {

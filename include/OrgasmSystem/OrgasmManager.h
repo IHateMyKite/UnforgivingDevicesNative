@@ -1,5 +1,7 @@
 #pragma once
 #include <OrgasmSystem/OrgasmData.h>
+#include <OrgasmSystem/OrgasmEvents.h>
+#include <UD_Spinlock.h>
 
 namespace ORS
 {

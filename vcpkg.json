@@ -4,6 +4,9 @@
     "version-string": "0.0.1",
     "dependencies": [
         "commonlibsse-ng",
-        "boost"
+        "boost-algorithm",
+        "boost-math",
+        "boost-lexical-cast",
+        "boost-property-tree"
     ]
 }

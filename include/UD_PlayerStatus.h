@@ -1,5 +1,7 @@
 #pragma once
 
+#include <UD_Utility.h>
+
 namespace UD
 {
     class PlayerStatus

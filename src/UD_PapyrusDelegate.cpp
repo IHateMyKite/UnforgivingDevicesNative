@@ -1,5 +1,14 @@
 #include <UD_PapyrusDelegate.h>
 
+#include <execution>
+
+#include <windows.h>
+#include <UD_Macros.h>  // needs to be included again because windows.h adds its own ERROR macro
+
+#include <UD_Config.h>
+#include <UD_Utility.h>
+#include <UD_Spinlock.h>
+
 #undef GetObject
 
 SINGLETONBODY(UD::PapyrusDelegate)
@@ -213,6 +222,7 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
 
 Result UD::PapyrusDelegate::SetBitMapData(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_name, int a_val, uint8_t a_size, uint8_t a_off)
 {
+    LOG("SetBitMapData(0x{:016X},0x{:08X},{},{},{},{}) called",a_handle,a_device ? a_device->GetFormID() : 0x0 ,a_name,a_val,a_size,a_off)
     if (a_name == "" || a_size > 32 || a_off > 32 || a_device == nullptr) return Result::rArgError;
     if (!a_device->HasKeyword(_udrdkw)) return Result::rDeviceError;
 

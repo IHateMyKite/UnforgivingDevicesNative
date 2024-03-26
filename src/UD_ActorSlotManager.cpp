@@ -1,4 +1,7 @@
 #include <UD_ActorSlotManager.h>
+#include <UD_Inventory.h>
+#include <UD_Config.h>
+#include <UD_Utility.h>
 
 SINGLETONBODY(UD::ActorSlotManager)
 
@@ -25,6 +28,9 @@ void UD::ActorSlotManager::Update()
 std::vector<uint32_t> UD::ActorSlotManager::GetValidActors()
 {
     UniqueLock lock(_lock);
+
+    LOG("ActorSlotManager::GetValidActors() called")
+
     if (_slots == nullptr) return std::vector<RE::ActorHandle::native_handle_type>();
     if (_slots->size() + _closeactors.size() == 0) return std::vector<RE::ActorHandle::native_handle_type>();
     //combine to one result
@@ -47,6 +53,9 @@ std::vector<uint32_t> UD::ActorSlotManager::GetValidActors()
 std::vector<RE::Actor*> UD::ActorSlotManager::GetRegisteredActors()
 {
     UniqueLock lock(_lock);
+
+    LOG("ActorSlotManager::GetRegisteredActors() called")
+
     if (_slots == nullptr) return std::vector<RE::Actor*>();
     
     std::vector<RE::Actor*> loc_result;
@@ -67,11 +76,14 @@ UD::ActorStorage* UD::ActorSlotManager::GetActorStorage(RE::Actor* a_actor)
 bool UD::ActorSlotManager::RegisterSlotQuest(RE::TESQuest* a_quest)
 {
     UniqueLock lock(_lock);
+
+    LOG("ActorSlotManager::ValidateAliases({}) called", a_quest ? a_quest->GetName() : "NONE")
+
     if (a_quest == nullptr) return false;
     if (std::find(_slotquests.begin(),_slotquests.end(),a_quest) == _slotquests.end())
     {
         _slotquests.push_back(a_quest);
-        LOG("ActorSlotManager::RegisterSlotQuest({}) - Total number = {}",a_quest->GetName(),_slotquests.size())
+        LOG("ActorSlotManager::RegisterSlotQuest({}) - Registered. New size = {}",a_quest->GetName(),_slotquests.size())
         //ValidateAliases();
         return true;
     }
@@ -84,6 +96,9 @@ bool UD::ActorSlotManager::RegisterSlotQuest(RE::TESQuest* a_quest)
 void UD::ActorSlotManager::ValidateAliases()
 {
     UniqueLock lock(_lock);
+
+    LOG("ActorSlotManager::ValidateAliases() called")
+
     std::unordered_map<RE::Actor*,ActorStorage>* loc_slots = new std::unordered_map<RE::Actor*,ActorStorage>();
 
     for (auto&& it1 : _slotquests)
@@ -114,7 +129,7 @@ void UD::ActorSlotManager::ValidateAliases()
 
     _closeactors.clear();
     const int loc_distance = UD::Config::GetSingleton()->GetVariable<int>("General.iUpdateDistance",5000);
-    UD::ForEachReferenceInRange(loc_player, loc_distance, [&](RE::TESObjectREFR& a_ref) {
+    UD::ForEachReferenceInRange(loc_player, loc_distance > 0.0f ? loc_distance : 100.0f, [&](RE::TESObjectREFR& a_ref) {
         auto loc_refBase    = a_ref.GetBaseObject();
         auto loc_actor      = a_ref.As<RE::Actor>();
         if (loc_actor && !loc_actor->IsDisabled() && 
@@ -131,10 +146,10 @@ void UD::ActorSlotManager::ValidateAliases()
         return RE::BSContainer::ForEachResult::kContinue;
     });
 
-    LOG("Registered actors")
+    LOG("===Registered actors===")
     for (auto&& it : *_slots) LOG("\t{}",it.first->GetName())
 
-    LOG("Close actors")
+    LOG("===Close actors===")
     for (auto&& it : _closeactors) LOG("\t{}",RE::Actor::LookupByHandle(it) ? RE::Actor::LookupByHandle(it)->GetName() : "NONE")
 
 }

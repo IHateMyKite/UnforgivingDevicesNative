@@ -1,4 +1,8 @@
 #include <UD_Animation.h>
+#include <UD_Utility.h>
+#include <UD_Config.h>
+#include <UD_Inventory.h>
+#include <UD_Keywords.h>
 
 namespace UD
 {

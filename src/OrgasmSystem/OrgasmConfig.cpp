@@ -1,4 +1,7 @@
 #include <OrgasmSystem/OrgasmConfig.h>
+#include <boost/property_tree/ini_parser.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 
 using ORS::Config;
 

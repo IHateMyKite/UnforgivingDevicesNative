@@ -1,4 +1,7 @@
 #include <OrgasmSystem/OrgasmData.h>
+#include <OrgasmSystem/OrgasmManager.h>
+#include <OrgasmSystem/OrgasmConfig.h>
+#include <OrgasmSystem/OrgasmEvents.h>
 #include <UD_UI.h>
 #include <UD_ModEvents.h>
 

@@ -1,5 +1,4 @@
 #pragma once
-#include <Windows.h>
 
 namespace UD {
     inline bool _DamageAV(RE::ActorValueOwner* a_avowner,const RE::ActorValue& a_av, const float& f_dmg, const float& f_min);

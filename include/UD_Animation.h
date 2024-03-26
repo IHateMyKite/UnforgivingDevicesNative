@@ -1,7 +1,5 @@
 #pragma once
 
-#include <UD_H.h>
-
 namespace UD 
 {
     extern inline int GetActorHBConstrains(RE::Actor* a_actor,RE::TESObjectARMO* a_device);

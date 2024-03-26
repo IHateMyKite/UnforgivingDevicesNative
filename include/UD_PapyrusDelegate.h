@@ -1,7 +1,5 @@
 #pragma once
 
-#include <execution>
-
 namespace UD
 {
     #define UDBASESCRIPT "ud_customdevice_renderscript"
@@ -115,7 +113,6 @@ namespace UD
     {
         THREADLOCK;
         const auto loc_handle = PapyrusDelegate::ToVMHandle(a_handle1,a_handle2);
-        LOG("SetBitMapData({} + {} = 0x{:016X},0x{:08X},{},{},{},{}) called",a_handle1,a_handle2,loc_handle,a_device ? a_device->GetFormID() : 0x0 ,a_name,a_val,a_size,a_off)
         return static_cast<int>(PapyrusDelegate::GetSingleton()->SetBitMapData(loc_handle,a_device,a_name,a_val,a_size,a_off));
     }
 

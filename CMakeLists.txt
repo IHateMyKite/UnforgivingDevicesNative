@@ -20,7 +20,6 @@ set(source_files ${source_files}
     src/UD_Updater.cpp
     src/UD_Lib.cpp
     src/UD_Skill.cpp
-    src/UD_Modifiers.cpp
     src/UD_ActorSlotManager.cpp
     src/UD_Serialization.cpp
     src/UD_ControlManager.cpp
@@ -50,9 +49,9 @@ add_custom_command(TARGET UDNative POST_BUILD
                        ${CMAKE_SOURCE_DIR}/build/release/UDNative.dll ${CMAKE_SOURCE_DIR}/SKSE/plugins)
 
 # Copy pdb to bin folder. For now disabled as even ziped, this file is too big
-#add_custom_command(TARGET UDNative POST_BUILD
-#                   COMMAND ${CMAKE_COMMAND} -E tar "cf" ${CMAKE_SOURCE_DIR}/bin/UDNativePDB.zip --format=zip
-#                   -- ${CMAKE_SOURCE_DIR}/build/release/UDNative.pdb )
+add_custom_command(TARGET UDNative POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E tar "cf" ${CMAKE_SOURCE_DIR}/SKSE/plugins/UDNativePDB.zip --format=zip
+                   -- ${CMAKE_SOURCE_DIR}/build/release/UDNative.pdb )
 
 # Copy pdb to bin folder. This file is no under SC. Only reason for this is so its on the same place s dll after build
 add_custom_command(TARGET UDNative POST_BUILD

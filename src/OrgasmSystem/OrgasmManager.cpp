@@ -1,4 +1,10 @@
 #include <OrgasmSystem/OrgasmManager.h>
+#include <UD_Utility.h>
+#include <UD_ActorSlotManager.h>
+#include <UD_Config.h>
+#include <Windows.h>
+#include <UD_Macros.h>
+
 
 SINGLETONBODY(ORS::OrgasmManager)
 
@@ -36,7 +42,8 @@ void ORS::OrgasmManager::Update(float a_delta)
     UniqueLock lock(_lock);
     if (a_delta <= 0.0f) return;
 
-    //LOG("OrgasmManager::Update({})",a_delta)
+    static size_t loc_callcnt = 0;
+    loc_callcnt += 1;
 
     std::vector<uint32_t> loc_toremove;
     for (auto&& it :_actors)
@@ -50,7 +57,13 @@ void ORS::OrgasmManager::Update(float a_delta)
     }
     for (auto&& it : loc_toremove) _actors.erase(it); //remove invalid actors
 
-    
+    //Log only once per 60 frames
+    if (loc_callcnt == 60)
+    {
+        loc_callcnt = 0;
+        LOG("OrgasmManager::Update({}) - Updating {} actors",a_delta,_actors.size())
+    }
+
     std::vector<std::thread> loc_threads;
     auto loc_actors = UD::ActorSlotManager::GetSingleton()->GetValidActors();
     for (auto&& it :_actors)
@@ -69,8 +82,6 @@ void ORS::OrgasmManager::Update(float a_delta)
             //error
         }
     }
-
-    
 
     for (auto&& it : loc_threads) it.join();
 

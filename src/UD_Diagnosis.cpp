@@ -1,4 +1,8 @@
 #include <UD_Diagnosis.h>
+#include <UD_Utility.h>
+#include <UD_Config.h>
+#include <Windows.h>
+#include <UD_Macros.h>
 
 SINGLETONBODY(UD::Diagnosis)
 

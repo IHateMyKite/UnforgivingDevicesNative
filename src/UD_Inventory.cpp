@@ -1,4 +1,10 @@
 #include <UD_Inventory.h>
+#include <execution>
+#include <UD_Config.h>
+#include <UD_Utility.h>
+#include <UD_Keywords.h>
+#include <UD_Spinlock.h>
+#include <UD_ActorSlotManager.h>
 
 SINGLETONBODY(UD::InventoryHandler)
 
@@ -178,4 +184,12 @@ bool UD::InventoryHandler::IsSharp(RE::TESObjectWEAP* a_weapon)
     default:
         return false;
     }
+}
+
+RE::TESObjectWEAP* UD::GetSharpestWeapon(PAPYRUSFUNCHANDLE, RE::Actor* a_actor)
+{
+    if (a_actor == nullptr) return nullptr;
+
+    auto loc_slot = ActorSlotManager::GetSingleton()->GetActorStorage(a_actor);
+    return loc_slot->BestWeapon;
 }

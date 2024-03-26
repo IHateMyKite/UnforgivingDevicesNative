@@ -1,11 +1,8 @@
 #pragma once
 
-//copied from DD
 #include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 
+//copied from DD
 namespace UD
 {
     class Config

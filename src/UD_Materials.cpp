@@ -1,4 +1,6 @@
 #include <UD_Materials.h>
+#include <UD_Utility.h>
+#include <UD_Config.h>
 
 SINGLETONBODY(UD::MaterialManager)
 

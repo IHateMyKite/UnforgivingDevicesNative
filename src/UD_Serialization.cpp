@@ -1,4 +1,8 @@
 #include <UD_Serialization.h>
+#include <UD_Utility.h>
+#include <UD_Config.h>
+#include <UD_PapyrusDelegate.h>
+#include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
 {

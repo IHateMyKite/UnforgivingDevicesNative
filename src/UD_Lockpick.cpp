@@ -1,5 +1,9 @@
 #include "UD_Lockpick.h"
 
+#include <UD_Utility.h>
+#include <UD_Config.h>
+#include <UD_PlayerStatus.h>
+
 SINGLETONBODY(UD::LockpickManager)
 SINGLETONBODY(UD::MenuEventSink)
 

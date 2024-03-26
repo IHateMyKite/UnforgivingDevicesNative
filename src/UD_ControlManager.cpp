@@ -1,5 +1,9 @@
 #include <UD_ControlManager.h>
-
+#include <UD_Utility.h>
+#include <UD_Config.h>
+#include <UD_PlayerStatus.h>
+#include <UD_UI.h>
+#include <UD_ModEvents.h>
 
 SINGLETONBODY(UD::KeyEventSink)
 SINGLETONBODY(UD::CameraEventSink)
@@ -91,6 +95,7 @@ void UD::ControlManager::UpdateControl()
 
 void UD::ControlManager::SyncSetting(bool a_hardcoreMode)
 {
+    LOG("SyncSetting({}) called",a_hardcoreMode)
     _hardcoreMode = a_hardcoreMode;
 }
 

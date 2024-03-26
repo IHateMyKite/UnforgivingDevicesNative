@@ -1,4 +1,15 @@
 #include <UD_Utility.h>
+
+#include <windows.h>
+#include <UD_Macros.h>
+#include <UD_Config.h>
+
+#include <boost/algorithm/clamp.hpp>
+#include <boost/math/special_functions/round.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
+
 namespace UD 
 {
     int Utility::DecodeBit(int a_codedmap,int a_size,int a_index) const

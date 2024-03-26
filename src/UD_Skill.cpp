@@ -1,4 +1,6 @@
 #include <UD_Skill.h>
+#include <UD_Utility.h>
+#include <UD_Config.h>
 
 namespace UD
 {

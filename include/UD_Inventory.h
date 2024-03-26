@@ -1,7 +1,5 @@
 #pragma once
 
-#include <execution>
-
 namespace UD 
 {
     using Item = std::pair<RE::TESBoundObject* const, std::pair<int32_t, std::unique_ptr<RE::InventoryEntryData>>>;
@@ -37,11 +35,5 @@ namespace UD
         return InventoryHandler::GetSingleton()->GetRenderDevices(a_actor,b_worn);
     }
 
-    inline RE::TESObjectWEAP* GetSharpestWeapon(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
-    {
-        if (a_actor == nullptr) return nullptr;
-
-        auto loc_slot = ActorSlotManager::GetSingleton()->GetActorStorage(a_actor);
-        return loc_slot->BestWeapon;
-    }
+    RE::TESObjectWEAP* GetSharpestWeapon(PAPYRUSFUNCHANDLE,RE::Actor* a_actor);
 }

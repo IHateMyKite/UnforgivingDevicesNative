@@ -1,4 +1,22 @@
 #include <UD_GameEvents.h>
+#include <UD_Lib.h>
+#include <UD_MinigameEffect.h>
+#include <UD_Utility.h>
+#include <UD_UI.h>
+#include <UD_Inventory.h>
+#include <UD_ControlManager.h>
+#include <UD_PapyrusDelegate.h>
+#include <UD_ModEvents.h>
+#include <UD_Animation.h>
+#include <UD_Skill.h>
+#include <UD_ActorSlotManager.h>
+#include <UD_Materials.h>
+#include <UD_Diagnosis.h>
+#include <UD_Lockpick.h>
+#include <UD_Updater.h>
+#include <UD_PlayerStatus.h>
+#include <UD_Keywords.h>
+#include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
 {

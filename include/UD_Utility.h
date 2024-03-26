@@ -1,11 +1,5 @@
 #pragma once
 
-#include <boost/algorithm/clamp.hpp>
-#include <boost/math/special_functions/round.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
-
 namespace UD 
 {
     #define UDBITERRORVALUE 0xFFFFFFFF
@@ -70,6 +64,7 @@ namespace UD
     {
         return Utility::GetSingleton()->DecodeBit(a_codedMap,a_size,a_index);
     }
+
     inline int Round(PAPYRUSFUNCHANDLE,float a_value)
     {
         return Utility::GetSingleton()->Round(a_value);
