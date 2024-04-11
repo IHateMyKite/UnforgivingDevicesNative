@@ -13,9 +13,12 @@ void UD::ActorSlotManager::Setup()
 
 void UD::ActorSlotManager::Update()
 {
+    LOG("ActorSlotManager::Update() called")
     ValidateAliases();
 
     if (_slots == nullptr) return;
+
+    LOG("ActorSlotManager::Update() - Number of actors = {}",_slots->size())
 
     UniqueLock lock(_lock);
     for (auto&& [actor,slot] : *_slots)

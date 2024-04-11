@@ -142,7 +142,7 @@ std::vector<RE::TESObjectARMO*> UD::InventoryHandler::GetInvisibleDevices(RE::Ac
 
 RE::TESObjectWEAP* UD::InventoryHandler::GetSharpestWeapon(RE::Actor* a_actor)
 {
-    LOG("GetSharpestWeapon called")
+    LOG("InventoryHandler::GetSharpestWeapon({}) called",a_actor ? a_actor->GetName() : "NONE")
 
     RE::TESObjectWEAP* loc_result = nullptr;
 
