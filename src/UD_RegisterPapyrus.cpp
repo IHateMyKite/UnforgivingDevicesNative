@@ -46,6 +46,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(FloatToInt,true)
         REGISTERPAPYRUSFUNC(RandomFloat,true)
         REGISTERPAPYRUSFUNC(RandomInt,true)
+        REGISTERPAPYRUSFUNC(RandomIdFromDist,true)
         REGISTERPAPYRUSFUNC(PluginInstalled,true)
         REGISTERPAPYRUSFUNC(CheckArmorEquipped,true)
         REGISTERPAPYRUSFUNC(ToggleDetection,true)

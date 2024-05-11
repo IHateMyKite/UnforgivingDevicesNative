@@ -15,8 +15,11 @@ namespace UD
         
         void Update(float a_delta);
 
-        static void ActorUpdatePatched(RE::Actor* a_this, float a_delta);
-        REL::Relocation<decltype(ActorUpdatePatched)> ActorUpdate;
+        static void PlayerUpdatePatched(RE::Actor* a_this, float a_delta);
+        REL::Relocation<decltype(PlayerUpdatePatched)> PlayerUpdate;
+
+        static void CharacterUpdatePatched(RE::Actor* a_this, float a_delta);
+        REL::Relocation<decltype(CharacterUpdatePatched)> CharacterUpdate;
 
         bool t1mutex = false;
         bool t2mutex = false;

@@ -10,6 +10,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <numeric>
+
 namespace UD 
 {
     int Utility::DecodeBit(int a_codedmap,int a_size,int a_index) const
@@ -201,6 +203,29 @@ namespace UD
         if (a_min == a_max) return a_min;
         return a_min + boost::math::lround(RandomNumber()*static_cast<float>(a_max - a_min));
     }
+    int RandomGenerator::RandomIdFromDist(const std::vector<int>& a_dist) const
+    {
+        if (a_dist.size() == 0) return -1;
+        DEBUG("RandomIdFromDist called - size = {}",a_dist.size())
+
+        // first sum the numbers
+        const int loc_sum         = std::accumulate(a_dist.begin(), a_dist.end(), 0);
+        const int loc_randompoint = RandomInt(1,loc_sum);
+              int loc_acu         = 1;
+        for (int i = 0; i < a_dist.size();i++)
+        {
+            // check if its between current and next point
+            if ((loc_randompoint >= loc_acu) && (loc_randompoint < (loc_acu + a_dist[i])))
+            {
+                return i;
+            }
+            loc_acu += a_dist[i];
+        }
+
+        return -1;
+    }
+
+
     uint32_t RandomGenerator::MWC64X() const
     {
         uint32_t c = (_seed) >> 32, x = (_seed) & 0xFFFFFFFF;

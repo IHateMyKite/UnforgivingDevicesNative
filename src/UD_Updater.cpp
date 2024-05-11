@@ -35,7 +35,10 @@ namespace UD
 
     void UpdateManager::Hook()
     {
-        HookVirtualMethod<RE::Actor,decltype(ActorUpdatePatched)>(RE::PlayerCharacter::GetSingleton(),0x0AD,0x0AF,reinterpret_cast<uintptr_t>(ActorUpdatePatched),ActorUpdate);
+        HookVirtualMethod<RE::Actor,decltype(PlayerUpdatePatched)>(RE::PlayerCharacter::GetSingleton(),0x0AD,0x0AF,reinterpret_cast<uintptr_t>(PlayerUpdatePatched),PlayerUpdate);
+
+        //auto loc_rel2 = REL::Relocation<uint64_t>(REL::RelocationID(261397,0),REL::VariantOffset(0,0,0)); //vtable of character update
+        //HookVirtualMethod<decltype(CharacterUpdatePatched)>(loc_rel2,0x0AD,0x0AF,reinterpret_cast<uintptr_t>(CharacterUpdatePatched),CharacterUpdate);
     }
 
     void UpdateManager::Update(float a_delta)
@@ -64,7 +67,7 @@ namespace UD
         //ControlManager::GetSingleton()->UpdateControl();
     }
 
-    void UpdateManager::ActorUpdatePatched(RE::Actor* a_this, float a_delta)
+    void UpdateManager::PlayerUpdatePatched(RE::Actor* a_this, float a_delta)
     {
         static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
 
@@ -73,7 +76,12 @@ namespace UD
             UpdateManager::GetSingleton()->Update(a_delta);
         }
 
-        UpdateManager::GetSingleton()->ActorUpdate(a_this,a_delta);
+        UpdateManager::GetSingleton()->PlayerUpdate(a_this,a_delta);
+    }
+
+    void UpdateManager::CharacterUpdatePatched(RE::Actor* a_this, float a_delta)
+    {
+        UpdateManager::GetSingleton()->CharacterUpdate(a_this,a_delta);
     }
 
     void UpdateManager::CreateUpdateThreads(void)
