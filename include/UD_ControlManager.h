@@ -99,6 +99,7 @@ namespace UD
         bool UnregisterDeviceCallbacks(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
         void UnregisterAllDeviceCallbacks();
         const std::unordered_map<uint32_t,DeviceCallback>& GetDeviceCallbacks();
+        bool HaveDeviceCallbacks() const;
     private:
         void AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm);
     private:

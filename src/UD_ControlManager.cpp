@@ -250,6 +250,11 @@ const std::unordered_map<uint32_t, UD::DeviceCallback>& UD::ControlManager::GetD
     return _DeviceCallbacks;
 }
 
+bool UD::ControlManager::HaveDeviceCallbacks() const
+{
+    return _DeviceCallbacks.size() > 0;
+}
+
 void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_funtype, std::string a_argStr, RE::TESForm* a_argForm)
 {
     if (a_callback == nullptr) return;
@@ -338,8 +343,8 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
 {
     if (_Cooldown) return RE::BSEventNotifyControl::kContinue; //on cooldown - return
     if (!eventPtr) return RE::BSEventNotifyControl::kContinue;
-    if (!ControlManager::GetSingleton()->HardcoreMode()) return RE::BSEventNotifyControl::kContinue; //no hardcore mode - return
-
+    if (!ControlManager::GetSingleton()->HardcoreMode() && (!ControlManager::GetSingleton()->HaveDeviceCallbacks())) return RE::BSEventNotifyControl::kContinue; //no hardcore mode - return
+    
     auto* event = *eventPtr;
     if (!event) return RE::BSEventNotifyControl::kContinue;
 
