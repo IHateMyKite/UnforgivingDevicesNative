@@ -5,4 +5,4 @@ build
 cmake-build*
 *.pdb
 *.pdb
-SKSE\plugins\*.zip
+SKSE/plugins/UDNativePDB.zip

@@ -1,12 +1,14 @@
 {
-    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-    "name": "hello-world",
-    "version-string": "0.0.1",
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+    "name": "udnative",
+    "version-string": "3.0.0",
+    "description": "",
     "dependencies": [
         "commonlibsse-ng",
         "boost-algorithm",
         "boost-math",
         "boost-lexical-cast",
-        "boost-property-tree"
+        "boost-property-tree",
+        "spdlog"
     ]
 }
