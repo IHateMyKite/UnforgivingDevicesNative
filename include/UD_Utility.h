@@ -197,7 +197,6 @@ namespace UD
         return RandomGenerator::GetSingleton()->RandomIdFromDist(a_dist);
     }
 
-
     std::vector<int> DivadeToParts(int a_number, int a_parts);
 
     bool PluginInstalled(PAPYRUSFUNCHANDLE,std::string a_dll);
@@ -216,4 +215,20 @@ namespace UD
     template<class T> std::vector<T> GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
 
     RE::TESObjectARMO* GetRandomDevice(PAPYRUSFUNCHANDLE,RE::TESLevItem* a_list);
+
+    inline bool IsAnimating(RE::Actor* a_actor)
+    {
+        static auto loc_datahandler = RE::TESDataHandler::GetSingleton();
+        static RE::TESFaction* loc_animationfaction = static_cast<RE::TESFaction*>(loc_datahandler->LookupForm(0x029567,"Devious Devices - Integration.esm"));
+        if (a_actor == nullptr || loc_animationfaction == nullptr) return false;
+
+        return a_actor->IsInFaction(loc_animationfaction);
+    }
+
+    inline bool ActorIsBound(RE::Actor* a_actor)
+    {
+        if (a_actor == nullptr) return false;
+
+        return Utility::GetSingleton()->WornHasKeyword(a_actor,"zad_DeviousHeavyBondage");
+    }
 }

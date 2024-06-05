@@ -70,7 +70,7 @@ namespace ORS
 
     private:
         bool              _installed = false;
-        mutable Spinlock  _lock;
+        mutable Utils::Spinlock  _lock;
         std::unordered_map<uint32_t,OrgasmActorData> _actors;
     };
 

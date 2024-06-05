@@ -20,7 +20,7 @@ void UD::ActorSlotManager::Update()
 
     LOG("ActorSlotManager::Update() - Number of actors = {}",_slots->size())
 
-    UniqueLock lock(_lock);
+    Utils::UniqueLock lock(_lock);
     for (auto&& [actor,slot] : *_slots)
     {
         //LOG("Updating {}",it.first->GetName())
@@ -30,7 +30,7 @@ void UD::ActorSlotManager::Update()
 
 std::vector<uint32_t> UD::ActorSlotManager::GetValidActors()
 {
-    UniqueLock lock(_lock);
+    Utils::UniqueLock lock(_lock);
 
     LOG("ActorSlotManager::GetValidActors() called")
 
@@ -55,7 +55,7 @@ std::vector<uint32_t> UD::ActorSlotManager::GetValidActors()
 
 std::vector<RE::Actor*> UD::ActorSlotManager::GetRegisteredActors()
 {
-    UniqueLock lock(_lock);
+    Utils::UniqueLock lock(_lock);
 
     LOG("ActorSlotManager::GetRegisteredActors() called")
 
@@ -72,13 +72,13 @@ std::vector<RE::Actor*> UD::ActorSlotManager::GetRegisteredActors()
 
 UD::ActorStorage* UD::ActorSlotManager::GetActorStorage(RE::Actor* a_actor)
 {
-    UniqueLock lock(_lock);
+    Utils::UniqueLock lock(_lock);
     return (_slots && a_actor) ? &(*_slots)[a_actor] : nullptr;
 }
 
 bool UD::ActorSlotManager::RegisterSlotQuest(RE::TESQuest* a_quest)
 {
-    UniqueLock lock(_lock);
+    Utils::UniqueLock lock(_lock);
 
     LOG("ActorSlotManager::ValidateAliases({}) called", a_quest ? a_quest->GetName() : "NONE")
 
@@ -98,7 +98,7 @@ bool UD::ActorSlotManager::RegisterSlotQuest(RE::TESQuest* a_quest)
 
 void UD::ActorSlotManager::ValidateAliases()
 {
-    UniqueLock lock(_lock);
+    Utils::UniqueLock lock(_lock);
 
     LOG("ActorSlotManager::ValidateAliases() called")
 

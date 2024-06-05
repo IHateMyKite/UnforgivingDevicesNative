@@ -18,9 +18,9 @@ std::vector<ORS::HornyLevel> ORS::g_HornyLevels = {
 
 void ORS::OrgasmActorData::Update(const float& a_delta)
 {
-    //UniqueLock updatelock(lock); //apply spinlock
-
     if (_RDATA.Actor == nullptr) return;
+
+    //DEBUG("{} = 0x{:016X}", _RDATA.Actor->GetName(),(uint64_t)_RDATA.Actor)
 
     if (_RDATA.OrgasmTimer > 0.0f)
     {
@@ -97,7 +97,6 @@ float ORS::OrgasmActorData::GetOrgasmProgress(int a_mod) const
 
 float ORS::OrgasmActorData::GetOrgasmProgressUI() const
 { 
-    //UniqueLock uiLock(lock);
     return clamp(100.0f*_PDATA.OrgasmProgress/_RDATA.OrgasmCapacity,0.0f,100.0f);
 }
 

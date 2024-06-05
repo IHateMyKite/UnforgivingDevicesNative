@@ -57,7 +57,7 @@ std::vector<RE::TESObjectARMO*> UD::InventoryHandler::GetInventoryDevices(RE::Ac
     {
         RE::Actor::InventoryItemMap loc_inv = a_actor->GetInventory();
 
-        Spinlock loc_lock;
+        Utils::Spinlock loc_lock;
 
         std::for_each(std::execution::seq,loc_inv.begin(),loc_inv.end(),[this,&loc_lock,&loc_res](Item& a_obj)
         {
@@ -103,7 +103,7 @@ std::vector<RE::TESObjectARMO*> UD::InventoryHandler::GetRenderDevices(RE::Actor
     {
         RE::Actor::InventoryItemMap loc_inv = a_actor->GetInventory();
 
-        Spinlock loc_lock;
+        Utils::Spinlock loc_lock;
 
         std::for_each(std::execution::seq,loc_inv.begin(),loc_inv.end(),[this,&loc_lock,&loc_res](Item& a_obj)
         {
@@ -148,7 +148,7 @@ RE::TESObjectWEAP* UD::InventoryHandler::GetSharpestWeapon(RE::Actor* a_actor)
 
     RE::Actor::InventoryItemMap loc_inv = a_actor->GetInventory();
 
-    Spinlock loc_lock;
+    Utils::Spinlock loc_lock;
 
     std::for_each(std::execution::seq,loc_inv.begin(),loc_inv.end(),[this,&loc_lock,&loc_result](Item& a_obj)
     {

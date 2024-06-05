@@ -1,5 +1,8 @@
 #pragma once
 
+#include <UD_Spinlock.h>
+
+
 namespace UD
 {
     #define UDBASESCRIPT "ud_customdevice_renderscript"
@@ -14,23 +17,6 @@ namespace UD
         RE::TESObjectARMO* rd;
         uint32_t           wearer;
     };
-
-    class ThreadLock
-    {
-    public:
-        ThreadLock()
-        {
-            assert(_used == false);
-            _used = true;
-        };
-        ~ThreadLock()
-        {
-            _used = false;
-        };
-    private:
-        static bool _used;
-    };
-    #define THREADLOCK auto CHECKTHREAD_var = ThreadLock()
 
     typedef RE::TESObjectARMO*(* GetDeviceRender)(RE::TESObjectARMO*);
 
@@ -73,6 +59,9 @@ namespace UD
         void UpdateVMHandles() const;
         Device GetDeviceScript(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
         Device GetCachedDevice(RE::VMHandle,RE::Actor* a_actor, RE::TESObjectARMO* a_device);
+
+        void Lock();
+        void Unlock();
     private:
         RE::VMHandle ValidateVMHandle(RE::VMHandle a_handle,RE::TESObjectARMO* a_device);
         void ValidateCache() const;
@@ -81,6 +70,7 @@ namespace UD
         FilterDeviceResult ProcessDevice(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices,std::function<void(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
         FilterDeviceResult ProcessDevice2(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::TESObjectARMO* a_device,std::function<bool(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
         GetDeviceRender DDNGGetDeviceRender;
+        void ResetCache();
     private:
         bool _installed = false;
         RE::BGSKeyword* _udrdkw;
@@ -89,36 +79,46 @@ namespace UD
         
         mutable uint64_t _RemovedCounter = 0x0; //removed devices counter
         mutable std::unordered_map<RE::VMHandle,Device> _cache;
+        mutable Utils::Spinlock _SaveLock;
     };
 
     inline int SendRegisterDeviceScriptEvent(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,std::vector<RE::TESObjectARMO*> a_devices)
     {
-        THREADLOCK;
-        return PapyrusDelegate::GetSingleton()->SendRegisterDeviceScriptEvent(a_actor,a_devices);
+        PapyrusDelegate::GetSingleton()->Lock();
+        auto loc_res = PapyrusDelegate::GetSingleton()->SendRegisterDeviceScriptEvent(a_actor,a_devices);
+        PapyrusDelegate::GetSingleton()->Unlock();
+        return loc_res;
     }
 
     inline int SendMinigameThreadEvents(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,RE::TESObjectARMO* a_device,int a_handle1,int a_handle2, int a_mode)
     {
-        THREADLOCK;
-        return static_cast<int>(PapyrusDelegate::GetSingleton()->SendMinigameThreadEvents(a_actor,a_device,PapyrusDelegate::ToVMHandle(a_handle1,a_handle2),(PapyrusDelegate::MinigameThreads)a_mode));
+        PapyrusDelegate::GetSingleton()->Lock();
+        auto loc_res = static_cast<int>(PapyrusDelegate::GetSingleton()->SendMinigameThreadEvents(a_actor,a_device,PapyrusDelegate::ToVMHandle(a_handle1,a_handle2),(PapyrusDelegate::MinigameThreads)a_mode));
+        PapyrusDelegate::GetSingleton()->Unlock();
+        return loc_res;
     }
 
     inline int SendRemoveRenderDeviceEvent(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,RE::TESObjectARMO* a_device)
     {
-        THREADLOCK;
-        return static_cast<int>(PapyrusDelegate::GetSingleton()->SendRemoveRenderDeviceEvent(a_actor,a_device));
+        PapyrusDelegate::GetSingleton()->Lock();
+        auto loc_res = static_cast<int>(PapyrusDelegate::GetSingleton()->SendRemoveRenderDeviceEvent(a_actor,a_device));
+        PapyrusDelegate::GetSingleton()->Unlock();
+        return loc_res;
     }
 
     inline int SetBitMapData(PAPYRUSFUNCHANDLE,int a_handle1,int a_handle2,RE::TESObjectARMO* a_device,std::string a_name,int a_val,int a_size,int a_off)
     {
-        THREADLOCK;
+        PapyrusDelegate::GetSingleton()->Lock();
         const auto loc_handle = PapyrusDelegate::ToVMHandle(a_handle1,a_handle2);
-        return static_cast<int>(PapyrusDelegate::GetSingleton()->SetBitMapData(loc_handle,a_device,a_name,a_val,a_size,a_off));
+        auto loc_res = static_cast<int>(PapyrusDelegate::GetSingleton()->SetBitMapData(loc_handle,a_device,a_name,a_val,a_size,a_off));
+        PapyrusDelegate::GetSingleton()->Unlock();
+        return loc_res;
     }
 
     inline void UpdateVMHandles(PAPYRUSFUNCHANDLE)
     {
-        THREADLOCK;
+        PapyrusDelegate::GetSingleton()->Lock();
         PapyrusDelegate::GetSingleton()->UpdateVMHandles();
+        PapyrusDelegate::GetSingleton()->Unlock();
     }
 }

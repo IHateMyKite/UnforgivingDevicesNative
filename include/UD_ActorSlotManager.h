@@ -25,7 +25,7 @@ namespace UD
 
         bool RegisterSlotQuest(RE::TESQuest* a_quest);
     private:
-        mutable Spinlock  _lock;
+        mutable Utils::Spinlock  _lock;
 
         std::vector<RE::TESQuest*> _slotquests;
 

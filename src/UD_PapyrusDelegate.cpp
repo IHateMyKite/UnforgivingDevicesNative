@@ -7,7 +7,7 @@
 
 #include <UD_Config.h>
 #include <UD_Utility.h>
-#include <UD_Spinlock.h>
+//#include <UD_Spinlock.h>
 
 #undef GetObject
 
@@ -16,8 +16,6 @@ SINGLETONBODY(UD::PapyrusDelegate)
 using UD::PapyrusDelegate;
 typedef PapyrusDelegate::Result Result;
 typedef PapyrusDelegate::FilterDeviceResult FilterDeviceResult;
-
-bool UD::ThreadLock::_used = false;
 
 RE::VMHandle UD::PapyrusDelegate::ToVMHandle(const int a_1, const int a_2)
 {
@@ -28,6 +26,7 @@ RE::VMHandle UD::PapyrusDelegate::ToVMHandle(const int a_1, const int a_2)
 
 void PapyrusDelegate::Setup()
 {
+    Utils::UniqueLock lock(_SaveLock);
     if (!_installed)
     {
         _udrdkw = reinterpret_cast<RE::BGSKeyword*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x11A352,"UnforgivingDevices.esp"));
@@ -53,7 +52,9 @@ void PapyrusDelegate::Setup()
 void UD::PapyrusDelegate::Reload()
 {
     Setup();
-    _cache.clear();
+    ResetCache();
+
+    Utils::UniqueLock lock(_SaveLock);
     UpdateVMHandles();
 }
 
@@ -526,13 +527,17 @@ FilterDeviceResult UD::PapyrusDelegate::ProcessDevice2(RE::VMHandle a_handle, RE
     return {false,nullptr,nullptr};
 }
 
+void UD::PapyrusDelegate::ResetCache()
+{
+    Utils::UniqueLock lock(_SaveLock);
+    _cache.clear();
+}
+
 void UD::PapyrusDelegate::UpdateVMHandles() const
 {
     LOG("UpdateVMHandles called")
 
     const auto loc_vm = InternalVM::GetSingleton();
-
-    Spinlock loc_lock;
 
     loc_vm->attachedScriptsLock.Lock();
     std::for_each(std::execution::seq,loc_vm->attachedScripts.begin(),loc_vm->attachedScripts.end(),[&](Script& a_script)
@@ -544,7 +549,6 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
             //get script object
             RE::BSTSmartPointer<RE::BSScript::Object> loc_object = nullptr;
 
-            UniqueLock lock(loc_lock);
             loc_vm->FindBoundObject(loc_handle,loc_type->GetName(),loc_object);
 
             if (loc_object != nullptr)
@@ -616,6 +620,16 @@ UD::Device UD::PapyrusDelegate::GetCachedDevice(RE::VMHandle a_handle, RE::Actor
     ValidateCache();
     Device loc_cacheres = _cache[loc_vmhandle];
     return loc_cacheres;
+}
+
+void UD::PapyrusDelegate::Lock()
+{
+    _SaveLock.Lock();
+}
+
+void UD::PapyrusDelegate::Unlock()
+{
+    _SaveLock.Unlock();
 }
 
 template<class T>

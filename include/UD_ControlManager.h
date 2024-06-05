@@ -102,6 +102,8 @@ namespace UD
         bool HaveDeviceCallbacks() const;
     private:
         void AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm);
+        static void DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw);
+        inline static REL::Relocation<decltype(DrawWeaponMagicHands)> DrawWeaponMagicHands_old;
     private:
         bool _installed = false;
         RE::BSTArray<RE::ControlMap::UserEventMapping>* _OriginalControls;
@@ -169,7 +171,6 @@ namespace UD
         void InitControlOverride(RE::BSTArray<RE::ControlMap::UserEventMapping>** a_controls,const std::vector<std::string>& a_filter);
         void DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
         void ApplyControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
-        
     };
 
     inline void SyncControlSetting(PAPYRUSFUNCHANDLE, bool a_hardcoremode)
