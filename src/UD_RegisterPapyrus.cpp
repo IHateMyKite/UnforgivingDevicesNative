@@ -85,6 +85,8 @@ namespace UD
 
         //animation
         REGISTERPAPYRUSFUNC(GetActorConstrains,true)
+        REGISTERPAPYRUSFUNC(CheckWeaponDisabled,true)
+        REGISTERPAPYRUSFUNC(DisableWeapons,true)
 
         //skill
         REGISTERPAPYRUSFUNC(CalculateSkillFromPerks,true)

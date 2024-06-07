@@ -2,7 +2,6 @@
 
 #include <UD_Spinlock.h>
 
-
 namespace UD
 {
     #define UDBASESCRIPT "ud_customdevice_renderscript"

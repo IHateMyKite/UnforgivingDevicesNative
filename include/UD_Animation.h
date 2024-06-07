@@ -1,14 +1,47 @@
 #pragma once
 
+#include <UD_Spinlock.h>
+
 namespace UD 
 {
-    extern inline int GetActorHBConstrains(RE::Actor* a_actor,RE::TESObjectARMO* a_device);
-    extern inline int ProccessDeviceArray(RE::Actor* a_actor,const std::vector<RE::TESObjectARMO*> &a_array);
-    extern inline int GetActorConstrainsInter(RE::Actor* a_actor);
+    typedef uint32_t Handle;
+
+    class AnimationManager
+    {
+    SINGLETONHEADER(AnimationManager);
+    public:
+        void Setup();
+        void Reload();
+
+        int GetActorHBConstrains(RE::Actor* a_actor,RE::TESObjectARMO* a_device) const;
+        int ProccessDeviceArray(RE::Actor* a_actor,const std::vector<RE::TESObjectARMO*> &a_array) const;
+        int GetActorConstrainsInter(RE::Actor* a_actor) const;
+
+        bool CheckWeaponDisabled(RE::Actor* a_actor) const;
+        void DisableWeapons(RE::Actor* a_actor, bool a_state);
+    private:
+        static void DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw);
+        inline static REL::Relocation<decltype(DrawWeaponMagicHands)> DrawWeaponMagicHands_old;
+    private:
+        bool _init = false;
+        std::vector<Handle> _weapondisabled;
+        mutable Utils::Spinlock _SaveLock;
+    };
+
+    // ==========================================
+    // ===         PAPYRUS FUNCTIONS          ===
+    // ==========================================
 
     inline int GetActorConstrains(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
     {
-        //const auto loc_storage = ActorSlotManager::GetSingleton()->GetActorStorage(a_actor);
-        return /*loc_storage ? loc_storage->Constrains : */ GetActorConstrainsInter(a_actor); //GetActorConstrainsInter(a_actor);
+        return AnimationManager::GetSingleton()->GetActorConstrainsInter(a_actor);
+    }
+    inline bool CheckWeaponDisabled(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        return AnimationManager::GetSingleton()->CheckWeaponDisabled(a_actor);
+    }
+    inline void DisableWeapons(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, bool a_state)
+    {
+        AnimationManager::GetSingleton()->DisableWeapons(a_actor,a_state);
     }
 }

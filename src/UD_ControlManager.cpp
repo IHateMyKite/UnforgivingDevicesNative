@@ -39,10 +39,6 @@ void UD::ControlManager::Setup()
 
         SKSE::GetCameraEventSource()->AddEventSink(CameraEventSink::GetSingleton());
 
-        REL::Relocation<std::uintptr_t> vtbl_player{RE::Character::VTABLE[0]};
-        DrawWeaponMagicHands_old = vtbl_player.write_vfunc(REL::Module::GetRuntime() != REL::Module::Runtime::VR ? 0x0A6 : 0x0A8, DrawWeaponMagicHands);
-
-
         LOG("ControlManager installed")
         //DebugPrintControls(_OriginalControls);
         //DebugPrintControls(_HardcoreControls);
@@ -296,21 +292,6 @@ void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns
     }
 
     a_callback->args.push_back({a_funtype,loc_atype,a_argStr,a_argForm,loc_fun});
-}
-
-void UD::ControlManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
-{
-    static const bool loc_boundcombatnpc = Config::GetSingleton()->GetVariable<bool>("Combat.bNPCBoundCombat",true);
-    if (a_draw && (IsAnimating(a_actor) || (!loc_boundcombatnpc && ActorIsBound(a_actor))))
-    {
-        
-        //DEBUG("ControlManager::DrawWeaponMagicHands({}) - actor is animating/bound and because of that cant draw weapon",a_actor ? a_actor->GetName() : "NONE")
-        return;
-    } 
-    else
-    {
-        DrawWeaponMagicHands_old(a_actor,a_draw);
-    }
 }
 
 void UD::ControlManager::SaveOriginalControls()

@@ -2,12 +2,14 @@
 #include <UD_Utility.h>
 #include <UD_Config.h>
 #include <UD_PapyrusDelegate.h>
+#include <UD_Animation.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
 {
     void OnGameLoaded(SKSE::SerializationInterface* serde)
     {
+        LOG("OnGameLoaded called")
         LoadMode loc_LoadMode = (LoadMode)UD::Config::GetSingleton()->GetVariable<int>("General.iLoadMode",0);
 
         switch(loc_LoadMode)
@@ -23,6 +25,7 @@ namespace UD
         }
 
         PapyrusDelegate::GetSingleton()->Reload();
+        AnimationManager::GetSingleton()->Reload();
     }
     void OnGameSaved(SKSE::SerializationInterface* serde)
     {

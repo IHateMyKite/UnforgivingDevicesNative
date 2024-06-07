@@ -37,6 +37,7 @@ namespace UD
         Diagnosis::GetSingleton()->Setup();
         LockpickManager::GetSingleton()->Setup();
         FastTravelManager::GetSingleton()->Setup();
+        AnimationManager::GetSingleton()->Setup();
         //remove effect in case that user reloaded the game without exit
         if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
 
