@@ -23,29 +23,45 @@ int UD::AnimationManager::GetActorConstrainsInter(RE::Actor* a_actor) const
     return loc_res;
 }
 
-inline bool UD::AnimationManager::CheckWeaponDisabled(RE::Actor* a_actor) const
+inline bool UD::AnimationManager::CheckWeaponDisabled(RE::Actor* a_actor)
 {
     if (a_actor == nullptr || a_actor->IsPlayerRef()) return false;
     Utils::UniqueLock lock(_SaveLock);
-    return (std::find(_weapondisabled.begin(),_weapondisabled.end(),a_actor->GetHandle().native_handle()) != _weapondisabled.end());
+    return (_weapondisabled.find(a_actor->GetHandle().native_handle()) != _weapondisabled.end());
 }
 
 void UD::AnimationManager::DisableWeapons(RE::Actor* a_actor, bool a_state)
 {
-    LOG("DisableWeapons({},{}) called",a_actor ? a_actor->GetName() : "NONE", a_state)
+    DEBUG("DisableWeapons({},{}) called",a_actor ? a_actor->GetName() : "NONE", a_state)
     if (a_actor == nullptr || a_actor->IsPlayerRef()) return;
     
-    bool loc_disabled = CheckWeaponDisabled(a_actor);
-
+    const bool loc_disabled = CheckWeaponDisabled(a_actor);
+    
     Utils::UniqueLock lock(_SaveLock);
-    if (!loc_disabled && a_state)
+    
+    const Handle loc_handle = a_actor->GetHandle().native_handle();
+    if (a_state)
     {
-        _weapondisabled.push_back(a_actor->GetHandle().native_handle());
+        const DisableCounter loc_cnt = _weapondisabled[loc_handle] + 1;
+        _weapondisabled[loc_handle] = loc_cnt;
+
+        DEBUG("DisableWeapons({},{}) - Counter = {}",a_actor ? a_actor->GetName() : "NONE", a_state,loc_cnt)
     }
     else if (loc_disabled && !a_state)
     {
-        Handle loc_handle = a_actor->GetHandle().native_handle();
-        (void)_weapondisabled.erase(std::find(_weapondisabled.begin(),_weapondisabled.end(),loc_handle));
+        const DisableCounter loc_cnt = _weapondisabled[loc_handle] - 1;
+
+        DEBUG("DisableWeapons({},{}) - Counter = {}",a_actor ? a_actor->GetName() : "NONE", a_state,loc_cnt)
+        if (loc_cnt == 0)
+        {
+            DEBUG("DisableWeapons({},{}) - Removing weapon disable",a_actor ? a_actor->GetName() : "NONE", a_state)
+            
+            (void)_weapondisabled.erase(loc_handle);
+        }
+        else
+        {
+            _weapondisabled[loc_handle] = loc_cnt; 
+        }
     }
 }
 
@@ -135,7 +151,7 @@ void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
     }
 
 
-    if (a_draw && (IsAnimating(a_actor) || (!loc_boundcombatnpc && ActorIsBound(a_actor))))
+    if (a_draw && (IsAnimating(a_actor) || ActorIsBoundCombatDisabled(a_actor) || (!loc_boundcombatnpc && ActorIsBound(a_actor))))
     {
         
         LOG("ControlManager::DrawWeaponMagicHands({}) - actor is animating/bound and because of that cant draw weapon",a_actor ? a_actor->GetName() : "NONE")

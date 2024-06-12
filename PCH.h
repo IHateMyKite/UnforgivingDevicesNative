@@ -5,3 +5,11 @@
 #include "include/UD_H.h"
 
 using namespace std::literals;
+
+namespace UD
+{
+    typedef uint32_t Handle;
+
+    template <class T>
+    using ActorMap = std::unordered_map<Handle, T>;
+}

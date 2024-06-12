@@ -4,7 +4,7 @@
 
 namespace UD 
 {
-    typedef uint32_t Handle;
+    typedef uint8_t DisableCounter;
 
     class AnimationManager
     {
@@ -17,14 +17,14 @@ namespace UD
         int ProccessDeviceArray(RE::Actor* a_actor,const std::vector<RE::TESObjectARMO*> &a_array) const;
         int GetActorConstrainsInter(RE::Actor* a_actor) const;
 
-        bool CheckWeaponDisabled(RE::Actor* a_actor) const;
+        bool CheckWeaponDisabled(RE::Actor* a_actor);
         void DisableWeapons(RE::Actor* a_actor, bool a_state);
     private:
         static void DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw);
         inline static REL::Relocation<decltype(DrawWeaponMagicHands)> DrawWeaponMagicHands_old;
     private:
         bool _init = false;
-        std::vector<Handle> _weapondisabled;
+        ActorMap<DisableCounter> _weapondisabled;
         mutable Utils::Spinlock _SaveLock;
     };
 

@@ -231,4 +231,11 @@ namespace UD
 
         return Utility::GetSingleton()->WornHasKeyword(a_actor,"zad_DeviousHeavyBondage");
     }
+
+    inline bool ActorIsBoundCombatDisabled(RE::Actor* a_actor)
+    {
+        if (a_actor == nullptr) return false;
+
+        return Utility::GetSingleton()->WornHasKeyword(a_actor,"zad_BoundCombatDisableKick");
+    }
 }
