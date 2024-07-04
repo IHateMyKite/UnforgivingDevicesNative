@@ -245,4 +245,7 @@ namespace UD
 
         return Utility::GetSingleton()->WornHasKeyword(a_actor,"zad_BoundCombatDisableKick");
     }
+
+    bool IsConcentrationSpell(PAPYRUSFUNCHANDLE,RE::SpellItem* a_spell);
+    bool IsConcentrationEnch(PAPYRUSFUNCHANDLE,RE::EnchantmentItem* a_ench);
 }

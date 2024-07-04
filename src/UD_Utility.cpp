@@ -456,7 +456,7 @@ namespace UD
 
     bool EditModifierStringParam(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier, int a_index, std::string a_newvalue)
     {
-        DEBUG("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - Called",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device ? a_device->GetFormID() : 0,a_modifier,a_index,a_newvalue)
+        LOG("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - Called",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device ? a_device->GetFormID() : 0,a_modifier,a_index,a_newvalue)
 
         if (a_device == nullptr || ((a_vm1 + a_vm2) == 0U)) return false;
 
@@ -465,26 +465,55 @@ namespace UD
 
         const auto loc_it = std::find_if(loc_modifiers.begin(),loc_modifiers.end(),[&](Modifier& a_mod){return a_mod.namealias == a_modifier;});
 
+        auto loc_device = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_vm1,a_vm2,a_device);
+
         if (loc_it == loc_modifiers.end())
         {
             WARN("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - Could not find modifier",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier,a_index,a_newvalue)
-            return "";
+            return false;
         }
-        
-        std::string loc_param = loc_modifierparam[loc_it - loc_modifiers.begin()];
+
+        auto loc_obj = loc_device.object->GetProperty("UD_ModifiersDataStr");
+
+        if (loc_obj->IsNoneArray())
+        {
+            ERROR("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - Device doesnt have parameter list set up. Setting it up...",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier,a_index,a_newvalue)
+            
+            RE::BSTSmartPointer<RE::BSScript::Array> a_val;
+            const auto loc_vm = InternalVM::GetSingleton();
+
+
+            loc_vm->CreateArray(RE::BSScript::TypeInfo(RE::BSScript::TypeInfo::RawType::kString), loc_modifiers.size(), a_val);
+
+            loc_obj->SetArray(a_val);
+        }
+        else if (!loc_obj->IsArray())
+        {
+            ERROR("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - UD_ModifiersDataStr is not array for some reason",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier,a_index,a_newvalue)
+            
+            return false;
+        }
+
+        const size_t loc_id = loc_it - loc_modifiers.begin();
+
+        std::string loc_param = loc_modifierparam[loc_id];
 
         auto loc_params = GetStringParamAllInter<std::string>(loc_param,",");
-
-        DEBUG("loc_param = {}",loc_param)
 
         // set new value
         loc_params[a_index] = a_newvalue;
 
         loc_param = boost::join(loc_params,",");
 
-        DEBUG("loc_param = {}",loc_param)
+        auto loc_arr = loc_obj->GetArray();
 
-        loc_it->object->GetProperty("UD_ModifiersDataStr")->SetString(loc_param);
+        if (loc_arr == nullptr) 
+        {
+            ERROR("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - Failed to edit the parameter",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier,a_index,a_newvalue)
+            return false;
+        }
+
+        (*loc_arr)[loc_id].SetString(loc_param);
 
         return true;
     }
@@ -561,7 +590,18 @@ namespace UD
         LOG("GetRandomDevice(0x{:08X}) - Returning 0x{:08X}",a_list->formID,loc_armor ? loc_armor->formID : 0x0U)
         return loc_armor;
     }
+
     #undef GetRandomDevice_UpdateForms
+
+    bool IsConcentrationSpell(PAPYRUSFUNCHANDLE, RE::SpellItem* a_spell)
+    {
+        return a_spell ? a_spell->GetCastingType() == RE::MagicSystem::CastingType::kConcentration : false;
+    }
+
+    bool IsConcentrationEnch(PAPYRUSFUNCHANDLE, RE::EnchantmentItem* a_ench)
+    {
+        return a_ench ? a_ench->GetCastingType() == RE::MagicSystem::CastingType::kConcentration : false;
+    }
 
     template<class T>
     T GetStringParam(const std::string& a_param, int a_Index, T a_DefaultValue)

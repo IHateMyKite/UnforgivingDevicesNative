@@ -60,6 +60,8 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetModifierStringParamAll,true)
         REGISTERPAPYRUSFUNC(EditModifierStringParam,true)
         REGISTERPAPYRUSFUNC(GetRandomDevice,true)
+        REGISTERPAPYRUSFUNC(IsConcentrationSpell,true)
+        REGISTERPAPYRUSFUNC(IsConcentrationEnch,true)
 
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
