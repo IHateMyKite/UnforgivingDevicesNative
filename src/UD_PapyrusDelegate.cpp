@@ -267,7 +267,7 @@ RE::VMHandle UD::PapyrusDelegate::ValidateVMHandle(RE::VMHandle a_handle, RE::TE
     loc_vm->attachedScriptsLock.Lock();
     for (auto&& it : loc_vm->attachedScripts)
     {
-        auto loc_type = IsUnforgivingDevice(it.second);
+        auto loc_type = HaveScriptBase(it.second,"ud_customdevice_renderscript");
         if (loc_type != nullptr)
         {
             FilterDeviceResult loc_filterres = ProcessDevice2(it.first,0,loc_type,a_device,[&](RE::BSTSmartPointer<RE::BSScript::Object> a_object,RE::TESObjectARMO* a_id,RE::TESObjectARMO* a_rd) -> bool
@@ -359,7 +359,7 @@ void UD::PapyrusDelegate::ValidateCache() const
     for(auto&& it : loc_toremove) _cache.erase(it);
 }
 
-RE::BSScript::ObjectTypeInfo* PapyrusDelegate::IsUnforgivingDevice(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts) const
+RE::BSScript::ObjectTypeInfo* UD::PapyrusDelegate::HaveScriptBase(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts, const std::string& a_base) const
 {
     for (auto&& it : a_scripts)
     {
@@ -371,7 +371,7 @@ RE::BSScript::ObjectTypeInfo* PapyrusDelegate::IsUnforgivingDevice(RE::BSTSmallS
             std::transform(loc_scriptname.begin(), loc_scriptname.end(), loc_scriptname.begin(), ::tolower);
                 
             //check if script is ud
-            if (loc_scriptname == UDBASESCRIPT)
+            if (loc_scriptname == a_base)
             {
                 return loc_info;
             }
@@ -542,7 +542,7 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
     loc_vm->attachedScriptsLock.Lock();
     std::for_each(std::execution::seq,loc_vm->attachedScripts.begin(),loc_vm->attachedScripts.end(),[&](Script& a_script)
     {
-        auto loc_type = IsUnforgivingDevice(a_script.second);
+        auto loc_type = HaveScriptBase(a_script.second,"ud_customdevice_renderscript");
         if (loc_type != nullptr)
         {
             RE::VMHandle loc_handle = a_script.first;
@@ -586,9 +586,42 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
                     _cache[loc_handle].wearer   = loc_wearer ? loc_wearer->GetHandle().native_handle() : 0x0U;
 
                     LOG("Handle of {} set to 0x{:016X} = 0x{:08X} + 0x{:08X} - Wearer = {}",loc_id->GetName(),a_script.first,loc_var1->GetUInt(),loc_var2->GetUInt(),loc_wearer ? loc_wearer->GetName() : "NONE")
+                    return;
                 }
             }
         }
+
+        auto loc_modtype = HaveScriptBase(a_script.second,"ud_modifier");
+        if (loc_modtype != nullptr)
+        {
+            RE::VMHandle loc_handle = a_script.first;
+            //get script object
+            RE::BSTSmartPointer<RE::BSScript::Object> loc_object = nullptr;
+
+            loc_vm->FindBoundObject(loc_handle,loc_modtype->GetName(),loc_object);
+
+            if (loc_object != nullptr)
+            {
+                //undef this stupidass macro so we can use the GetObject method
+                #undef GetObject
+
+                _modifiercache[loc_handle].object   = loc_object;
+                _modifiercache[loc_handle].name     = loc_object->GetProperty("NameFull")->GetString();
+                _modifiercache[loc_handle].namealias    = loc_object->GetProperty("NameAlias")->GetString();
+
+                const RE::FormID loc_formid = static_cast<RE::FormID>(loc_handle & 0x00000000FFFFFFFF);
+
+                auto loc_quest = reinterpret_cast<RE::TESQuest*>(RE::TESForm::LookupByID(loc_formid));
+                _modifiercache[loc_handle].quest = loc_quest;
+
+                const uint32_t loc_qalias = static_cast<uint32_t>((loc_handle >> 32U));
+                _modifiercache[loc_handle].alias = loc_quest->aliases[loc_qalias];;
+
+                //DEBUG("Modifier {}::{} found",_modifiercache[loc_handle].alias,_modifiercache[loc_handle].name)
+                return;
+            }
+        }
+
     });
     loc_vm->attachedScriptsLock.Unlock();
 
@@ -597,6 +630,12 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
     {
         RE::Actor* loc_wearer = RE::Actor::LookupByHandle(device.wearer).get();
         DEBUG("0x{:016X} - {}(0x{:08X}) / 0x{:08X} = {} ; Wearer = {}",vmhandle,device.id->GetName(),device.id->GetFormID(),device.rd ? device.rd->GetFormID() : 0x0,device.object->type->name,loc_wearer ? loc_wearer->GetName() : "NONE")
+    }
+
+    DEBUG("Modifier cache size: {}",_modifiercache.size())
+    for(auto&& [vmhandle,modifier] : _modifiercache) 
+    {
+        DEBUG("0x{:016X} - {}::{} , Storage = {} , Alias = {}",vmhandle,modifier.namealias,modifier.name,modifier.quest ? modifier.quest->GetName() : "NONE", modifier.alias ? modifier.alias->aliasName : "NONE")
     }
     ValidateCache();
 }
@@ -620,6 +659,102 @@ UD::Device UD::PapyrusDelegate::GetCachedDevice(RE::VMHandle a_handle, RE::Actor
     ValidateCache();
     Device loc_cacheres = _cache[loc_vmhandle];
     return loc_cacheres;
+}
+
+const std::unordered_map<RE::VMHandle, UD::Modifier>& UD::PapyrusDelegate::GetModifiers() const
+{
+    return _modifiercache;
+}
+
+std::vector<UD::Modifier> UD::PapyrusDelegate::GetModifiers(RE::VMHandle a_handle, RE::TESObjectARMO* a_device)
+{
+    auto loc_modifiers = GetDeviceAliasArray(a_handle,a_device,"UD_ModifiersRef");
+
+    std::string loc_param;
+
+    std::vector<UD::Modifier> loc_res;
+
+    for (int i = 0; i < loc_modifiers.size(); i++)
+    {
+        if (loc_modifiers[i] != nullptr)
+        {
+            auto loc_mod = PapyrusDelegate::GetSingleton()->GetModifier(loc_modifiers[i]);
+            if (loc_mod.name == "ERROR") continue;
+            else
+            {
+                loc_res.push_back(loc_mod);
+            }
+        }
+        else
+        {
+            ERROR("Alias is NULL")
+        }
+    }
+
+    return loc_res;
+}
+
+UD::Modifier UD::PapyrusDelegate::GetModifier(RE::BGSBaseAlias* a_alias) const
+{
+    auto loc_res = std::find_if(_modifiercache.begin(),_modifiercache.end(),[&](std::pair<const RE::VMHandle,Modifier> a_mod)
+    {
+        if (a_mod.second.alias == a_alias) return true;
+        else return false;
+    });
+    return loc_res != _modifiercache.end() ? loc_res->second : UD::Modifier();
+}
+
+UD::Modifier UD::PapyrusDelegate::GetModifier(std::string a_namealias) const
+{
+    auto loc_res = std::find_if(_modifiercache.begin(),_modifiercache.end(),[&](std::pair<const RE::VMHandle,Modifier> a_mod)
+    {
+        if (a_mod.second.namealias == a_namealias || a_mod.second.name == a_namealias) return true;
+        else return false;
+    });
+    return loc_res != _modifiercache.end() ? loc_res->second : UD::Modifier();
+}
+
+std::vector<RE::BGSBaseAlias*> UD::PapyrusDelegate::GetDeviceAliasArray(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_pname)
+{
+    RE::VMHandle loc_vmhandle = a_handle;
+    loc_vmhandle = ValidateVMHandle(loc_vmhandle,a_device);
+
+    ValidateCache();
+    Device loc_cacheres = _cache[loc_vmhandle];
+
+    // Alias is not form. Because of that, the type is 139 and 140 (dunno why it have 2 types) (while there are only 138 form types)
+    auto loc_res = GetScriptFormArray<RE::BGSBaseAlias>(loc_cacheres.object,a_pname,(RE::FormType)139);
+
+    return loc_res;
+}
+
+std::vector<std::string> UD::PapyrusDelegate::GetDeviceStringArray(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_pname)
+{
+    RE::VMHandle loc_vmhandle = a_handle;
+    loc_vmhandle = ValidateVMHandle(loc_vmhandle,a_device);
+
+    ValidateCache();
+    Device loc_cacheres = _cache[loc_vmhandle];
+
+    if (loc_cacheres.object == nullptr) return std::vector<std::string>();
+
+    const auto loc_var = loc_cacheres.object->GetProperty(a_pname);
+
+    auto loc_vararrptr = loc_var->GetArray();
+
+    if (loc_vararrptr == nullptr) return std::vector<std::string>();
+
+    auto loc_vararr = loc_vararrptr.get();
+
+    std::vector<std::string> loc_res;
+    for (uint8_t i = 0; i < loc_vararr->size(); i++)
+    {
+        //undef this stupidass macro so we can use the GetObject method
+        #undef GetObject
+        auto loc_varobj = (std::string)(*loc_vararr)[i].GetString();
+        loc_res.push_back(loc_varobj);
+    }
+    return loc_res;
 }
 
 void UD::PapyrusDelegate::Lock()

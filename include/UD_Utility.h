@@ -2,6 +2,8 @@
 
 namespace UD 
 {
+    using InternalVM = RE::BSScript::Internal::VirtualMachine;
+
     #define UDBITERRORVALUE 0xFFFFFFFF
 
     //copy of RE::InventoryChanges::IItemChangeVisitor, with full definition so it can be inherited from
@@ -210,6 +212,11 @@ namespace UD
     float                       GetStringParamFloat(PAPYRUSFUNCHANDLE, std::string a_DataStr,int a_Index,float a_DefaultValue);
     std::string                 GetStringParamString(PAPYRUSFUNCHANDLE, std::string a_DataStr,int a_Index,std::string a_DefaultValue);
     std::vector<std::string>    GetStringParamAll(PAPYRUSFUNCHANDLE,std::string a_param);
+    int                         GetModifierIndex(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier);
+    RE::BGSBaseAlias*           GetModifier(PAPYRUSFUNCHANDLE, std::string a_modifier);
+    std::vector<std::string>    GetModifierStringParamAll(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier);
+    std::string                 GetModifierStringParam(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier);
+    bool                        EditModifierStringParam(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier, int a_index, std::string a_newvalue);
 
     template<class T> T GetStringParam(const std::string& a_param,int a_Index,T a_DefaultValue);
     template<class T> std::vector<T> GetStringParamAllInter(const std::string& a_param, const std::string& a_del);

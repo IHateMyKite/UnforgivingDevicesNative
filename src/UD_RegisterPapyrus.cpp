@@ -54,6 +54,11 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetStringParamInt,true)
         REGISTERPAPYRUSFUNC(GetStringParamFloat,true)
         REGISTERPAPYRUSFUNC(GetStringParamString,true)
+        REGISTERPAPYRUSFUNC(GetModifier,true)
+        REGISTERPAPYRUSFUNC(GetModifierIndex,true)
+        REGISTERPAPYRUSFUNC(GetModifierStringParam,true)
+        REGISTERPAPYRUSFUNC(GetModifierStringParamAll,true)
+        REGISTERPAPYRUSFUNC(EditModifierStringParam,true)
         REGISTERPAPYRUSFUNC(GetRandomDevice,true)
 
         //UI

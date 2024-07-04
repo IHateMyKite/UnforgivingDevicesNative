@@ -4,17 +4,24 @@
 
 namespace UD
 {
-    #define UDBASESCRIPT "ud_customdevice_renderscript"
-
     using InternalVM = RE::BSScript::Internal::VirtualMachine;
     using Script = RE::BSTTuple<const RE::VMHandle, RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>>;
 
     struct Device
     {
-        RE::BSTSmartPointer<RE::BSScript::Object> object;
-        RE::TESObjectARMO* id;
-        RE::TESObjectARMO* rd;
-        uint32_t           wearer;
+        RE::BSTSmartPointer<RE::BSScript::Object> object = nullptr;
+        RE::TESObjectARMO* id       = nullptr;
+        RE::TESObjectARMO* rd       = nullptr;
+        uint32_t           wearer   = 0U;
+    };
+
+    struct Modifier
+    {
+        RE::BSTSmartPointer<RE::BSScript::Object> object = nullptr;
+        std::string name        = "ERROR";
+        std::string namealias   = "ERROR";
+        RE::TESQuest* quest     = nullptr;
+        RE::BGSBaseAlias* alias = nullptr;
     };
 
     typedef RE::TESObjectARMO*(* GetDeviceRender)(RE::TESObjectARMO*);
@@ -59,12 +66,22 @@ namespace UD
         Device GetDeviceScript(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
         Device GetCachedDevice(RE::VMHandle,RE::Actor* a_actor, RE::TESObjectARMO* a_device);
 
+        const std::unordered_map<RE::VMHandle,Modifier>& GetModifiers() const;
+        std::vector<Modifier> GetModifiers(RE::VMHandle a_handle, RE::TESObjectARMO* a_device);
+        Modifier GetModifier(RE::BGSBaseAlias* a_alias) const;
+        Modifier GetModifier(std::string a_namealias) const;
+
+        std::vector<RE::BGSBaseAlias*> GetDeviceAliasArray(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_pname);
+        template<class T> std::vector<T*> GetDeviceFormArray(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_pname, RE::FormType a_type);
+        std::vector<std::string> GetDeviceStringArray(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_pname);
+
+
         void Lock();
         void Unlock();
     private:
         RE::VMHandle ValidateVMHandle(RE::VMHandle a_handle,RE::TESObjectARMO* a_device);
         void ValidateCache() const;
-        RE::BSScript::ObjectTypeInfo* IsUnforgivingDevice(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts) const;
+        RE::BSScript::ObjectTypeInfo* HaveScriptBase(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts, const std::string& a_base) const;
         FilterDeviceResult CheckRegisterDevice(RE::VMHandle a_handle,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices);
         FilterDeviceResult ProcessDevice(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices,std::function<void(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
         FilterDeviceResult ProcessDevice2(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::TESObjectARMO* a_device,std::function<bool(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
@@ -75,9 +92,11 @@ namespace UD
         RE::BGSKeyword* _udrdkw;
         template<class T> T* GetScriptVariable(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_variable,RE::FormType a_type) const;
         template<class T> T* GetScriptProperty(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_property,RE::FormType a_type) const;
-        
+        template<class T> std::vector<T*> GetScriptFormArray(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_property,RE::FormType a_type);
+
         mutable uint64_t _RemovedCounter = 0x0; //removed devices counter
         mutable std::unordered_map<RE::VMHandle,Device> _cache;
+        mutable std::unordered_map<RE::VMHandle,Modifier> _modifiercache;
         mutable Utils::Spinlock _SaveLock;
     };
 
@@ -119,5 +138,48 @@ namespace UD
         PapyrusDelegate::GetSingleton()->Lock();
         PapyrusDelegate::GetSingleton()->UpdateVMHandles();
         PapyrusDelegate::GetSingleton()->Unlock();
+    }
+
+    template<class T>
+    std::vector<T*> PapyrusDelegate::GetScriptFormArray(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_property, RE::FormType a_type)
+    {
+        if (a_scriptobject == nullptr) return std::vector<T*>();
+
+        auto loc_var = a_scriptobject->GetProperty(a_property);
+
+        if (loc_var == nullptr) return std::vector<T*>();
+
+        auto loc_vararrptr = loc_var->GetArray();
+
+        if (loc_vararrptr == nullptr) return std::vector<T*>();
+
+        auto loc_vararr = loc_vararrptr.get();
+
+        std::vector<T*> loc_res;
+        for (uint8_t i = 0; i < loc_vararr->size(); i++)
+        {
+            //undef this stupidass macro so we can use the GetObject method
+            #undef GetObject
+            auto loc_varobj = (*loc_vararr)[i].GetObject();
+            loc_res.push_back(static_cast<T*>(loc_varobj->Resolve((RE::VMTypeID)a_type)));
+
+            //for (int a = 0; a < 255; a++) DEBUG("{} -> {}",a,loc_varobj->Resolve((RE::VMTypeID)a))
+        }
+
+        return loc_res;
+    }
+
+
+    template<class T> std::vector<T*> PapyrusDelegate::GetDeviceFormArray(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_pname, RE::FormType a_type)
+    {
+        RE::VMHandle loc_vmhandle = a_handle;
+        loc_vmhandle = ValidateVMHandle(loc_vmhandle,a_device);
+
+        ValidateCache();
+        Device loc_cacheres = _cache[loc_vmhandle];
+
+        auto loc_res = GetScriptPropertyArray<T>(loc_cacheres.object,a_pname,a_type);
+
+        return loc_res;
     }
 }
