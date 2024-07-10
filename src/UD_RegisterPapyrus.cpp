@@ -12,6 +12,7 @@
 #include <UD_Materials.h>
 #include <UD_Diagnosis.h>
 #include <UD_Lockpick.h>
+#include <UD_Modifiers.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
@@ -54,11 +55,6 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetStringParamInt,true)
         REGISTERPAPYRUSFUNC(GetStringParamFloat,true)
         REGISTERPAPYRUSFUNC(GetStringParamString,true)
-        REGISTERPAPYRUSFUNC(GetModifier,true)
-        REGISTERPAPYRUSFUNC(GetModifierIndex,true)
-        REGISTERPAPYRUSFUNC(GetModifierStringParam,true)
-        REGISTERPAPYRUSFUNC(GetModifierStringParamAll,true)
-        REGISTERPAPYRUSFUNC(EditModifierStringParam,true)
         REGISTERPAPYRUSFUNC(GetRandomDevice,true)
         REGISTERPAPYRUSFUNC(IsConcentrationSpell,true)
         REGISTERPAPYRUSFUNC(IsConcentrationEnch,true)
@@ -133,6 +129,14 @@ namespace UD
         //lockpick
         REGISTERPAPYRUSFUNC(GetLockpickVariable,true)
         REGISTERPAPYRUSFUNC(SetLockpickVariable,true)
+
+        //modifiers
+        REGISTERPAPYRUSFUNC(GetModifier,true)
+        REGISTERPAPYRUSFUNC(GetModifierIndex,true)
+        REGISTERPAPYRUSFUNC(GetModifierStringParam,true)
+        REGISTERPAPYRUSFUNC(GetModifierStringParamAll,true)
+        REGISTERPAPYRUSFUNC(EditModifierStringParam,true)
+        REGISTERPAPYRUSFUNC(GetModifierAliases,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

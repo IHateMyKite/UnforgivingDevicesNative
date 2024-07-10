@@ -17,6 +17,7 @@
 #include <UD_PlayerStatus.h>
 #include <UD_Keywords.h>
 #include <UD_FastTravelManager.h>
+#include <UD_Modifiers.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
@@ -38,6 +39,7 @@ namespace UD
         LockpickManager::GetSingleton()->Setup();
         FastTravelManager::GetSingleton()->Setup();
         AnimationManager::GetSingleton()->Setup();
+        ModifierManager::GetSingleton()->Setup();
         //remove effect in case that user reloaded the game without exit
         if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
 

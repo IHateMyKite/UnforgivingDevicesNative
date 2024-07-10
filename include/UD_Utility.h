@@ -208,16 +208,6 @@ namespace UD
     void ForEachReferenceInRange(RE::TESObjectREFR* origin, float radius,
                                  std::function<RE::BSContainer::ForEachResult(RE::TESObjectREFR& ref)> callback);
 
-    int                         GetStringParamInt(PAPYRUSFUNCHANDLE, std::string a_DataStr,int a_Index,int a_DefaultValue);
-    float                       GetStringParamFloat(PAPYRUSFUNCHANDLE, std::string a_DataStr,int a_Index,float a_DefaultValue);
-    std::string                 GetStringParamString(PAPYRUSFUNCHANDLE, std::string a_DataStr,int a_Index,std::string a_DefaultValue);
-    std::vector<std::string>    GetStringParamAll(PAPYRUSFUNCHANDLE,std::string a_param);
-    int                         GetModifierIndex(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier);
-    RE::BGSBaseAlias*           GetModifier(PAPYRUSFUNCHANDLE, std::string a_modifier);
-    std::vector<std::string>    GetModifierStringParamAll(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier);
-    std::string                 GetModifierStringParam(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier);
-    bool                        EditModifierStringParam(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier, int a_index, std::string a_newvalue);
-
     template<class T> T GetStringParam(const std::string& a_param,int a_Index,T a_DefaultValue);
     template<class T> std::vector<T> GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
 

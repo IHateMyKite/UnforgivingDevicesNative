@@ -138,7 +138,24 @@ void UD::AnimationManager::Reload()
 
 void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
 {
-    static const bool loc_boundcombatnpc = Config::GetSingleton()->GetVariable<bool>("Combat.bNPCBoundCombat",true);
+    static const int loc_boundcombatnpc = Config::GetSingleton()->GetVariable<int>("Combat.iNPCBoundCombat",0);
+
+    bool loc_canattack = false;
+
+    switch (loc_boundcombatnpc)
+    {
+    default:
+    case 0:
+        loc_canattack = false;
+        break;
+    case 1:
+        // Only if actor is follower
+        loc_canattack = a_actor->GetActorRuntimeData().boolBits.any(RE::Actor::BOOL_BITS::kPlayerTeammate);
+        break;
+    case 2:
+        loc_canattack = true;
+        break;
+    }
 
     // Check if actor weapons are disabled
     if (a_draw)
@@ -151,7 +168,7 @@ void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
     }
 
 
-    if (a_draw && (IsAnimating(a_actor) || ActorIsBoundCombatDisabled(a_actor) || (!loc_boundcombatnpc && ActorIsBound(a_actor))))
+    if (a_draw && (IsAnimating(a_actor) || ActorIsBoundCombatDisabled(a_actor) || (!loc_canattack && ActorIsBound(a_actor))))
     {
         
         LOG("ControlManager::DrawWeaponMagicHands({}) - actor is animating/bound and because of that cant draw weapon",a_actor ? a_actor->GetName() : "NONE")
@@ -161,4 +178,5 @@ void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
     {
         DrawWeaponMagicHands_old(a_actor,a_draw);
     }
+
 }

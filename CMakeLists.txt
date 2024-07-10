@@ -31,6 +31,7 @@ set(source_files ${source_files}
     src/UD_Diagnosis.cpp
     src/UD_Lockpick.cpp
     src/UD_FastTravelManager.cpp
+    src/UD_Modifiers.cpp
     src/OrgasmSystem/OrgasmEvents.cpp
     src/OrgasmSystem/OrgasmManager.cpp
     src/OrgasmSystem/OrgasmData.cpp

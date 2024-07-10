@@ -349,174 +349,61 @@ namespace UD
         return nullptr;
     }
 
-    int GetStringParamInt(PAPYRUSFUNCHANDLE, std::string a_DataStr, int a_Index, int a_DefaultValue)
+    template<class T>
+    T GetStringParam(const std::string& a_param, int a_Index, T a_DefaultValue)
     {
-        //LOG("GetStringParamInt({},{},{})",a_DataStr,a_Index,a_DefaultValue)
-        return GetStringParam<int>(a_DataStr,a_Index,a_DefaultValue);
-    }
+        const std::vector<std::string> loc_para = GetStringParamAllInter<std::string>(a_param,",");
 
-    float GetStringParamFloat(PAPYRUSFUNCHANDLE, std::string a_DataStr, int a_Index, float a_DefaultValue)
-    {
-        //LOG("GetStringParamFloat({},{},{})",a_DataStr,a_Index,a_DefaultValue)
-        return GetStringParam<float>(a_DataStr,a_Index,a_DefaultValue);
-    }
-
-    std::string GetStringParamString(PAPYRUSFUNCHANDLE, std::string a_DataStr, int a_Index, std::string a_DefaultValue)
-    {
-        //LOG("GetStringParamString({},{},{})",a_DataStr,a_Index,a_DefaultValue)
-        return GetStringParam<std::string>(a_DataStr,a_Index,a_DefaultValue);
-    }
-
-    std::vector<std::string> GetStringParamAll(PAPYRUSFUNCHANDLE, std::string a_param)
-    {
-        //LOG("GetModifierAllParam({})",a_param)
-        return GetStringParamAllInter<std::string>(a_param,",");
-    }
-
-    int GetModifierIndex(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier)
-    {
-        LOG("GetModifierIndex(0x{:016X},0x{:08X},{}) - Called",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device ? a_device->GetFormID() : 0,a_modifier)
-
-        if (a_device == nullptr || ((a_vm1 + a_vm2) == 0U)) return -1;
-
-        auto loc_modifiers = PapyrusDelegate::GetSingleton()->GetModifiers(PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device);
-
-        const auto loc_it = std::find_if(loc_modifiers.begin(),loc_modifiers.end(),[&](Modifier& a_mod){return a_mod.namealias == a_modifier;});
-
-        if (loc_it == loc_modifiers.end())
+        if (a_Index < loc_para.size() && a_Index >= 0)
         {
-            LOG("GetModifierIndex(0x{:016X},0x{:08X},{}) - Could not find modifier",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier)
-            return -1;
-        }
-
-        return loc_it - loc_modifiers.begin();
-    }
-
-    RE::BGSBaseAlias* GetModifier(PAPYRUSFUNCHANDLE, std::string a_modifier)
-    {
-        const auto loc_modifiers = PapyrusDelegate::GetSingleton()->GetModifiers();
-
-        for (auto&& [vmhandle, modifier] : loc_modifiers)
-        {
-            if (modifier.namealias == a_modifier)
+            try
             {
-                return modifier.alias;
-
+                return ((loc_para[a_Index] != "") ? boost::lexical_cast<T>(loc_para[a_Index]) : a_DefaultValue);
+            }
+            catch(boost::bad_lexical_cast &)
+            {
+                LOG("_GetModifierParam({},{}) - Error casting {} to {}",a_param,a_Index,a_DefaultValue,a_param,typeid(T).name())
+                return a_DefaultValue;
             }
         }
-
-        return nullptr;
+        else
+        {
+            return a_DefaultValue;
+        }
     }
 
-    std::vector<std::string> GetModifierStringParamAll(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier)
+    template<class T>
+    std::vector<T> GetStringParamAllInter(const std::string& a_param, const std::string& a_del)
     {
-        LOG("GetModifierStringParamAll(0x{:016X},0x{:08X},{}) - Called",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device ? a_device->GetFormID() : 0,a_modifier)
-
-        if (a_device == nullptr || ((a_vm1 + a_vm2) == 0U)) return std::vector<std::string>();
-
-        auto loc_modifierparam = PapyrusDelegate::GetSingleton()->GetDeviceStringArray(PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device,"UD_ModifiersDataStr");
-        auto loc_modifiers = PapyrusDelegate::GetSingleton()->GetModifiers(PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device);
-
-        const auto loc_it = std::find_if(loc_modifiers.begin(),loc_modifiers.end(),[&](Modifier& a_mod){return a_mod.namealias == a_modifier;});
-
-        if (loc_it == loc_modifiers.end())
+        //separete parameters
+        std::vector<std::string> loc_params;
+        boost::split(loc_params,a_param,boost::is_any_of(a_del));
+        std::vector<T> loc_res;
+        for (auto&& it : loc_params)
         {
-            WARN("GetModifierStringParamAll(0x{:016X},0x{:08X},{}) - Could not find modifier",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier)
-            return std::vector<std::string>();
+            try
+            {
+                loc_res.push_back(boost::lexical_cast<T>(it));
+            }
+            catch(boost::bad_lexical_cast &)
+            {
+                ERROR("_GetModifierAllParam({}) - Error casting {} to {}",a_param,a_param,typeid(T).name())
+                loc_res.push_back(T());
+                continue;
+            }
         }
-
-        const std::string loc_param = loc_modifierparam[loc_it - loc_modifiers.begin()];
-
-        auto loc_res = GetStringParamAllInter<std::string>(loc_param,",");
-
         return loc_res;
     }
 
-    std::string GetModifierStringParam(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier)
-    {
-        LOG("GetModifierStringParam(0x{:016X},0x{:08X},{}) - Called",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device ? a_device->GetFormID() : 0,a_modifier)
+    template std::string   GetStringParam(const std::string& a_param, int a_Index, std::string a_DefaultValue);
+    template int           GetStringParam(const std::string& a_param, int a_Index, int a_DefaultValue);
+    template float         GetStringParam(const std::string& a_param, int a_Index, float a_DefaultValue);
+    template bool          GetStringParam(const std::string& a_param, int a_Index, bool a_DefaultValue);
 
-        if (a_device == nullptr || ((a_vm1 + a_vm2) == 0U)) return "";
-
-        auto loc_modifierparam = PapyrusDelegate::GetSingleton()->GetDeviceStringArray(PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device,"UD_ModifiersDataStr");
-        auto loc_modifiers = PapyrusDelegate::GetSingleton()->GetModifiers(PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device);
-
-        const auto loc_it = std::find_if(loc_modifiers.begin(),loc_modifiers.end(),[&](Modifier& a_mod){return a_mod.namealias == a_modifier;});
-
-        if (loc_it == loc_modifiers.end())
-        {
-            WARN("GetModifierStringParam(0x{:016X},0x{:08X},{}) - Could not find modifier",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier)
-            return "";
-        }
-
-        const std::string loc_param = loc_modifierparam[loc_it - loc_modifiers.begin()];
-
-        return loc_param;
-    }
-
-    bool EditModifierStringParam(PAPYRUSFUNCHANDLE, uint32_t a_vm1, uint32_t a_vm2, RE::TESObjectARMO* a_device, std::string a_modifier, int a_index, std::string a_newvalue)
-    {
-        LOG("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - Called",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device ? a_device->GetFormID() : 0,a_modifier,a_index,a_newvalue)
-
-        if (a_device == nullptr || ((a_vm1 + a_vm2) == 0U)) return false;
-
-        auto loc_modifierparam = PapyrusDelegate::GetSingleton()->GetDeviceStringArray(PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device,"UD_ModifiersDataStr");
-        auto loc_modifiers = PapyrusDelegate::GetSingleton()->GetModifiers(PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device);
-
-        const auto loc_it = std::find_if(loc_modifiers.begin(),loc_modifiers.end(),[&](Modifier& a_mod){return a_mod.namealias == a_modifier;});
-
-        auto loc_device = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_vm1,a_vm2,a_device);
-
-        if (loc_it == loc_modifiers.end())
-        {
-            WARN("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - Could not find modifier",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier,a_index,a_newvalue)
-            return false;
-        }
-
-        auto loc_obj = loc_device.object->GetProperty("UD_ModifiersDataStr");
-
-        if (loc_obj->IsNoneArray())
-        {
-            ERROR("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - Device doesnt have parameter list set up. Setting it up...",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier,a_index,a_newvalue)
-            
-            RE::BSTSmartPointer<RE::BSScript::Array> a_val;
-            const auto loc_vm = InternalVM::GetSingleton();
-
-
-            loc_vm->CreateArray(RE::BSScript::TypeInfo(RE::BSScript::TypeInfo::RawType::kString), loc_modifiers.size(), a_val);
-
-            loc_obj->SetArray(a_val);
-        }
-        else if (!loc_obj->IsArray())
-        {
-            ERROR("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - UD_ModifiersDataStr is not array for some reason",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier,a_index,a_newvalue)
-            
-            return false;
-        }
-
-        const size_t loc_id = loc_it - loc_modifiers.begin();
-
-        std::string loc_param = loc_modifierparam[loc_id];
-
-        auto loc_params = GetStringParamAllInter<std::string>(loc_param,",");
-
-        // set new value
-        loc_params[a_index] = a_newvalue;
-
-        loc_param = boost::join(loc_params,",");
-
-        auto loc_arr = loc_obj->GetArray();
-
-        if (loc_arr == nullptr) 
-        {
-            ERROR("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - Failed to edit the parameter",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device->GetFormID(),a_modifier,a_index,a_newvalue)
-            return false;
-        }
-
-        (*loc_arr)[loc_id].SetString(loc_param);
-
-        return true;
-    }
+    template std::vector<std::string>   GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
+    template std::vector<int>           GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
+    template std::vector<float>         GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
+    template std::vector<bool>          GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
 
     #define GetRandomDevice_UpdateForms                                             \
     {                                                                               \
@@ -602,60 +489,4 @@ namespace UD
     {
         return a_ench ? a_ench->GetCastingType() == RE::MagicSystem::CastingType::kConcentration : false;
     }
-
-    template<class T>
-    T GetStringParam(const std::string& a_param, int a_Index, T a_DefaultValue)
-    {
-        const std::vector<std::string> loc_para = GetStringParamAllInter<std::string>(a_param,",");
-
-        if (a_Index < loc_para.size() && a_Index >= 0)
-        {
-            try
-            {
-                return ((loc_para[a_Index] != "") ? boost::lexical_cast<T>(loc_para[a_Index]) : a_DefaultValue);
-            }
-            catch(boost::bad_lexical_cast &)
-            {
-                LOG("_GetModifierParam({},{}) - Error casting {} to {}",a_param,a_Index,a_DefaultValue,a_param,typeid(T).name())
-                return a_DefaultValue;
-            }
-        }
-        else
-        {
-            return a_DefaultValue;
-        }
-    }
-
-    template<class T>
-    std::vector<T> GetStringParamAllInter(const std::string& a_param, const std::string& a_del)
-    {
-        //separete parameters
-        std::vector<std::string> loc_params;
-        boost::split(loc_params,a_param,boost::is_any_of(a_del));
-        std::vector<T> loc_res;
-        for (auto&& it : loc_params)
-        {
-            try
-            {
-                loc_res.push_back(boost::lexical_cast<T>(it));
-            }
-            catch(boost::bad_lexical_cast &)
-            {
-                ERROR("_GetModifierAllParam({}) - Error casting {} to {}",a_param,a_param,typeid(T).name())
-                loc_res.push_back(T());
-                continue;
-            }
-        }
-        return loc_res;
-    }
-
-    template std::string   GetStringParam(const std::string& a_param, int a_Index, std::string a_DefaultValue);
-    template int           GetStringParam(const std::string& a_param, int a_Index, int a_DefaultValue);
-    template float         GetStringParam(const std::string& a_param, int a_Index, float a_DefaultValue);
-    template bool          GetStringParam(const std::string& a_param, int a_Index, bool a_DefaultValue);
-
-    template std::vector<std::string>   GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
-    template std::vector<int>           GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
-    template std::vector<float>         GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
-    template std::vector<bool>          GetStringParamAllInter(const std::string& a_param, const std::string& a_del);
 }
