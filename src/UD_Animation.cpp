@@ -91,7 +91,9 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
         return {"ERROR",std::format("Could not find animation file {}",loc_filename)};
     }
 
-    boost::json::object& loc_object = loc_it->second->as_object();
+    if (loc_it->second.status != sOK) return {"ERROR",std::format("JSON {} is disabled",loc_filename)}; 
+
+    boost::json::object& loc_object = loc_it->second.json->as_object();
 
     if (loc_object.size() == 0)
     {
@@ -162,16 +164,17 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
             auto loc_arr2 = loc_anim2.as_array();
         
             const size_t loc_size = loc_arr1.size() < loc_arr2.size() ? loc_arr1.size() : loc_arr2.size();
+
             loc_res.push_back(std::to_string(loc_size));
-        
-            std::vector<std::string> loc_anims(loc_size);
+
+            std::vector<std::string> loc_anims(2*loc_size);
         
             for (size_t i = 0U; i < loc_size; i++)
             {
                 loc_anims[i] = loc_arr1[i].as_string();
-                loc_anims[i + loc_size] = loc_arr1[i].as_string();
+                loc_anims[i + loc_size] = loc_arr2[i].as_string();
             }
-        
+
             loc_res.append_range(loc_anims);
         }
         else if (loc_anim1.is_string() && loc_anim2.is_string())
@@ -216,6 +219,77 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
     return loc_res;
 }
 
+std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a_type, const std::vector<std::string>& a_kws, std::string a_field, const std::vector<int>& a_ActorConstraints, int a_lewdmin, int a_lewdmax, int a_aggromin, int a_aggromax)
+{
+    LOG("AnimationManager::GetAnimationsFromDB({},[{}],{},{},{}) called",a_type,boost::join(a_kws,","),a_field,a_lewdmin,a_lewdmax)
+
+    std::vector<std::string> loc_result;
+
+    for (auto&& kw : a_kws)
+    {
+        std::string loc_dict_path = a_type + kw;
+        for (auto&& [name,animfile] : _jsoncache)
+        {
+            if (animfile.status != sOK) continue;
+
+            auto loc_obj = animfile.json->as_object();
+            auto loc_type = RecursiveFind(loc_obj,loc_dict_path);
+
+            if (loc_type.is_array())
+            {
+                size_t loc_animid = 0;
+                for (auto&& anim : loc_type.as_array())
+                {
+                    std::string loc_anim_path = loc_dict_path + "[" + std::to_string(loc_animid++) + "]";
+                    bool loc_check = true;
+                    for (int i = 0; i < a_ActorConstraints.size(); i++)
+                    {
+                        auto loc_A = RecursiveFind(anim,"A" + std::to_string(i+1));
+                        if (loc_A.is_array())
+                        {
+                            for (auto&& actor : loc_A.as_array())
+                            {
+                                loc_check = _CheckConstraints(actor,"",a_ActorConstraints[i]);
+                                if (loc_check) break;
+                            }
+                        }
+                        else if (loc_A.is_object())
+                        {
+                            loc_check = _CheckConstraints(loc_A,"",a_ActorConstraints[i]);
+                        }
+                        else
+                        {
+                            ERROR("A element is neither array or object")
+                            continue;
+                        }
+                        if (!loc_check) break;
+                    }
+
+                    if (loc_check /* && TODO: Check Lewd and Aggro */)
+                    {
+                        if (a_field == "")
+                        {
+                            loc_result.push_back(name + ":" + loc_anim_path);
+                        }
+                        else
+                        {
+                            WARN("AnimationManager::GetAnimationsFromDB({},[{}],{},{},{}) - Use of field is currently not supported",a_type,boost::join(a_kws,","),a_field,a_lewdmin,a_lewdmax)
+                        }
+                    }
+                }
+            }
+            else
+            {
+                LOG("{} does not exist",loc_dict_path)
+            }
+        }
+    }
+
+    LOG("AnimationManager::GetAnimationsFromDB({},[{}],{},{},{}) - Result:",a_type,boost::join(a_kws,","),a_field,a_lewdmin,a_lewdmax)
+    for (auto&& it : loc_result) LOG("\t{}",it)
+
+    return loc_result;
+}
 inline int UD::AnimationManager::ProccessDeviceArray(RE::Actor* a_actor,const std::vector<RE::TESObjectARMO*> &a_array) const
 {
     int loc_res = 0x00000000;
@@ -309,14 +383,47 @@ void UD::AnimationManager::Setup()
                     ERROR("Could not open file {}",loc_jsonname)
                 }
 
-                _jsoncache[loc_jsonname] = std::shared_ptr<boost::json::value>(new boost::json::value(loc_json));
+                _jsoncache[loc_jsonname] = AnimationFile{std::shared_ptr<boost::json::value>(new boost::json::value(loc_json)),sOK,"OK"};
+
+                // Check json status
+                auto loc_jsoncond   = RecursiveFind(loc_json.as_object(),"conditions.json");
+                auto loc_modcond    = RecursiveFind(loc_json.as_object(),"conditions.mod");
+
+                const std::string loc_jsoncondstr   = (loc_jsoncond.is_string() ? loc_jsoncond.as_string().c_str() : "");
+                const std::string loc_modcondstr    = (loc_modcond.is_string() ? loc_modcond.as_string().c_str() : "");
+
+                bool loc_cond = true;
+                if (loc_jsoncondstr != "")
+                {
+                    const std::string loc_condjsonpath = std::filesystem::current_path().string() + "\\Data\\skse\\plugins\\StorageUtilData\\" + loc_jsoncondstr;
+                    if (!std::filesystem::exists(loc_condjsonpath))
+                    {
+                        loc_cond = false;
+                        _jsoncache[loc_jsonname].error = loc_jsoncondstr;
+                    }
+                    //DEBUG("Json {} found = {}",loc_condjsonpath,loc_cond)
+                }
+                if (loc_cond && loc_modcondstr != "")
+                {
+                    if (!(RE::TESDataHandler::GetSingleton()->GetLoadedModIndex(loc_modcondstr).has_value() || RE::TESDataHandler::GetSingleton()->GetLoadedLightModIndex(loc_modcondstr).has_value()))
+                    {
+                        loc_cond = false;
+                        _jsoncache[loc_jsonname].error = loc_modcondstr;
+                    }
+                   // DEBUG("Mod {} found = {}",loc_modcondstr,loc_cond)
+                }
+
+                if (!loc_cond)
+                {
+                    _jsoncache[loc_jsonname].status = sMissingMaster;
+                }
             }
         }
 
         DEBUG("=== Loaded animation files ===")
         for (auto&& it : _jsoncache)
         {
-            DEBUG("\t{}",it.first)
+            DEBUG("\t{} - {} / {}",it.first, it.second.status, it.second.error)
         }
     }
 }
@@ -372,7 +479,7 @@ void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
 
 }
 
-bool UD::AnimationManager::_CheckConstraints(boost::json::object& a_obj, std::string a_ObjPath, int a_ActorConstraints) const
+bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::string a_ObjPath, int a_ActorConstraints) const
 {
     LOG("AnimationManager::_CheckConstraints({},{})",a_ObjPath,a_ActorConstraints)
     try
@@ -390,13 +497,13 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::object& a_obj, std::st
     }
     catch (const std::exception& e)
     {
-        WARN("AnimationManager::_CheckConstraints - Cant get values from json - {}",e.what())
+        WARN("AnimationManager::_CheckConstraints({},{}) - Cant get values from json - {}",a_ObjPath,a_ActorConstraints,e.what())
         return false;
     }
 
 }
 
-boost::json::value UD::AnimationManager::RecursiveFind(boost::json::object& a_obj, std::string a_path) const
+boost::json::value UD::AnimationManager::RecursiveFind(boost::json::value a_obj, std::string a_path) const
 {
     LOG("RecursiveFind({})",a_path)
     boost::json::value loc_val = a_obj;
@@ -404,12 +511,15 @@ boost::json::value UD::AnimationManager::RecursiveFind(boost::json::object& a_ob
     std::vector<std::string> loc_objects;
     boost::split(loc_objects,a_path,boost::is_any_of("."));
 
-    size_t      loc_arrindx = 0;
+    int      loc_arrindx = -1;
     std::regex  loc_arrregex("\\b(.*)\\[(\\d*)\\]");
 
     for (auto&& it : loc_objects)
     {
-        
+        if (it == "")
+        {
+            continue;
+        }
         if (std::regex_match(it,loc_arrregex))
         {
             try {loc_arrindx = std::stoi(std::regex_replace(it,loc_arrregex,"$2"));}
@@ -425,12 +535,12 @@ boost::json::value UD::AnimationManager::RecursiveFind(boost::json::object& a_ob
             }
 
             // Immidiatly dereference array
-            if (loc_val.is_array())
+            if (loc_val.is_array() && loc_arrindx >= 0)
             {
                 if (loc_arrindx < loc_val.as_array().size())
                 {
                     loc_val = loc_val.as_array()[loc_arrindx];
-                    loc_arrindx = 0;
+                    loc_arrindx = -1;
                 }
                 else
                 {
