@@ -3,6 +3,7 @@
 #pragma warning( disable : 4244 )
 #pragma warning( disable : 4267 )
 #pragma warning( disable : 4245 )
+#pragma warning( disable : 6031 )
 
 //include some usefull macros
 #include <UD_Macros.h>

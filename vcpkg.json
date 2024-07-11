@@ -9,6 +9,7 @@
         "boost-math",
         "boost-lexical-cast",
         "boost-property-tree",
-        "spdlog"
+        "spdlog",
+        "boost-json"
     ]
 }

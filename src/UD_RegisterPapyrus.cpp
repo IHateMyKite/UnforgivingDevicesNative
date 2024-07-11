@@ -88,6 +88,7 @@ namespace UD
 
         //animation
         REGISTERPAPYRUSFUNC(GetActorConstrains,true)
+        REGISTERPAPYRUSFUNC(GetAnimationsFromJSON,true)
         REGISTERPAPYRUSFUNC(CheckWeaponDisabled,true)
         REGISTERPAPYRUSFUNC(DisableWeapons,true)
 
