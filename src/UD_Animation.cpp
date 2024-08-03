@@ -68,6 +68,44 @@ void UD::AnimationManager::DisableWeapons(RE::Actor* a_actor, bool a_state)
     }
 }
 
+std::vector<std::string> UD::AnimationManager::GetAllAnimationFiles() const
+{
+    std::vector<std::string> loc_res;
+
+    for (auto&& [name,file] : _jsoncache)
+    {
+        loc_res.push_back(name);
+    }
+
+    LOG("AnimationManager::GetAllAnimationFiles() -> {}",boost::join(loc_res,", "))
+
+    return loc_res;
+}
+
+std::vector<std::string> UD::AnimationManager::GetAllAnimationFilesErrors() const
+{
+    std::vector<std::string> loc_res;
+
+    for (auto&& [name,file] : _jsoncache)
+    {
+        loc_res.push_back(file.error);
+    }
+
+    return loc_res;
+}
+
+std::vector<int> UD::AnimationManager::GetAllAnimationFilesStatus() const
+{
+    std::vector<int> loc_res;
+
+    for (auto&& [name,file] : _jsoncache)
+    {
+        loc_res.push_back(file.status);
+    }
+
+    return loc_res;
+}
+
 std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string a_def, std::vector<RE::Actor*> a_actors, int a_constraintsORA1, int a_constraintsORA2)
 {
     LOG("AnimationManager::GetAnimationsFromJSON({},{},{}) called",a_def,a_constraintsORA1,a_constraintsORA2)
@@ -290,6 +328,39 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
 
     return loc_result;
 }
+
+void UD::AnimationManager::SyncAnimationSetting(const std::vector<std::string>& a_animationoff)
+{
+    LOG("SyncAnimationSetting({})",boost::join(a_animationoff,", "))
+
+    for (auto&& [name,file] : _jsoncache)
+    {
+        if (file.status == sOK || file.status == sDisabled)
+        {
+            auto loc_find = std::find(a_animationoff.begin(),a_animationoff.end(),name);
+            if (loc_find != a_animationoff.end())
+            {
+                file.status = sDisabled;
+                LOG("SyncAnimationSetting({}) - {} disabled",boost::join(a_animationoff,", "),name)
+            }
+            else
+            {
+               file.status = sOK;
+            }
+        }
+    }
+
+    for (auto&& it : a_animationoff)
+    {
+        auto loc_find = _jsoncache.find(it);
+        if (loc_find != _jsoncache.end())
+        {
+            loc_find->second.status = sDisabled;
+            LOG("SyncAnimationSetting({}) - {} disabled",boost::join(a_animationoff,", "),loc_find->first)
+        }
+    }
+}
+
 inline int UD::AnimationManager::ProccessDeviceArray(RE::Actor* a_actor,const std::vector<RE::TESObjectARMO*> &a_array) const
 {
     int loc_res = 0x00000000;
@@ -383,7 +454,11 @@ void UD::AnimationManager::Setup()
                     ERROR("Could not open file {}",loc_jsonname)
                 }
 
-                _jsoncache[loc_jsonname] = AnimationFile{std::shared_ptr<boost::json::value>(new boost::json::value(loc_json)),sOK,"OK"};
+
+                std::regex loc_regexname(R"regex((.*\\)(.*)(\.[jJ][sS][oO][nN]))regex");
+                const std::string loc_name = std::regex_replace(loc_path,loc_regexname,"$2");
+
+                _jsoncache[loc_name] = AnimationFile{std::shared_ptr<boost::json::value>(new boost::json::value(loc_json)),sOK,"OK"};
 
                 // Check json status
                 auto loc_jsoncond   = RecursiveFind(loc_json.as_object(),"conditions.json");
@@ -399,7 +474,7 @@ void UD::AnimationManager::Setup()
                     if (!std::filesystem::exists(loc_condjsonpath))
                     {
                         loc_cond = false;
-                        _jsoncache[loc_jsonname].error = loc_jsoncondstr;
+                        _jsoncache[loc_name].error = loc_jsoncondstr;
                     }
                     //DEBUG("Json {} found = {}",loc_condjsonpath,loc_cond)
                 }
@@ -408,22 +483,22 @@ void UD::AnimationManager::Setup()
                     if (!(RE::TESDataHandler::GetSingleton()->GetLoadedModIndex(loc_modcondstr).has_value() || RE::TESDataHandler::GetSingleton()->GetLoadedLightModIndex(loc_modcondstr).has_value()))
                     {
                         loc_cond = false;
-                        _jsoncache[loc_jsonname].error = loc_modcondstr;
+                        _jsoncache[loc_name].error = loc_modcondstr;
                     }
                    // DEBUG("Mod {} found = {}",loc_modcondstr,loc_cond)
                 }
 
                 if (!loc_cond)
                 {
-                    _jsoncache[loc_jsonname].status = sMissingMaster;
+                    _jsoncache[loc_name].status = sMissingMaster;
                 }
             }
         }
 
         DEBUG("=== Loaded animation files ===")
-        for (auto&& it : _jsoncache)
+        for (auto&& [name,file] : _jsoncache)
         {
-            DEBUG("\t{} - {} / {}",it.first, it.second.status, it.second.error)
+            DEBUG("\t{} - {} / {}",name, file.status, file.error)
         }
     }
 }

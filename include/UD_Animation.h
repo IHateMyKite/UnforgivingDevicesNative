@@ -40,8 +40,14 @@ namespace UD
         bool CheckWeaponDisabled(RE::Actor* a_actor);
         void DisableWeapons(RE::Actor* a_actor, bool a_state);
 
+        std::vector<std::string> GetAllAnimationFiles() const;
+        std::vector<std::string> GetAllAnimationFilesErrors() const;
+        std::vector<int> GetAllAnimationFilesStatus() const;
+        
         std::vector<std::string> GetAnimationsFromJSON(std::string a_def, std::vector<RE::Actor*> a_actors, int a_constraintsORA1, int a_constraintsORA2);
         std::vector<std::string> GetAnimationsFromDB(std::string a_type,const std::vector<std::string>& a_kws, std::string a_field, const std::vector<int>& a_ActorConstraints, int a_lewdmin, int a_lewdmax, int a_aggromin, int a_aggromax);
+        void SyncAnimationSetting(const std::vector<std::string>& a_animationoff);
+
     private:
         static void DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw);
         inline static REL::Relocation<decltype(DrawWeaponMagicHands)> DrawWeaponMagicHands_old;
@@ -80,5 +86,20 @@ namespace UD
     {
         AnimationManager::GetSingleton()->DisableWeapons(a_actor,a_state);
     }
-
+    inline std::vector<std::string> GetAllAnimationFiles(PAPYRUSFUNCHANDLE)
+    {
+        return AnimationManager::GetSingleton()->GetAllAnimationFiles();
+    }
+    inline std::vector<std::string> GetAllAnimationFilesErrors(PAPYRUSFUNCHANDLE)
+    {
+        return AnimationManager::GetSingleton()->GetAllAnimationFilesErrors();
+    }
+    inline std::vector<int> GetAllAnimationFilesStatus(PAPYRUSFUNCHANDLE)
+    {
+        return AnimationManager::GetSingleton()->GetAllAnimationFilesStatus();
+    }
+    inline void SyncAnimationSetting(PAPYRUSFUNCHANDLE,std::vector<std::string> a_animationoff)
+    {
+        AnimationManager::GetSingleton()->SyncAnimationSetting(a_animationoff);
+    }
 }

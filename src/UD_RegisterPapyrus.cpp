@@ -92,6 +92,10 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetAnimationsFromDB,true)
         REGISTERPAPYRUSFUNC(CheckWeaponDisabled,true)
         REGISTERPAPYRUSFUNC(DisableWeapons,true)
+        REGISTERPAPYRUSFUNC(GetAllAnimationFiles,true)
+        REGISTERPAPYRUSFUNC(GetAllAnimationFilesErrors,true)
+        REGISTERPAPYRUSFUNC(GetAllAnimationFilesStatus,true)
+        REGISTERPAPYRUSFUNC(SyncAnimationSetting,true)
 
         //skill
         REGISTERPAPYRUSFUNC(CalculateSkillFromPerks,true)
