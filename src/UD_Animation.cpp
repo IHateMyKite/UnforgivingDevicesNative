@@ -122,6 +122,11 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
     std::string loc_jsonpath = a_def.substr(loc_part_index + 2);
     std::vector<std::string> loc_actor_animVars(a_actors.size());
 
+    std::regex loc_nameregex(R"regex(^(\w*)(?:\.[jJ][sS][oO][nN])*$)regex");
+
+    //Remove possible sufix
+    loc_filename = std::regex_replace(loc_filename,loc_nameregex,"$1");
+
     auto loc_it = _jsoncache.find(loc_filename);
     if (loc_it == _jsoncache.end())
     {
