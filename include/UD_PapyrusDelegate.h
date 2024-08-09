@@ -24,6 +24,18 @@ namespace UD
         RE::BGSBaseAlias* alias = nullptr;
     };
 
+    struct ModScript
+    {
+        std::string scriptname;
+        std::string modname;
+        RE::FormID formid;
+    };
+    struct ModScriptVM
+    {
+        RE::VMHandle handle;
+        RE::BSTSmartPointer<RE::BSScript::Object> object;
+    };
+
     typedef RE::TESObjectARMO*(* GetDeviceRender)(RE::TESObjectARMO*);
 
     class PapyrusDelegate
@@ -75,6 +87,8 @@ namespace UD
         template<class T> std::vector<T*> GetDeviceFormArray(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_pname, RE::FormType a_type);
         std::vector<std::string> GetDeviceStringArray(RE::VMHandle a_handle, RE::TESObjectARMO* a_device, std::string a_pname);
 
+        RE::BSTSmartPointer<RE::BSScript::Object> GetScript(std::string a_script);
+        bool GetScriptVariableBool(std::string a_script,std::string a_variable,bool a_property);
 
         void Lock();
         void Unlock();
@@ -85,7 +99,6 @@ namespace UD
         FilterDeviceResult CheckRegisterDevice(RE::VMHandle a_handle,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices);
         FilterDeviceResult ProcessDevice(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices,std::function<void(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
         FilterDeviceResult ProcessDevice2(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::TESObjectARMO* a_device,std::function<bool(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
-        GetDeviceRender DDNGGetDeviceRender;
         void ResetCache();
     private:
         bool _installed = false;
@@ -98,6 +111,13 @@ namespace UD
         mutable std::unordered_map<RE::VMHandle,Device> _cache;
         mutable std::unordered_map<RE::VMHandle,Modifier> _modifiercache;
         mutable Utils::Spinlock _SaveLock;
+
+        std::vector<std::pair<ModScript,ModScriptVM>> _modscripts =
+        {
+            {{"UDCustomDeviceMain","UnforgivingDevices.esp",0x15E73C},{}},
+            {{"UnforgivingDevicesMain","UnforgivingDevices.esp",0x005901},{}},
+            {{"UD_Config","UnforgivingDevices.esp",0x005901},{}}
+        };
     };
 
     inline int SendRegisterDeviceScriptEvent(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,std::vector<RE::TESObjectARMO*> a_devices)

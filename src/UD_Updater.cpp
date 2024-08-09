@@ -16,9 +16,12 @@ namespace UD
         if (t1mutex) return;
         t1mutex = true;
 
-        ControlManager::GetSingleton()->UpdateControl();
-        
-        std::this_thread::sleep_for(std::chrono::milliseconds(500)); //only once per 500ms
+        SKSE::GetTaskInterface()->AddTask([]
+        {
+            ControlManager::GetSingleton()->UpdateControl();
+        });
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(250)); //only once per 250ms
 
         t1mutex = false;
     }

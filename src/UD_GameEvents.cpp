@@ -19,12 +19,14 @@
 #include <UD_FastTravelManager.h>
 #include <UD_Modifiers.h>
 #include <OrgasmSystem/OrgasmManager.h>
+#include <UD_DDAPI.h>
 
 namespace UD
 {
     inline void _OnGameLoad()
     {
         UD::ReloadLib();
+        PapyrusDelegate::GetSingleton()->Setup();
         RandomGenerator::GetSingleton()->Setup();
         PlayerStatus::GetSingleton()->Setup();
         MeterManager::RemoveAll();
@@ -33,7 +35,6 @@ namespace UD
         ORS::OrgasmManager::GetSingleton()->Setup();
         ActorSlotManager::GetSingleton()->Setup();
         ControlManager::GetSingleton()->Setup();
-        PapyrusDelegate::GetSingleton()->Setup();
         MaterialManager::GetSingleton()->Setup();
         Diagnosis::GetSingleton()->Setup();
         LockpickManager::GetSingleton()->Setup();
@@ -61,6 +62,7 @@ namespace UD
                 break;
             case SKSE::MessagingInterface::kPostLoadGame:
             case SKSE::MessagingInterface::kNewGame:
+                if (!DeviousDevicesAPI::LoadAPI()) ERROR("Could not load DD API!")
                 _OnGameLoad();
                 break;
             case SKSE::MessagingInterface::kPostPostLoad:

@@ -4,6 +4,7 @@
 #include <UD_PlayerStatus.h>
 #include <UD_UI.h>
 #include <UD_ModEvents.h>
+#include <UD_PapyrusDelegate.h>
 
 SINGLETONBODY(UD::KeyEventSink)
 SINGLETONBODY(UD::CameraEventSink)
@@ -47,17 +48,23 @@ void UD::ControlManager::Setup()
     }
 
     _DisableFreeCamera = Config::GetSingleton()->GetVariable<bool>("Disabler.bDisableFreeCamera",true);
+    _hardcoreMode = PapyrusDelegate::GetSingleton()->GetScriptVariableBool("UDCustomDeviceMain","UD_HardcoreMode",true);
 }
 
 void UD::ControlManager::UpdateControl()
 {
     //check if player is in minigame
     typedef UD::PlayerStatus::Status Status;
+
+    PlayerStatus::GetSingleton()->Update();
+
     const Status loc_status = PlayerStatus::GetSingleton()->GetPlayerStatus();
 
     const bool loc_bound        = loc_status & Status::sBound;
     const bool loc_minigame     = loc_status & Status::sMinigame;
     const bool loc_animation    = loc_status & Status::sAnimation;
+
+    _hardcoreMode = PapyrusDelegate::GetSingleton()->GetScriptVariableBool("UDCustomDeviceMain","UD_HardcoreMode",true);
 
     //CheckStatusSafe(loc_status);
 
@@ -91,12 +98,6 @@ void UD::ControlManager::UpdateControl()
             }
         }
     }
-}
-
-void UD::ControlManager::SyncSetting(bool a_hardcoreMode)
-{
-    LOG("SyncSetting({}) called",a_hardcoreMode)
-    _hardcoreMode = a_hardcoreMode;
 }
 
 bool UD::ControlManager::HardcoreMode() const
@@ -434,6 +435,8 @@ RE::BSEventNotifyControl UD::CameraEventSink::ProcessEvent(const SKSE::CameraEve
             break;
         }
     }
+
+    ControlManager::GetSingleton()->UpdateControl();
 
     return RE::BSEventNotifyControl::kContinue;
 }

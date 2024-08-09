@@ -8,6 +8,7 @@
 #include <UD_Config.h>
 #include <UD_Utility.h>
 //#include <UD_Spinlock.h>
+#include <UD_DDAPI.h>
 
 #undef GetObject
 
@@ -30,32 +31,37 @@ void PapyrusDelegate::Setup()
     if (!_installed)
     {
         _udrdkw = reinterpret_cast<RE::BGSKeyword*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x11A352,"UnforgivingDevices.esp"));
-
-        HINSTANCE dllHandle = LoadLibrary(TEXT("DeviousDevices.dll"));
-        if (dllHandle != NULL)
-        {
-            FARPROC pGetDeviceRender = GetProcAddress(HMODULE (dllHandle),"GetDeviceRender");
-            DDNGGetDeviceRender = GetDeviceRender(pGetDeviceRender);
-            DEBUG("PapyrusDelegate::Setup() - DDNGGetDeviceRender imported - addrs = 0x{:016X}",(uintptr_t)DDNGGetDeviceRender)
-            //FreeLibrary(dllHandle);
-        }
-        else
-        {
-            ERROR("PapyrusDelegate::Setup() - ERROR: Cant find DeviousDevices.dll!!")
-            DDNGGetDeviceRender = nullptr;
-        }
         _installed = true;
         LOG("PapyrusDelegate::Setup - installed")
+    }
+
+    // update static scripts
+    const auto loc_vm = InternalVM::GetSingleton();
+    for (auto&& [form,formvm] : _modscripts)
+    {
+        auto loc_form = RE::TESDataHandler::GetSingleton()->LookupForm(form.formid,form.modname);
+        if (loc_form)
+        {
+            formvm.handle = loc_vm->GetObjectHandlePolicy()->GetHandleForObject(loc_form->GetFormType(),loc_form);
+            loc_vm->FindBoundObject(formvm.handle, form.scriptname.c_str(), formvm.object);
+
+            if (formvm.handle && formvm.object) DEBUG("Script {} loaded",form.scriptname)
+            else ERROR("Could not load script {}",form.scriptname)
+        }
+        else ERROR("Cant find form {}:{}",form.formid,form.modname)
     }
 }
 
 void UD::PapyrusDelegate::Reload()
 {
-    Setup();
-    ResetCache();
+    SKSE::GetTaskInterface()->AddTask([this]
+    {
+        Setup();
+        ResetCache();
 
-    Utils::UniqueLock lock(_SaveLock);
-    UpdateVMHandles();
+        Utils::UniqueLock lock(_SaveLock);
+        UpdateVMHandles();
+    });
 }
 
 int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices)
@@ -334,7 +340,7 @@ void UD::PapyrusDelegate::ValidateCache() const
 
         if (!cached.rd && cached.id)
         {
-            auto loc_rd = DDNGGetDeviceRender(cached.id);
+            auto loc_rd = DeviousDevicesAPI::g_API->GetDeviceRender(cached.id);
             cached.rd = loc_rd;
 
             LOG("Getting render device from DD database => 0x{:08X}",loc_rd ? loc_rd->GetFormID() : 0)
@@ -535,7 +541,7 @@ void UD::PapyrusDelegate::ResetCache()
 
 void UD::PapyrusDelegate::UpdateVMHandles() const
 {
-    LOG("UpdateVMHandles called")
+    DEBUG("UpdateVMHandles called")
 
     const auto loc_vm = InternalVM::GetSingleton();
 
@@ -573,7 +579,7 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
                     _cache[loc_handle].rd       = GetScriptVariable<RE::TESObjectARMO>(loc_object,"_DeviceRendered",RE::FormType::Armor);
                     if (!_cache[loc_handle].rd && loc_id)
                     {
-                        auto loc_rd = DDNGGetDeviceRender(loc_id);
+                        auto loc_rd = DeviousDevicesAPI::g_API->GetDeviceRender(loc_id);
                         _cache[loc_handle].rd = loc_rd;
 
                         LOG("Getting render device from DD database => 0x{:08X}",loc_rd ? loc_rd->GetFormID() : 0)
@@ -753,6 +759,27 @@ std::vector<std::string> UD::PapyrusDelegate::GetDeviceStringArray(RE::VMHandle 
         #undef GetObject
         auto loc_varobj = (std::string)(*loc_vararr)[i].GetString();
         loc_res.push_back(loc_varobj);
+    }
+    return loc_res;
+}
+
+RE::BSTSmartPointer<RE::BSScript::Object> UD::PapyrusDelegate::GetScript(std::string a_script)
+{
+    for (auto&& [form,formVM] : _modscripts)
+    {
+        if (form.scriptname == a_script) return formVM.object;
+    }
+    return RE::BSTSmartPointer<RE::BSScript::Object>();
+}
+
+bool UD::PapyrusDelegate::GetScriptVariableBool(std::string a_script,std::string a_variable,bool a_property)
+{
+    bool loc_res = false;
+    auto loc_script = GetScript(a_script);
+    if (loc_script)
+    {
+        auto loc_var = a_property ? loc_script->GetProperty(a_variable) : loc_script->GetVariable(a_variable);
+        loc_res = loc_var ? loc_var->GetBool() : false;
     }
     return loc_res;
 }

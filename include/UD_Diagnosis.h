@@ -51,8 +51,6 @@ namespace UD
         std::vector<HistoryRecord>      history; //history stack
     };
 
-    typedef const std::map<RE::TESObjectARMO*, DeviceUnitPrototype>&(* GetDatabase)(void);
-
     class Diagnosis
     {
     SINGLETONHEADER(Diagnosis)
@@ -65,7 +63,6 @@ namespace UD
         bool _imported  = false;
         RE::BGSKeyword* _udid;
         RE::BGSKeyword* _udrd;
-        GetDatabase DDNGGetDatabase;
     };
 
     inline int CheckPatchedDevices(PAPYRUSFUNCHANDLE)

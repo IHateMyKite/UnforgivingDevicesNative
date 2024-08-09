@@ -78,7 +78,6 @@ namespace UD
         void Setup();
 
         void UpdateControl();
-        void SyncSetting(bool a_hardcoreMode);
 
         bool HardcoreMode() const;
 
@@ -171,11 +170,6 @@ namespace UD
         void ApplyControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
     };
 
-    inline void SyncControlSetting(PAPYRUSFUNCHANDLE, bool a_hardcoremode)
-    {
-        ControlManager::GetSingleton()->SyncSetting(a_hardcoremode);
-    }
-
     inline int GetCameraState(PAPYRUSFUNCHANDLE)
     {
         return CameraEventSink::GetSingleton()->GetCameraState();
@@ -199,5 +193,11 @@ namespace UD
     inline bool AddDeviceCallbackArgument(PAPYRUSFUNCHANDLE, int a_dxkeycode, int a_type, std::string a_argStr, RE::TESForm* a_argForm)
     {
         return ControlManager::GetSingleton()->AddDeviceCallbackArgument(a_dxkeycode,(CallbackArgFuns)a_type,a_argStr,a_argForm);
+    }
+
+    inline void ForceUpdateControls(PAPYRUSFUNCHANDLE)
+    {
+        DEBUG("ForceUpdateControls called")
+        ControlManager::GetSingleton()->UpdateControl();
     }
 }

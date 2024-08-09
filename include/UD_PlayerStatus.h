@@ -20,6 +20,11 @@ namespace UD
         void Update();
 
         Status GetPlayerStatus();
+
+        inline bool PlayerIsBound() const;
+        inline bool PlayerInMinigame() const;
+        inline bool PlayerInZadAnimation() const;
+        inline bool PlayerHaveTelekinesis() const;
     private:
         bool                            _installed          = false;
         RE::BGSKeyword*                 _hbkeyword          = nullptr;
@@ -27,10 +32,5 @@ namespace UD
         RE::TESFaction*                 _animationfaction   = nullptr;
         RE::SpellItem*                  _telekinesis        = nullptr;
         Status                          _status;
-
-        inline bool PlayerIsBound() const;
-        inline bool PlayerInMinigame() const;
-        inline bool PlayerInZadAnimation() const;
-        inline bool PlayerHaveTelekinesis() const;
     };
 }

@@ -3,6 +3,7 @@
 #include <UD_Config.h>
 #include <Windows.h>
 #include <UD_Macros.h>
+#include <UD_DDAPI.h>
 
 SINGLETONBODY(UD::Diagnosis)
 
@@ -13,19 +14,6 @@ void UD::Diagnosis::Setup()
         _udid = reinterpret_cast<RE::BGSKeyword*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x1553DD,"UnforgivingDevices.esp"));
         _udrd = reinterpret_cast<RE::BGSKeyword*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x11A352,"UnforgivingDevices.esp"));
 
-        HINSTANCE dllHandle = LoadLibrary(TEXT("DeviousDevices.dll"));
-        if (dllHandle != NULL)
-        {
-            FARPROC pGetDatabase = GetProcAddress(HMODULE (dllHandle),"GetDatabase");
-            DDNGGetDatabase = GetDatabase(pGetDatabase);
-            DEBUG("Diagnosis::Setup() - GetDatabase imported - addrs = 0x{:016X}",(uintptr_t)DDNGGetDatabase)
-            _imported = DDNGGetDatabase != NULL;
-            //FreeLibrary(dllHandle);
-        }
-        else
-        {
-            ERROR("Diagnosis::Setup() - ERROR: Cant find DeviousDevices.dll!!")
-        }
         _installed = true;
     }
 }
@@ -33,12 +21,12 @@ void UD::Diagnosis::Setup()
 int UD::Diagnosis::CheckPatchedDevices()
 {
     DEBUG("CheckPatchedDevices called")
-    if (!_imported || (DDNGGetDatabase == nullptr)) 
+    if (DeviousDevicesAPI::g_API == nullptr) 
     {
         ERROR("Cant check database because it was impossible to import the functions!!!!!!!!!!!")
         return 0;
     }
-    auto loc_db = DDNGGetDatabase();
+    auto loc_db = DeviousDevicesAPI::g_API->GetDatabase();
     DEBUG("Database size = {}",loc_db.size())
 
     int loc_res = 0;

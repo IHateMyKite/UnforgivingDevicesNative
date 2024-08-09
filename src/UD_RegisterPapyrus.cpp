@@ -105,12 +105,12 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetRegisteredActors,true)
 
         //player control
-        REGISTERPAPYRUSFUNC(SyncControlSetting,true)
         REGISTERPAPYRUSFUNC(GetCameraState,true)
         REGISTERPAPYRUSFUNC(RegisterDeviceCallback,true)
         REGISTERPAPYRUSFUNC(UnregisterDeviceCallbacks,true)
         REGISTERPAPYRUSFUNC(UnregisterAllDeviceCallbacks,true)
         REGISTERPAPYRUSFUNC(AddDeviceCallbackArgument,true)
+        REGISTERPAPYRUSFUNC(ForceUpdateControls,true)
 
         //events
         REGISTERPAPYRUSFUNC(RegisterForHMTweenMenu,true)
