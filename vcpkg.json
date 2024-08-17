@@ -11,5 +11,11 @@
         "boost-property-tree",
         "spdlog",
         "boost-json"
+    ],
+    "overrides": [
+        {
+            "name": "fmt",
+            "version": "8.0.1"
+        }
     ]
 }

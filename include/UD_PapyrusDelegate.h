@@ -6,6 +6,8 @@ namespace UD
 {
     using InternalVM = RE::BSScript::Internal::VirtualMachine;
     using Script = RE::BSTTuple<const RE::VMHandle, RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>>;
+    using Object = RE::BSTSmartPointer<RE::BSScript::Object>;
+    using Variable = RE::BSScript::Variable;
 
     struct Device
     {
@@ -22,6 +24,14 @@ namespace UD
         std::string namealias   = "ERROR";
         RE::TESQuest* quest     = nullptr;
         RE::BGSBaseAlias* alias = nullptr;
+    };
+
+    struct NPCSlot
+    {
+        RE::BSTSmartPointer<RE::BSScript::Object> object = nullptr;
+        RE::TESQuest* quest     = nullptr;
+        RE::BGSRefAlias* alias = nullptr;
+        size_t id;
     };
 
     struct ModScript
@@ -70,7 +80,7 @@ namespace UD
         void Setup();
         void Reload();
 
-        int SendRegisterDeviceScriptEvent(RE::Actor* a_actor,std::vector<RE::TESObjectARMO*>& a_devices);
+        int RegisterDeviceScripts(RE::Actor* a_actor);
         Result SendMinigameThreadEvents(RE::Actor* a_actor,RE::TESObjectARMO* a_device,RE::VMHandle a_handle,MinigameThreads a_threads);
         Result SendRemoveRenderDeviceEvent(RE::Actor* a_actor,RE::TESObjectARMO* a_device);
         Result SetBitMapData(RE::VMHandle a_handle,RE::TESObjectARMO* a_device,std::string a_name,int a_val,uint8_t a_size,uint8_t a_off);
@@ -78,7 +88,7 @@ namespace UD
         Device GetDeviceScript(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
         Device GetCachedDevice(RE::VMHandle,RE::Actor* a_actor, RE::TESObjectARMO* a_device);
 
-        const std::unordered_map<RE::VMHandle,Modifier>& GetModifiers() const;
+        const std::map<RE::VMHandle,Modifier>& GetModifiers() const;
         std::vector<Modifier> GetModifiers(RE::VMHandle a_handle, RE::TESObjectARMO* a_device);
         Modifier GetModifier(RE::BGSBaseAlias* a_alias) const;
         Modifier GetModifier(std::string a_namealias) const;
@@ -90,16 +100,26 @@ namespace UD
         RE::BSTSmartPointer<RE::BSScript::Object> GetScript(std::string a_script);
         bool GetScriptVariableBool(std::string a_script,std::string a_variable,bool a_property);
 
+        bool GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable);
+        bool GetInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable);
+
         void Lock();
         void Unlock();
     private:
         RE::VMHandle ValidateVMHandle(RE::VMHandle a_handle,RE::TESObjectARMO* a_device);
         void ValidateCache() const;
+        void ValidateInvalidDevices() const;
         RE::BSScript::ObjectTypeInfo* HaveScriptBase(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts, const std::string& a_base) const;
+        RE::BSScript::ObjectTypeInfo* HaveScriptBase(RE::BSScript::ObjectTypeInfo* a_type, const std::string& a_base) const;
         FilterDeviceResult CheckRegisterDevice(RE::VMHandle a_handle,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices);
         FilterDeviceResult ProcessDevice(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices,std::function<void(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
         FilterDeviceResult ProcessDevice2(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::TESObjectARMO* a_device,std::function<bool(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
         void ResetCache();
+
+        Object FindDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device);
+        Object FindInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device);
+        std::vector<Object> FindAllDeviceScripts(RE::Actor* a_actor);
+
     private:
         bool _installed = false;
         RE::BGSKeyword* _udrdkw;
@@ -108,8 +128,10 @@ namespace UD
         template<class T> std::vector<T*> GetScriptFormArray(RE::BSTSmartPointer<RE::BSScript::Object> a_scriptobject, RE::BSFixedString a_property,RE::FormType a_type);
 
         mutable uint64_t _RemovedCounter = 0x0; //removed devices counter
-        mutable std::unordered_map<RE::VMHandle,Device> _cache;
-        mutable std::unordered_map<RE::VMHandle,Modifier> _modifiercache;
+        mutable std::map<RE::VMHandle,Device,std::greater<RE::VMHandle>>   _cache;
+        mutable std::vector<Device> _removeddevices;
+        mutable std::map<RE::VMHandle,Modifier> _modifiercache;
+        mutable std::map<RE::VMHandle,NPCSlot>  _npcslotcache;
         mutable Utils::Spinlock _SaveLock;
 
         std::vector<std::pair<ModScript,ModScriptVM>> _modscripts =
@@ -120,10 +142,10 @@ namespace UD
         };
     };
 
-    inline int SendRegisterDeviceScriptEvent(PAPYRUSFUNCHANDLE,RE::Actor* a_actor,std::vector<RE::TESObjectARMO*> a_devices)
+    inline int RegisterDeviceScripts(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
     {
         PapyrusDelegate::GetSingleton()->Lock();
-        auto loc_res = PapyrusDelegate::GetSingleton()->SendRegisterDeviceScriptEvent(a_actor,a_devices);
+        auto loc_res = PapyrusDelegate::GetSingleton()->RegisterDeviceScripts(a_actor);
         PapyrusDelegate::GetSingleton()->Unlock();
         return loc_res;
     }
@@ -158,6 +180,22 @@ namespace UD
         PapyrusDelegate::GetSingleton()->Lock();
         PapyrusDelegate::GetSingleton()->UpdateVMHandles();
         PapyrusDelegate::GetSingleton()->Unlock();
+    }
+
+    inline bool GetDeviceScript(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable)
+    {
+        PapyrusDelegate::GetSingleton()->Lock();
+        bool loc_res = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_actor,a_device,a_script,a_variable);
+        PapyrusDelegate::GetSingleton()->Unlock();
+        return loc_res;
+    }
+
+    inline bool GetInventoryDeviceScript(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable)
+    {
+        PapyrusDelegate::GetSingleton()->Lock();
+        bool loc_res = PapyrusDelegate::GetSingleton()->GetInventoryDeviceScript(a_actor,a_device,a_script,a_variable);
+        PapyrusDelegate::GetSingleton()->Unlock();
+        return loc_res;
     }
 
     template<class T>

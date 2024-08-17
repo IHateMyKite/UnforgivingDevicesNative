@@ -115,12 +115,14 @@ namespace UD
         //events
         REGISTERPAPYRUSFUNC(RegisterForHMTweenMenu,true)
 
-        //object handler
-        REGISTERPAPYRUSFUNC(SendRegisterDeviceScriptEvent,true)
+        // Papyrus Delegate
+        REGISTERPAPYRUSFUNC(RegisterDeviceScripts,true)
         REGISTERPAPYRUSFUNC(SendMinigameThreadEvents,true)
         REGISTERPAPYRUSFUNC(SendRemoveRenderDeviceEvent,true)
         REGISTERPAPYRUSFUNC(SetBitMapData,true)
         REGISTERPAPYRUSFUNC(UpdateVMHandles,true)
+        REGISTERPAPYRUSFUNC(GetDeviceScript,true)
+        REGISTERPAPYRUSFUNC(GetInventoryDeviceScript,true)
 
         //materials
         REGISTERPAPYRUSFUNC(IsSteel,true)

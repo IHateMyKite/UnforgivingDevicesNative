@@ -197,7 +197,6 @@ namespace UD
 
     inline void ForceUpdateControls(PAPYRUSFUNCHANDLE)
     {
-        DEBUG("ForceUpdateControls called")
         ControlManager::GetSingleton()->UpdateControl();
     }
 }

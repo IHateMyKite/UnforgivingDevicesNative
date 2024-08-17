@@ -64,74 +64,64 @@ void UD::PapyrusDelegate::Reload()
     });
 }
 
-int PapyrusDelegate::SendRegisterDeviceScriptEvent(RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices)
+int PapyrusDelegate::RegisterDeviceScripts(RE::Actor* a_actor)
 {
-    LOG("SendRegisterDeviceScriptEvent called")
-    if (a_actor == nullptr) return -1;
+    LOG("RegisterDeviceScripts({}) - Called",a_actor ? a_actor->GetName() : "NONE")
+    if (a_actor == nullptr) return 0;
 
-    if (!_udrdkw) 
+    auto loc_slot = std::find_if(_npcslotcache.begin(),_npcslotcache.end(),[&](std::pair<const RE::VMHandle,NPCSlot> a_it)
     {
-        ERROR("ERROR: UD RD keyword is none !")
-        return 0;
-    }
-
-    std::erase_if(a_devices,[this](const RE::TESObjectARMO* a_device)
-    {
-        if ((a_device != nullptr) && !a_device->HasKeyword(_udrdkw)) return true;
+        if (a_it.second.alias && a_it.second.alias->GetActorReference() == a_actor)
+        {
+            return true;
+        }
         return false;
     });
 
-    size_t loc_tofound = a_devices.size();
-    if (loc_tofound == 0) return 0;
-
-    LOG("Finding scripts for {} devices",loc_tofound)
-
-    const auto loc_vm = InternalVM::GetSingleton();
-    
-    ValidateCache();
-
-    for(auto rd : a_devices)
+    if (loc_slot == _npcslotcache.end())
     {
-        for (auto&& [vmhandle,cached] : _cache)
+        ERROR("RegisterDeviceScripts({}) - Cant register devices because actor is not registered in any of the slots",a_actor ? a_actor->GetName() : "NONE")
+        return 0;
+    }
+
+    auto loc_devices = DeviousDevicesAPI::g_API->GetWornDevices(a_actor);
+    if (loc_devices.size() == 0) return 0;
+
+    auto loc_devicescripts = FindAllDeviceScripts(a_actor);
+    if (loc_devicescripts.size() == 0) return 0;
+
+    auto loc_slotobject = loc_slot->second.object;
+    auto loc_arrobject = loc_slotobject ? loc_slotobject->GetProperty("UD_equipedCustomDevices") : nullptr;
+    auto loc_arr = loc_arrobject ? loc_arrobject->GetArray() : nullptr;
+
+    if (!loc_arrobject || !loc_arr)
+    {
+        ERROR("RegisterDeviceScripts({}) - Cant register devices because slot doesnt have device slots ready",a_actor ? a_actor->GetName() : "NONE")
+        return 0;
+    }
+
+    int loc_registered = 0;
+    for (auto&& object : loc_devicescripts)
+    {
+        auto loc_rd = GetScriptVariable<RE::TESObjectARMO>(object,"_DeviceRendered",RE::FormType::Armor);
+        if (loc_rd && (std::find(loc_devices.begin(),loc_devices.end(),loc_rd) != loc_devices.end()))
         {
-            if (cached.rd == rd && rd)
+            auto loc_emptyslot = std::find_if(loc_arr->begin(),loc_arr->end(),[](Variable& a_var)
             {
-                //get wearer from script
-                RE::Actor* loc_wearer = RE::Actor::LookupByHandle(cached.wearer).get();
+                if (a_var.GetObject()) return false;
+                else return true;
+            });
 
-                //check if device wearer is the same one as passed actor
-                if (loc_wearer == a_actor)
-                {
-                    //get inventory device from papyrus script
-                    RE::TESObjectARMO* loc_id = cached.id;
-
-                    //check if actor really wears the device
-                    //if (!Utility::GetSingleton()->CheckArmorEquipped(loc_wearer,rd)) 
-                    //{
-                    //    LOG("Device {} found, but actor is not wearing it. Skipping!",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
-                    //    continue;
-                    //}
-
-                    LOG("Device {} found",loc_id ? ((RE::TESObjectARMO*)loc_id)->GetName() : "NONE")
-                    
-                    //ready function args
-                    auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, RE::TESObjectARMO*, RE::TESObjectARMO*>(std::forward<RE::Actor*>(a_actor),std::forward<RE::TESObjectARMO*>(loc_id),std::forward<RE::TESObjectARMO*>(rd));
-                    
-                    //init unused callback
-                    RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback;
-                    
-                    //call papyrus method
-                    loc_vm->DispatchMethodCall(cached.object,"RegisterDevice",loc_args,loc_callback);
-                    delete loc_args;
-
-                    loc_tofound--;
-                }
+            if (loc_emptyslot)
+            {
+                loc_emptyslot->SetObject(object,loc_emptyslot->GetType().GetRawType());
+                loc_registered++;
+                continue;
             }
         }
     }
 
-    //some device was not found
-    return  static_cast<int>(a_devices.size() - loc_tofound);
+    return loc_registered;
 }
 
 Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObjectARMO* a_device, RE::VMHandle a_handle,MinigameThreads a_threads)
@@ -363,6 +353,104 @@ void UD::PapyrusDelegate::ValidateCache() const
     }
 
     for(auto&& it : loc_toremove) _cache.erase(it);
+
+    ValidateInvalidDevices();
+}
+
+void UD::PapyrusDelegate::ValidateInvalidDevices() const
+{
+    const auto loc_vm = InternalVM::GetSingleton();
+    std::for_each(std::execution::seq,loc_vm->objectsAwaitingCleanup.begin(),loc_vm->objectsAwaitingCleanup.end(),[&](RE::BSTSmartPointer<RE::BSScript::Object>& a_script)
+    {
+        auto loc_removed = std::find_if(std::execution::par,_removeddevices.begin(),_removeddevices.end(),[a_script](Device& a_device)
+        {
+            return a_device.object.get() == a_script.get();
+        });
+
+        if (loc_removed != _removeddevices.end())
+        {
+            return;
+        }
+
+        auto loc_type = HaveScriptBase(a_script->GetTypeInfo(),"ud_customdevice_renderscript");
+        if (loc_type != nullptr)
+        {
+            static size_t loc_cnt = 0;
+            RE::VMHandle loc_handle = a_script->handle;
+            //get script object
+            RE::BSTSmartPointer<RE::BSScript::Object> loc_object = a_script;
+        
+            if (loc_object != nullptr)
+            {
+                //undef this stupidass macro so we can use the GetObject method
+                #undef GetObject
+        
+                //get inventory device from papyrus script
+                auto loc_id = GetScriptProperty<RE::TESObjectARMO>(loc_object,"DeviceInventory",RE::FormType::Armor);
+                if (loc_id != nullptr)
+                {
+                    const auto loc_var1 = loc_object->GetVariable("_VMHandle1");
+                    const auto loc_var2 = loc_object->GetVariable("_VMHandle2");
+        
+                    if (loc_var1 == nullptr || loc_var2 == nullptr) return;
+        
+                    loc_handle = ((uint64_t)loc_var1->GetUInt() | ((uint64_t)loc_var2->GetUInt() << 32U));
+
+                    if (loc_handle == 0x0000FFFF00000000)
+                    {
+                        
+                        static uint64_t loc_counter = 0;
+                        loc_handle |= (loc_counter++);
+                    }
+
+                    // Check if device is already not removed
+                    auto loc_unregistered = loc_object->GetVariable("_UnregisterInvalidCalled");
+                    if (loc_unregistered && (loc_unregistered->GetSInt() == 2))
+                    {
+                        DEBUG("Device 0x{:016X} is removed. Removing from cache",loc_handle)
+                        _cache.erase(loc_handle);
+                        _removeddevices.push_back({loc_object});
+                        return;
+                    }
+
+                    loc_var1->SetUInt(loc_handle & 0xFFFFFFFF);
+                    loc_var2->SetUInt((loc_handle >> 32) & 0xFFFFFFFF);
+        
+                    _cache[loc_handle].object   = loc_object;
+                    _cache[loc_handle].id       = loc_id;
+                    _cache[loc_handle].rd       = GetScriptVariable<RE::TESObjectARMO>(loc_object,"_DeviceRendered",RE::FormType::Armor);
+                    if (!_cache[loc_handle].rd && loc_id)
+                    {
+                        auto loc_rd = DeviousDevicesAPI::g_API ? DeviousDevicesAPI::g_API->GetDeviceRender(loc_id) : nullptr;
+                        _cache[loc_handle].rd = loc_rd;
+                    
+                        LOG("Getting render device from DD database => 0x{:08X}",loc_rd ? loc_rd->GetFormID() : 0)
+                    
+                        auto loc_objvar = loc_object->GetVariable("_DeviceRendered");
+                        RE::BSScript::PackHandle(loc_objvar,loc_rd,(RE::VMTypeID)RE::FormType::Armor);
+                    }
+                    
+                    auto loc_wearer = GetScriptVariable<RE::Actor>(loc_object,"Wearer",RE::FormType::ActorCharacter);
+                    _cache[loc_handle].wearer   = loc_wearer ? loc_wearer->GetHandle().native_handle() : 0x0U;
+        
+                    DEBUG("Device awaiting cleanup found {} - 0x{:016X} = 0x{:08X} + 0x{:08X} - Wearer = {}",loc_id->GetName(),loc_handle,loc_var1->GetUInt(),loc_var2->GetUInt(),loc_wearer ? loc_wearer->GetName() : "NONE")
+
+                    //ready function args
+                    auto loc_args = RE::MakeFunctionArguments();
+                    
+                    //init unused callback
+                    RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback;
+                    
+                    //call papyrus method
+                    loc_vm->DispatchMethodCall(loc_object,"_UnregisterInvalid",loc_args,loc_callback);
+                    delete loc_args;
+
+                    //LOG("Handle of {} set to 0x{:016X} = 0x{:08X} + 0x{:08X} - Wearer = {}",loc_id->GetName(),a_script->handle,loc_var1->GetUInt(),loc_var2->GetUInt(),loc_wearer ? loc_wearer->GetName() : "NONE")
+                    return;
+                }
+            }
+        }
+    });
 }
 
 RE::BSScript::ObjectTypeInfo* UD::PapyrusDelegate::HaveScriptBase(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts, const std::string& a_base) const
@@ -385,6 +473,28 @@ RE::BSScript::ObjectTypeInfo* UD::PapyrusDelegate::HaveScriptBase(RE::BSTSmallSh
             {
                 loc_info = loc_info->GetParent();
             }
+        }
+    }
+    return nullptr;
+}
+
+RE::BSScript::ObjectTypeInfo* UD::PapyrusDelegate::HaveScriptBase(RE::BSScript::ObjectTypeInfo* a_type, const std::string& a_base) const
+{
+    auto loc_info = a_type;
+
+    while (loc_info != nullptr)
+    {
+        std::string loc_scriptname = loc_info->GetName();
+        std::transform(loc_scriptname.begin(), loc_scriptname.end(), loc_scriptname.begin(), ::tolower);
+                
+        //check if script is ud
+        if (loc_scriptname == a_base)
+        {
+            return loc_info;
+        }
+        else
+        {
+            loc_info = loc_info->GetParent();
         }
     }
     return nullptr;
@@ -533,10 +643,249 @@ FilterDeviceResult UD::PapyrusDelegate::ProcessDevice2(RE::VMHandle a_handle, RE
     return {false,nullptr,nullptr};
 }
 
+bool UD::PapyrusDelegate::GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable)
+{
+    LOG("GetDeviceScript({},0x{:08X},{},{}) - Called",a_actor ? a_actor->GetName() : "NONE",a_device ? a_device->GetFormID() : 0,a_script,a_variable)
+    
+    if (!a_actor || !a_device || a_script == "" || a_variable == "")
+    {
+        return false;
+    }
+
+    // Find device script
+    Object loc_device = FindDeviceScript(a_actor,a_device);
+
+    if (loc_device == nullptr)
+    {
+        ERROR("GetDeviceScript({},0x{:08X},{},{}) - Could not find script object",a_actor->GetName(),a_device->GetFormID(),a_script,a_variable)
+        return false;
+    }
+
+    std::transform(a_script.begin(), a_script.end(), a_script.begin(), ::tolower);
+
+    for (auto&& [script,scriptVM] : _modscripts)
+    {
+        std::string loc_script = script.scriptname;
+        std::transform(loc_script.begin(), loc_script.end(), loc_script.begin(), ::tolower);
+        if (loc_script == a_script)
+        {
+            auto loc_object = scriptVM.object;
+            if (loc_object != nullptr)
+            {
+                Variable* loc_var = loc_object->GetProperty(a_variable) ? loc_object->GetProperty(a_variable) : loc_object->GetVariable(a_variable);
+                if (loc_var != nullptr)
+                {
+                    loc_var->SetObject(loc_device,loc_var->GetType().GetRawType());
+                    return true;
+                }
+                else
+                {
+                    ERROR("GetDeviceScript({},0x{:08X},{},{}) - Could not find quest variable",a_actor->GetName(),a_device->GetFormID(),a_script,a_variable)
+                }
+
+                break;
+            }
+            else
+            {
+                ERROR("GetDeviceScript({},0x{:08X},{},{}) - Could not find quest script",a_actor->GetName(),a_device->GetFormID(),a_script,a_variable)
+            }
+        }
+    }
+
+    return false;
+}
+
+bool UD::PapyrusDelegate::GetInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable)
+{
+    LOG("GetDeviceScript({},0x{:08X},{},{}) - Called",a_actor ? a_actor->GetName() : "NONE",a_device ? a_device->GetFormID() : 0,a_script,a_variable)
+    
+    if (!a_actor || !a_device || a_script == "" || a_variable == "")
+    {
+        return false;
+    }
+
+    // Find device script
+    Object loc_device = FindInventoryDeviceScript(a_actor,a_device);
+
+    if (loc_device == nullptr)
+    {
+        ERROR("GetInventoryDeviceScript({},0x{:08X},{},{}) - Could not find script object",a_actor->GetName(),a_device->GetFormID(),a_script,a_variable)
+        return false;
+    }
+
+    std::transform(a_script.begin(), a_script.end(), a_script.begin(), ::tolower);
+
+    for (auto&& [script,scriptVM] : _modscripts)
+    {
+        std::string loc_script = script.scriptname;
+        std::transform(loc_script.begin(), loc_script.end(), loc_script.begin(), ::tolower);
+        if (loc_script == a_script)
+        {
+            auto loc_object = scriptVM.object;
+            if (loc_object != nullptr)
+            {
+                Variable* loc_var = loc_object->GetProperty(a_variable) ? loc_object->GetProperty(a_variable) : loc_object->GetVariable(a_variable);
+                if (loc_var != nullptr)
+                {
+                    loc_var->SetObject(loc_device,loc_var->GetType().GetRawType());
+                    return true;
+                }
+                else
+                {
+                    ERROR("GetInventoryDeviceScript({},0x{:08X},{},{}) - Could not find quest variable",a_actor->GetName(),a_device->GetFormID(),a_script,a_variable)
+                }
+
+                break;
+            }
+            else
+            {
+                ERROR("GetInventoryDeviceScript({},0x{:08X},{},{}) - Could not find quest script",a_actor->GetName(),a_device->GetFormID(),a_script,a_variable)
+            }
+        }
+    }
+
+    return false;
+}
+
 void UD::PapyrusDelegate::ResetCache()
 {
     Utils::UniqueLock lock(_SaveLock);
     _cache.clear();
+    _removeddevices.clear();
+}
+
+UD::Object UD::PapyrusDelegate::FindDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
+{
+    if (!a_actor || !a_device) return Object();
+
+    const auto loc_vm = InternalVM::GetSingleton();
+    auto loc_formid = a_actor->GetFormID();
+     
+    loc_vm->attachedScriptsLock.Lock();
+
+    RE::VMHandle loc_handle = 0x0001000000000000 | loc_formid;
+
+    const RE::VMHandle loc_scriptstep = 0x100000000;
+    Object loc_object;
+
+    int loc_nonefound = 15;
+    while (loc_nonefound > 0)
+    {
+        loc_vm->FindBoundObject(loc_handle,"ud_customdevice_renderscript",loc_object);
+        DEBUG("0x{:016X} = {}",loc_handle,loc_object ? loc_object->GetTypeInfo()->GetName() : "NONE")
+        if (loc_object)
+        {
+            auto loc_rd = GetScriptVariable<RE::TESObjectARMO>(loc_object,"_DeviceRendered",RE::FormType::Armor);
+            if (loc_rd == a_device)
+            {
+                break;
+            }
+            loc_nonefound = 15;
+        }
+        else
+        {
+            loc_nonefound--;
+        }
+        loc_handle += loc_scriptstep;
+    }
+    
+    loc_vm->attachedScriptsLock.Unlock();
+    return loc_object;
+}
+
+UD::Object UD::PapyrusDelegate::FindInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
+{
+    if (!a_actor || !a_device) return Object();
+
+    const auto loc_vm = InternalVM::GetSingleton();
+    auto loc_formid = a_actor->GetFormID();
+     
+    loc_vm->attachedScriptsLock.Lock();
+
+    RE::VMHandle loc_handle = 0x0001000000000000 | loc_formid;
+
+    const RE::VMHandle loc_scriptstep = 0x100000000;
+    Object loc_object;
+
+    int loc_nonefound = 15;
+    while (loc_nonefound > 0)
+    {
+        loc_vm->FindBoundObject(loc_handle,"ud_customdevice_equipscript",loc_object);
+        if (loc_object)
+        {
+            auto loc_id = GetScriptProperty<RE::TESObjectARMO>(loc_object,"deviceInventory",RE::FormType::Armor);
+            if (loc_id == a_device)
+            {
+                break;
+            }
+            loc_nonefound = 15;
+        }
+        else
+        {
+            loc_nonefound--;
+        }
+        loc_handle += loc_scriptstep;
+    }
+    
+    loc_vm->attachedScriptsLock.Unlock();
+    return loc_object;
+}
+
+std::vector<UD::Object> UD::PapyrusDelegate::FindAllDeviceScripts(RE::Actor* a_actor)
+{
+    if (!a_actor) return std::vector<Object>();
+
+    const auto loc_vm = InternalVM::GetSingleton();
+    auto loc_formid = a_actor->GetFormID();
+     
+    loc_vm->attachedScriptsLock.Lock();
+
+    RE::VMHandle loc_handle = 0x0001000000000000 | loc_formid;
+
+    const RE::VMHandle loc_scriptstep = 0x100000000;
+    std::vector<Object> loc_objects;
+
+    int loc_nonefound = 15;
+    while (loc_nonefound > 0)
+    {
+        Object loc_object;
+        loc_vm->FindBoundObject(loc_handle,"form",loc_object);
+        if (loc_object)
+        {
+            auto loc_info = loc_object->GetTypeInfo();
+            bool loc_isud = false;
+            while (loc_info != nullptr)
+            {
+                std::string loc_scriptname = loc_info->GetName();
+                std::transform(loc_scriptname.begin(), loc_scriptname.end(), loc_scriptname.begin(), ::tolower);
+                
+                //check if script is ud
+                if (loc_scriptname == "ud_customdevice_renderscript")
+                {
+                    loc_isud = true;
+                    break;
+                }
+                else
+                {
+                    loc_info = loc_info->GetParent();
+                }
+            }
+
+            if (loc_isud)
+            {
+                loc_objects.push_back(loc_object);
+            }
+            loc_nonefound = 15;
+        }
+        else
+        {
+            loc_nonefound--;
+        }
+        loc_handle += loc_scriptstep;
+    }
+    
+    loc_vm->attachedScriptsLock.Unlock();
+    return loc_objects;
 }
 
 void UD::PapyrusDelegate::UpdateVMHandles() const
@@ -628,8 +977,86 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
             }
         }
 
+        auto loc_npcslottype = HaveScriptBase(a_script.second,"ud_customdevice_npcslot");
+        if (loc_npcslottype != nullptr)
+        {
+            RE::VMHandle loc_handle = a_script.first;
+            //get script object
+            RE::BSTSmartPointer<RE::BSScript::Object> loc_object = nullptr;
+
+            loc_vm->FindBoundObject(loc_handle,loc_npcslottype->GetName(),loc_object);
+
+            if (loc_object != nullptr)
+            {
+                //undef this stupidass macro so we can use the GetObject method
+                #undef GetObject
+
+                _npcslotcache[loc_handle].object   = loc_object;
+
+                const RE::FormID loc_formid = static_cast<RE::FormID>(loc_handle & 0x00000000FFFFFFFF);
+
+                auto loc_quest = reinterpret_cast<RE::TESQuest*>(RE::TESForm::LookupByID(loc_formid));
+                _npcslotcache[loc_handle].quest = loc_quest;
+
+                if (loc_quest == nullptr)
+                {
+                    DEBUG("Quest is none ??? Skipping")
+                    _npcslotcache.erase(loc_handle);
+                    return;
+                }
+
+                const uint32_t loc_qalias = static_cast<uint32_t>((loc_handle >> 32U));
+
+                if (loc_qalias >= loc_quest->aliases.size())
+                {
+                    DEBUG("Alias is out of the range ??? Skipping")
+                    _npcslotcache.erase(loc_handle);
+                    return;
+                }
+
+                if (loc_quest->aliases[loc_qalias] == nullptr)
+                {
+                    DEBUG("Alias is none ??? Skipping")
+                    _npcslotcache.erase(loc_handle);
+                    return;
+                }
+
+                if (loc_quest->aliases[loc_qalias]->GetVMTypeID() != 140)
+                {
+                    DEBUG("Alias is not ReferenceAlias ?? Skipping")
+                    _npcslotcache.erase(loc_handle);
+                    return;
+                }
+
+                _npcslotcache[loc_handle].alias = reinterpret_cast<RE::BGSRefAlias*>(loc_quest->aliases[loc_qalias]);
+                _npcslotcache[loc_handle].id = loc_qalias;
+
+                //{
+                //    //auto loc_regdevices = loc_object->GetVariable("_iUsedSlots")->GetSInt();
+                //    //DEBUG("0x{:016X}, loc_regdevices = {}",loc_handle,loc_regdevices)
+                //    auto loc_arr = loc_object->GetProperty("UD_equipedCustomDevices")->GetArray();
+                //    if (loc_arr)
+                //    {
+                //        for(size_t i = 0; i < loc_arr->size();i++)
+                //        {
+                //            auto loc_vartype = (*loc_arr)[i].GetType();
+                //            //DEBUG("Type = {}, RawType = {}",(size_t)loc_vartype.GetUnmangledRawType(),(size_t)loc_vartype.GetRawType())
+                //
+                //            auto loc_device = (*loc_arr)[i].GetObject();
+                //            DEBUG("0x{:016X} - {}",loc_device ? loc_device->handle : 0x0,loc_device ? loc_device->GetTypeInfo()->GetName() : "NONE")
+                //        }
+                //    }
+                //}
+
+                //DEBUG("Modifier {}::{} found",_modifiercache[loc_handle].alias,_modifiercache[loc_handle].name)
+                return;
+            }
+        }
+
     });
     loc_vm->attachedScriptsLock.Unlock();
+
+    ValidateCache();
 
     DEBUG("Cache size: {}",_cache.size())
     for(auto&& [vmhandle,device] : _cache) 
@@ -643,7 +1070,12 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
     {
         DEBUG("0x{:016X} - {}::{} , Storage = {} , Alias = {}",vmhandle,modifier.namealias,modifier.name,modifier.quest ? modifier.quest->GetName() : "NONE", modifier.alias ? modifier.alias->aliasName : "NONE")
     }
-    ValidateCache();
+
+    DEBUG("NPC Slot cache size: {}",_npcslotcache.size())
+    for(auto&& [vmhandle,npcslot] : _npcslotcache) 
+    {
+        DEBUG("0x{:08X} - 0x{:016X}, Actor = {}, Storage = {} , Alias = {}",npcslot.id,vmhandle,npcslot.alias ? (npcslot.alias->GetActorReference() ? npcslot.alias->GetActorReference()->GetName() : "NONE") : "NONE",npcslot.quest ? npcslot.quest->GetName() : "NONE", npcslot.alias ? npcslot.alias->aliasName : "NONE")
+    }
 }
 
 UD::Device UD::PapyrusDelegate::GetDeviceScript(int a_handle1, int a_handle2, RE::TESObjectARMO* a_device)
@@ -667,7 +1099,7 @@ UD::Device UD::PapyrusDelegate::GetCachedDevice(RE::VMHandle a_handle, RE::Actor
     return loc_cacheres;
 }
 
-const std::unordered_map<RE::VMHandle, UD::Modifier>& UD::PapyrusDelegate::GetModifiers() const
+const std::map<RE::VMHandle, UD::Modifier>& UD::PapyrusDelegate::GetModifiers() const
 {
     return _modifiercache;
 }

@@ -17,6 +17,31 @@ void UD::LockpickManager::Setup()
             RE::UI::GetSingleton()->AddEventSink<RE::MenuOpenCloseEvent>(MenuEventSink::GetSingleton());
             DEBUG("Menu sink installed")
         }
+
+        // SE: 14089918E
+        // AE: 140939B52
+        _PatchLockpickCrimeAddr = REL::Relocation<std::uintptr_t>{REL::RelocationID(51099, 51981), REL::VariantOffset(0xEEU, 0xF2U, 0xF2U)};
+
+        DEBUG("_PatchLockpickCrimeAddr = 0x{:016X}",_PatchLockpickCrimeAddr.address())
+
+        _PatchLockpickCrimeDisable.ready();
+
+        DEBUG("PatchLockpickCrimeDisable size = 0x{:02X}",_PatchLockpickCrimeDisable.getSize())
+
+        //store original code
+        std::memcpy(_PatchLockpickCrimeOld,(uintptr_t*)_PatchLockpickCrimeAddr.address(),_PatchLockpickCrimeDisable.getSize());
+
+        if (_PatchLockpickCrimeDisable.getSize() > 0xCU)
+        {
+            SKSE::stl::report_and_fail("UnforgivingDevices: PatchLockpickCrimeDisable was too large, failed to install"sv);
+        }
+
+        std::string loc_rawdata = "";
+        for (size_t i = 0; i < _PatchLockpickCrimeDisable.getSize(); i++)
+        {
+            loc_rawdata += std::format(" {:02X}",_PatchLockpickCrimeOld[i]);
+        }
+        DEBUG("_PatchLockpickCrimeOld = {}",loc_rawdata)
     }
 }
 
@@ -65,12 +90,12 @@ bool UD::LockpickManager::SetLockpickVariable(LockpickVariable a_var, float a_va
     {
         RE::LockpickingMenu* loc_lockpickmenuPtr = reinterpret_cast<RE::LockpickingMenu*>(loc_lockpickmenu.get());
         auto loc_rnd = loc_lockpickmenuPtr->GetRuntimeData();
-
+    
         #define SetLockpickVariable_CASE(var)   \
         case LockpickVariable::v##var:          \
             loc_rnd.var = a_value;              \
-            break;
-
+            return true;
+    
         switch (a_var)
         {
             SetLockpickVariable_CASE(pickKeyTime        )
@@ -89,50 +114,62 @@ bool UD::LockpickManager::SetLockpickVariable(LockpickVariable a_var, float a_va
             default:
                 return false;
         }
-
+    
         #undef GetLockpickVariable_CASE
     }
 
     return false;
 }
 
-int UD::LockpickManager::GetDestroyedLockpicks() const
+void UD::LockpickManager::DisableLockpickCrime()
 {
-    auto loc_lockpickmenu = RE::UI::GetSingleton()->GetMenu("Lockpicking Menu");
-    if (loc_lockpickmenu)
+    if (!_PatchLockpickCrimeApplied)
     {
-        RE::LockpickingMenu* loc_lockpickmenuPtr = reinterpret_cast<RE::LockpickingMenu*>(loc_lockpickmenu.get());
-        return loc_lockpickmenuPtr->GetRuntimeData().numBrokenPicks;
+        _PatchLockpickCrimeApplied = true;
+
+        REL::safe_fill(_PatchLockpickCrimeAddr.address(), REL::NOP, _PatchLockpickCrimeDisable.getSize());
+        REL::safe_write(_PatchLockpickCrimeAddr.address(), _PatchLockpickCrimeDisable.getCode(), _PatchLockpickCrimeDisable.getSize());
     }
-    return 0;
 }
 
-bool UD::LockpickManager::SetLockpickIsCrime(bool a_val) const
+void UD::LockpickManager::EnableLockpickCrime()
 {
-    auto loc_lockpickmenu = RE::UI::GetSingleton()->GetMenu("Lockpicking Menu");
-    if (loc_lockpickmenu)
+    if (_PatchLockpickCrimeApplied)
     {
-        RE::LockpickingMenu* loc_lockpickmenuPtr = reinterpret_cast<RE::LockpickingMenu*>(loc_lockpickmenu.get());
-        loc_lockpickmenuPtr->GetRuntimeData().isLockpickingCrime = a_val;
-        return true;
+        REL::safe_fill(_PatchLockpickCrimeAddr.address(), REL::NOP, _PatchLockpickCrimeDisable.getSize());
+        REL::safe_write(_PatchLockpickCrimeAddr.address(), _PatchLockpickCrimeOld, _PatchLockpickCrimeDisable.getSize());
+    
+        _PatchLockpickCrimeApplied = false;
     }
-    return false;
 }
 
 RE::BSEventNotifyControl UD::MenuEventSink::ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>* a_eventSource)
 {
     if (a_event)
     {
-        LOG("UD::MenuEventSink::ProcessEvent - Menu={}, Opening={}",a_event->menuName,a_event->opening)
-        if (a_event->menuName == "Lockpicking Menu")
+        LOG("MenuEventSink::ProcessEvent - Menu={}, Opening={}",a_event->menuName,a_event->opening)
+        if (a_event->menuName == RE::LockpickingMenu::MENU_NAME)
         {
             auto loc_player     = RE::PlayerCharacter::GetSingleton();
             auto loc_utility    = Utility::GetSingleton();
-            auto loc_status     = PlayerStatus::GetSingleton()->GetPlayerStatus();
+            auto loc_minigame   = PlayerStatus::GetSingleton()->PlayerInMinigame();
+
+            if (loc_minigame)
+            {
+                if (a_event->opening)
+                {
+                    LockpickManager::GetSingleton()->DisableLockpickCrime();
+                }
+                else
+                {
+                    LockpickManager::GetSingleton()->EnableLockpickCrime();
+                }
+            }
+
             // prevent lockpick minigame from working if player have either bondage mittens 
             // or heavy bondage which hides hands (everything except for yoke)
             // also is only relevant if player is not in lockpick minigame (for obvious reasons)
-            if (!(loc_status & PlayerStatus::Status::sMinigame) && 
+            if (!(loc_minigame) && 
                 loc_player && a_event->opening && (loc_utility->WornHasKeyword(loc_player,"zad_DeviousBondageMittens") ||
                 (loc_utility->WornHasKeyword(loc_player,"zad_DeviousHeavyBondage") && !loc_utility->WornHasKeyword(loc_player,"zad_DeviousYoke"))
                 )
@@ -142,9 +179,9 @@ RE::BSEventNotifyControl UD::MenuEventSink::ProcessEvent(const RE::MenuOpenClose
                 if (loc_lockpickmenu)
                 {
                     RE::LockpickingMenu* loc_lockpickmenuPtr = reinterpret_cast<RE::LockpickingMenu*>(loc_lockpickmenu.get());
-                    if (loc_status & PlayerStatus::Status::sHaveTelekinesis)
+                    if (PlayerStatus::GetSingleton()->PlayerHaveTelekinesis())
                     {
-                        RE::DebugNotification("You use telekinesis help with lockpicking");
+                        RE::DebugNotification("You use telekinesis to help with lockpicking");
                         loc_lockpickmenuPtr->GetRuntimeData().sweetSpotAngle    *= 0.25f;
                         loc_lockpickmenuPtr->GetRuntimeData().partialPickAngle  *= 0.5f;
                     }

@@ -20,6 +20,7 @@
 #include <UD_Modifiers.h>
 #include <OrgasmSystem/OrgasmManager.h>
 #include <UD_DDAPI.h>
+#include <UD_Macros.h>
 
 namespace UD
 {

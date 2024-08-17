@@ -32,7 +32,7 @@ std::vector<uint32_t> UD::ActorSlotManager::GetValidActors()
 {
     Utils::UniqueLock lock(_lock);
 
-    LOG("ActorSlotManager::GetValidActors() called")
+    //LOG("ActorSlotManager::GetValidActors() called")
 
     if (_slots == nullptr) return std::vector<RE::ActorHandle::native_handle_type>();
     if (_slots->size() + _closeactors.size() == 0) return std::vector<RE::ActorHandle::native_handle_type>();
