@@ -362,7 +362,7 @@ void UD::PapyrusDelegate::ValidateInvalidDevices() const
     const auto loc_vm = InternalVM::GetSingleton();
     std::for_each(std::execution::seq,loc_vm->objectsAwaitingCleanup.begin(),loc_vm->objectsAwaitingCleanup.end(),[&](RE::BSTSmartPointer<RE::BSScript::Object>& a_script)
     {
-        auto loc_removed = std::find_if(std::execution::par,_removeddevices.begin(),_removeddevices.end(),[a_script](Device& a_device)
+        auto loc_removed = std::find_if(std::execution::seq,_removeddevices.begin(),_removeddevices.end(),[a_script](Device& a_device)
         {
             return a_device.object.get() == a_script.get();
         });
