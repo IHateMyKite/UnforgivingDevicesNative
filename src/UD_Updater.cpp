@@ -26,16 +26,6 @@ namespace UD
         t1mutex = false;
     }
 
-    void UpdateManager::UpdateThread2(const float& a_delta)
-    {
-        if (t2mutex) return;
-        t2mutex = true;
-
-        ORS::OrgasmManager::GetSingleton()->Update(a_delta);
-
-        t2mutex = false;
-    }
-
     void UpdateManager::Hook()
     {
         HookVirtualMethod<RE::Actor,decltype(PlayerUpdatePatched)>(RE::PlayerCharacter::GetSingleton(),0x0AD,0x0AF,reinterpret_cast<uintptr_t>(PlayerUpdatePatched),PlayerUpdate);
@@ -50,8 +40,9 @@ namespace UD
 
         PlayerStatus::GetSingleton()->Update();
 
+        ORS::OrgasmManager::GetSingleton()->Update(a_delta);
+
         if (!t1mutex) std::thread(&UpdateManager::UpdateThread1,this,a_delta).detach();
-        if (!t2mutex) std::thread(&UpdateManager::UpdateThread2,this,a_delta).detach();
         if (!t3mutex) std::thread([this]
         {
             if (t3mutex) return;

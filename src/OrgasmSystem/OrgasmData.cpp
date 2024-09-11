@@ -37,27 +37,7 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
         _RDATA.OrgasmCount = 0;
     }
 
-    _RDATA.ArousalRate            = CalculateArousalRate(a_delta);
-    _RDATA.ArousalRateMult        = CalculateArousalRateMult();
-
-    const float loc_da            = _RDATA.ArousalRate*_RDATA.ArousalRateMult*a_delta;
-
-    _RDATA.ArousalEventTimer -= a_delta;
-
-    bool loc_sendarousalevent = false;
-    if (_RDATA.ArousalEventTimer <= 0.0f && (_RDATA.ArousalEventLastValue != _RDATA.Arousal))
-    {
-        static Config*      loc_config      = Config::GetSingleton();
-        static const float  loc_updnpc      = loc_config->GetVariable<float>("Arousal.fArousalEventTimeNPC",5.0f);
-        static const float  loc_updplayer   = loc_config->GetVariable<float>("Arousal.fArousalEventTimePlayer",1.0f);
-        if (_RDATA.Actor->IsPlayerRef()) _RDATA.ArousalEventTimer = loc_updplayer;
-        else _RDATA.ArousalEventTimer = loc_updnpc;
-
-        if (_RDATA.Actor->Is3DLoaded()) loc_sendarousalevent = true;
-        _RDATA.ArousalEventLastValue = _RDATA.Arousal;
-    }
-
-    if (OSLAModifyArousal != nullptr && loc_da != 0.0f) _RDATA.Arousal = OSLAModifyArousal(_RDATA.Actor,loc_da,loc_sendarousalevent);
+    UpdateArousal(a_delta);
 
     _RDATA.OrgasmRate             = CalculateOrgasmRate(a_delta);
     _RDATA.OrgasmRateMult         = CalculateOrgasmRateMult();
@@ -403,6 +383,32 @@ ORS::OrgasmActorData::OrgasmActorData(const ORS::OrgasmActorData& a_oad)
     _PDATA = a_oad._PDATA;
     _PDATAH = a_oad._PDATAH;
     _Sources = a_oad._Sources;
+}
+
+void ORS::OrgasmActorData::UpdateArousal(const float& a_delta)
+{
+    _RDATA.ArousalRate            = CalculateArousalRate(a_delta);
+    _RDATA.ArousalRateMult        = CalculateArousalRateMult();
+
+    const float loc_da            = _RDATA.ArousalRate*_RDATA.ArousalRateMult*a_delta;
+
+    _RDATA.ArousalEventTimer -= a_delta;
+
+    bool loc_sendarousalevent = false;
+    if (_RDATA.ArousalEventTimer <= 0.0f && (_RDATA.ArousalEventLastValue != _RDATA.Arousal))
+    {
+        static Config*      loc_config      = Config::GetSingleton();
+        static const float  loc_updnpc      = loc_config->GetVariable<float>("Arousal.fArousalEventTimeNPC",5.0f);
+        static const float  loc_updplayer   = loc_config->GetVariable<float>("Arousal.fArousalEventTimePlayer",1.0f);
+        if (_RDATA.Actor->IsPlayerRef()) _RDATA.ArousalEventTimer = loc_updplayer;
+        else _RDATA.ArousalEventTimer = loc_updnpc;
+
+        if (_RDATA.Actor->Is3DLoaded()) loc_sendarousalevent = true;
+        _RDATA.ArousalEventLastValue = _RDATA.Arousal;
+    }
+
+    if (OSLAModifyArousal != nullptr && loc_da != 0.0f) _RDATA.Arousal = OSLAModifyArousal(_RDATA.Actor,loc_da,loc_sendarousalevent);
+
 }
 
 void ORS::OrgasmActorData::OnGameLoaded(SKSE::SerializationInterface* serde)

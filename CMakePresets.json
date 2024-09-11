@@ -22,12 +22,6 @@
             }
         },
         {
-            "name": "debug",
-            "inherits": [ "base" ],
-            "displayName": "Debug",
-            "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
-        },
-        {
             "name": "release",
             "inherits": [ "base" ],
             "displayName": "Release",

@@ -2,6 +2,7 @@
 #include <UD_Utility.h>
 #include <UD_ActorSlotManager.h>
 #include <UD_Config.h>
+#include <OrgasmSystem/OrgasmConfig.h>
 #include <Windows.h>
 #include <UD_Macros.h>
 
@@ -64,6 +65,8 @@ void ORS::OrgasmManager::Update(float a_delta)
         LOG("OrgasmManager::Update({}) - Updating {} actors",a_delta,_actors.size())
     }
 
+    const bool loc_multithd = ORS::Config::GetSingleton()->GetVariable<bool>("General.bMultiThreading",true);
+
     std::vector<std::thread> loc_threads;
     auto loc_actors = UD::ActorSlotManager::GetSingleton()->GetValidActors();
     for (auto&& it :_actors)
@@ -74,8 +77,16 @@ void ORS::OrgasmManager::Update(float a_delta)
         if (loc_actororgasm != nullptr && loc_actor != nullptr && (std::find(loc_actors.begin(),loc_actors.end(), it.first) != loc_actors.end()))
         {
             loc_actororgasm->SetActor(loc_actor);
-            ////create thread for every actor
-            loc_threads.push_back(std::thread(&OrgasmActorData::Update,loc_actororgasm,a_delta));
+            if (loc_multithd)
+            {
+                //create thread for every actor
+                loc_threads.push_back(std::thread(&OrgasmActorData::Update,loc_actororgasm,a_delta));
+            }
+            else
+            {
+                loc_actororgasm->Update(a_delta);
+            }
+
         }
         else
         {
@@ -83,7 +94,10 @@ void ORS::OrgasmManager::Update(float a_delta)
         }
     }
 
-    for (auto&& it : loc_threads) it.join();
+    if (loc_multithd)
+    {
+        for (auto&& it : loc_threads) it.join();
+    }
 
     //LOG("OrgasmManager::Update({}) - Done",a_delta)
 }

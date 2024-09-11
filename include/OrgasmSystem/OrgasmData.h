@@ -202,6 +202,8 @@ namespace ORS
         OrgasmActorData(const OrgasmActorData& a_oad);
         OrgasmActorData(){};
 
+        void    UpdateArousal(const float& a_delta);
+
     private:
         inline float CalculateOrgasmProgress(const float& a_delta);
         inline float CalculateOrgasmRate(const float& a_delta);

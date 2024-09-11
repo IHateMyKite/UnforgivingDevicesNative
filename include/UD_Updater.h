@@ -9,7 +9,6 @@ namespace UD
         void CreateUpdateThreads(void);
     public:
         void UpdateThread1(const float& a_delta);   //used for slow update
-        void UpdateThread2(const float& a_delta);   //used for fps tied updated (is called on every frame). Should be fast
 
         void Hook();
         
@@ -22,7 +21,6 @@ namespace UD
         REL::Relocation<decltype(CharacterUpdatePatched)> CharacterUpdate;
 
         bool t1mutex = false;
-        bool t2mutex = false;
         bool t3mutex = false;
     private:
         int _installed = false;

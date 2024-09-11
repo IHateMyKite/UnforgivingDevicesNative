@@ -2,6 +2,7 @@
 
 //copied from DD
 #include <boost/property_tree/ptree.hpp>
+#include <UD_Spinlock.h>
 
 namespace ORS
 {
@@ -17,6 +18,7 @@ namespace ORS
         bool _ready = false;
         boost::property_tree::ptree _config;
         mutable std::unordered_map<std::string,void*> _catche;
+        mutable Utils::Spinlock  _lock;
         std::vector<std::string> GetArrayRaw(std::string a_name, bool a_tolower, std::string a_sep = ",") const;
     };
 }
