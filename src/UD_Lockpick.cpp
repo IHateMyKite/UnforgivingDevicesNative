@@ -22,7 +22,7 @@ void UD::LockpickManager::Setup()
         // AE: 140939B52
         // VR: 1408c6f8e
         if (REL::Module::IsVR()) {
-            _PatchLockpickCrimeAddr = (std::uintptr_t)Rel::Offset(0x8c6f8e).address();
+            _PatchLockpickCrimeAddr = (std::uintptr_t)REL::Offset(0x8c6f8e).address();
         } else {
             _PatchLockpickCrimeAddr = REL::Relocation<std::uintptr_t>{REL::RelocationID(51099, 51981), REL::VariantOffset(0xEEU, 0xF2U, 0xF2U)};
         }
