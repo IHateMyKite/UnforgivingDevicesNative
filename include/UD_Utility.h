@@ -55,6 +55,10 @@ namespace UD
         bool WornHasKeyword(RE::Actor* a_actor, std::string a_kw) const;
         RE::TESObjectARMO* GetWornArmor(RE::Actor* a_actor,int a_mask) const;
         RE::TESObjectARMO* CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_device) const;
+
+        bool IsBlockingMenuOpen();
+    private:
+
     };
 
     inline int CodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_value,int a_size,int a_index)
@@ -238,4 +242,7 @@ namespace UD
 
     bool IsConcentrationSpell(PAPYRUSFUNCHANDLE,RE::SpellItem* a_spell);
     bool IsConcentrationEnch(PAPYRUSFUNCHANDLE,RE::EnchantmentItem* a_ench);
+
+    
+
 }

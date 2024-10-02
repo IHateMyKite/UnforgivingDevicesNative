@@ -100,6 +100,19 @@ int PapyrusDelegate::RegisterDeviceScripts(RE::Actor* a_actor)
         return 0;
     }
 
+    // Fuck you and your private bullshit and assert non sense
+    struct Variable_
+    {
+        RE::BSScript::TypeInfo  varType;  // 00
+        Variable::Value         value;    // 08
+    };
+
+    // Reset array
+    for (auto&& it : *loc_arr)
+    {
+        (*(Variable_*)(&it)).value.obj.~BSTSmartPointer();
+    }
+
     int loc_registered = 0;
     for (auto&& object : loc_devicescripts)
     {

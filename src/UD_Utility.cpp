@@ -349,6 +349,21 @@ namespace UD
         return nullptr;
     }
 
+    bool Utility::IsBlockingMenuOpen()
+    {
+        auto loc_ui = RE::UI::GetSingleton();
+        if (loc_ui == nullptr) return false;
+
+        auto loc_menus = Config::GetSingleton()->GetArrayText("General.asBlockingMenus",false);
+
+        for (auto&& it : loc_menus)
+        {
+            if (loc_ui->IsMenuOpen(it)) return true;
+        }
+        
+        return false;
+    }
+
     template<class T>
     T GetStringParam(const std::string& a_param, int a_Index, T a_DefaultValue)
     {

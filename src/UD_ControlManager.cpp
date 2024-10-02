@@ -353,11 +353,17 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
     auto* event = *eventPtr;
     if (!event) return RE::BSEventNotifyControl::kContinue;
 
-    if (event->GetEventType() == RE::INPUT_EVENT_TYPE::kButton) {
+    if (event->GetEventType() == RE::INPUT_EVENT_TYPE::kButton) 
+    {
         const auto*       loc_buttonEvent = event->AsButtonEvent();
         const uint32_t    loc_dxScanCode  = loc_buttonEvent->GetIDCode();
         if (loc_buttonEvent->IsRepeating()) return RE::BSEventNotifyControl::kContinue;
         LOG("KeyEventSink::ProcessEvent(...) dxkeycode = {}",loc_dxScanCode)
+
+        static auto loc_utility = Utility::GetSingleton();
+        bool loc_ismenuopen = loc_utility->IsBlockingMenuOpen();
+
+        if (loc_ismenuopen) return RE::BSEventNotifyControl::kContinue;
 
         auto loc_callbacks = ControlManager::GetSingleton()->GetDeviceCallbacks();
         const auto loc_callback = loc_callbacks.find(loc_dxScanCode);
