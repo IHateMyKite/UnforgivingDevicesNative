@@ -402,6 +402,14 @@ void UD::PapyrusDelegate::ValidateInvalidDevices() const
                 auto loc_id = GetScriptProperty<RE::TESObjectARMO>(loc_object,"DeviceInventory",RE::FormType::Armor);
                 if (loc_id != nullptr)
                 {
+                    // device is currently getting unlocked. Because of that, the device should be valid
+                    auto loc_unlocked = loc_object->GetVariable("_IsUnlocked");
+                    if (loc_unlocked && (loc_unlocked->GetBool() == true))
+                    {
+                        DEBUG("ValidateInvalidDevices - Device 0x{:016X} is unlocked. Skipping",loc_handle)
+                        return;
+                    }
+
                     const auto loc_var1 = loc_object->GetVariable("_VMHandle1");
                     const auto loc_var2 = loc_object->GetVariable("_VMHandle2");
         
@@ -420,11 +428,12 @@ void UD::PapyrusDelegate::ValidateInvalidDevices() const
                     auto loc_unregistered = loc_object->GetVariable("_UnregisterInvalidCalled");
                     if (loc_unregistered && (loc_unregistered->GetSInt() == 2))
                     {
-                        DEBUG("Device 0x{:016X} is removed. Removing from cache",loc_handle)
+                        DEBUG("ValidateInvalidDevices - Device 0x{:016X} is removed. Removing from cache",loc_handle)
                         _cache.erase(loc_handle);
                         _removeddevices.push_back({loc_object});
                         return;
                     }
+
 
                     loc_var1->SetUInt(loc_handle & 0xFFFFFFFF);
                     loc_var2->SetUInt((loc_handle >> 32) & 0xFFFFFFFF);
