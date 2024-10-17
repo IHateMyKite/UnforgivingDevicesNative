@@ -13,6 +13,7 @@
 #include <UD_Diagnosis.h>
 #include <UD_Lockpick.h>
 #include <UD_Modifiers.h>
+#include <UD_MessageBox.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
@@ -145,6 +146,15 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetModifierStringParamAll,true)
         REGISTERPAPYRUSFUNC(EditModifierStringParam,true)
         REGISTERPAPYRUSFUNC(GetModifierAliases,true)
+
+        //messagebox
+        REGISTERPAPYRUSFUNC(ShowArrayNonBlocking,true)
+        REGISTERPAPYRUSFUNC(ShowArrayNonBlockingTemplate,true)
+        REGISTERPAPYRUSFUNC(ShowNonBlocking,true)
+        REGISTERPAPYRUSFUNC(Delete,true)
+        REGISTERPAPYRUSFUNC(GetResultText,true)
+        REGISTERPAPYRUSFUNC(GetResultIndex,true)
+        REGISTERPAPYRUSFUNC(IsMessageResultAvailable,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 
