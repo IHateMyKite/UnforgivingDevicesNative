@@ -65,7 +65,7 @@ int UD::ModifierManager::GetModifierIndex(uint32_t a_vm1, uint32_t a_vm2, RE::TE
 {
     LOG("GetModifierIndex(0x{:016X},0x{:08X},{}) - Called",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device ? a_device->GetFormID() : 0,a_modifier)
 
-    if (a_device == nullptr || ((a_vm1 + a_vm2) == 0U)) return -1;
+    if (a_device == nullptr) return -1;
 
     auto loc_modifiers = PapyrusDelegate::GetSingleton()->GetModifiers(PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device);
 

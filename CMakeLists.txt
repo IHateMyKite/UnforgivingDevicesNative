@@ -7,6 +7,7 @@ project(UDNative VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+set(VCPKG_MANIFEST_INSTALL OFF)
 
 # === Set source files ===
 # Add new .cpp here, otherwise the build will end with link error
@@ -49,7 +50,7 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 sta
 target_precompile_headers(${PROJECT_NAME} PRIVATE PCH.h) # <--- PCH.h is required!
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
-set(VCPKG_MANIFEST_INSTALL OFF)
+
 
 set(SKSE_USE_XBYAK ON)
 

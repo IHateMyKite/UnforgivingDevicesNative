@@ -150,7 +150,7 @@ Result PapyrusDelegate::SendMinigameThreadEvents(RE::Actor* a_actor, RE::TESObje
 
     const auto loc_vm = InternalVM::GetSingleton();
 
-    auto loc_cacheres = _cache[a_handle];
+    auto loc_cacheres = _cache[loc_vmhandle];
     if (loc_cacheres.object != nullptr)
     {
         LOG("Device object found in cache - using it")
@@ -193,7 +193,7 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
 
             auto loc_device = cached.object;
 
-            const bool loc_isremoved = (loc_device->GetVariable("_deviceControlBitMap_1")->GetSInt() & 0x04000000U);
+            const bool loc_isremoved = (loc_device->GetProperty("_isRemoved")->GetBool());
 
             if (loc_isremoved) continue; //every device can be only removed once
 
@@ -354,11 +354,11 @@ void UD::PapyrusDelegate::ValidateCache() const
 
         if (cached.object->refCountAndHandleLock > 2) continue; //if number of references is 2, it means that no thread is currently running on the object (hopefully)
 
-        auto loc_var = cached.object->GetVariable("_deviceControlBitMap_1");
+        auto loc_var = cached.object->GetProperty("_isRemoved");
         if (loc_var == nullptr) continue;
 
-        int32_t loc_val = loc_var->GetSInt();
-        if (loc_val & 0x04000000)
+        bool loc_val = loc_var->GetBool();
+        if (loc_val)
         {
             loc_toremove.push_back(vmhandle);
             LOG("PapyrusDelegate::ValidateCache - {} is no longer valid - Removing from cache",cached.id->GetName())
