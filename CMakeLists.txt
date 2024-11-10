@@ -2,12 +2,13 @@
 # If you use CMake features from higher versions, update this to match.
 cmake_minimum_required(VERSION 3.21)
 
+#set(VCPKG_MANIFEST_INSTALL OFF)
+
 # Set your project name. This will be the name of your SKSE .dll file.
 project(UDNative VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-set(VCPKG_MANIFEST_INSTALL OFF)
 
 # === Set source files ===
 # Add new .cpp here, otherwise the build will end with link error
@@ -49,8 +50,6 @@ add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${source_files} plugin.cpp) # <-
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 standard
 target_precompile_headers(${PROJECT_NAME} PRIVATE PCH.h) # <--- PCH.h is required!
 target_include_directories(${PROJECT_NAME} PRIVATE include)
-
-
 
 set(SKSE_USE_XBYAK ON)
 

@@ -6,7 +6,7 @@
 SINGLETONBODY(UD::MessageBoxCalibration)
 SINGLETONBODY(UD::MessageboxManager)
 
-void UD::MessageboxManager::ShowMessageBox(const std::string& bodyText, const std::vector<std::string>& buttonTextValues, std::function<void(uint32_t)> callback, bool useHtml)
+void UD::MessageboxManager::ShowMessageBox(const std::string& bodyText, const std::vector<std::string>& buttonTextValues, std::function<void(uint32_t)> callback, bool useHtml, bool wordWrap)
 {
     auto* factoryManager = RE::MessageDataFactoryManager::GetSingleton();
     auto* uiStringHolder = RE::InterfaceStrings::GetSingleton();
@@ -21,15 +21,26 @@ void UD::MessageboxManager::ShowMessageBox(const std::string& bodyText, const st
 
     MessageBoxCalibration::GetSingleton()->Inject(messagebox);
 
+    loc_injectwordwrap = !wordWrap;
+
     messagebox->QueueMessage();
 }
 
 void UD::MessageboxManager::Setup()
 {
     DEBUG("MessageBoxCalibration address => 0x{:016X}",(uintptr_t)MessageBoxCalibration::GetSingleton())
+
+    if (!_init)
+    {
+        // Vtable of MessageBoxMenu 
+        REL::Relocation<std::uintptr_t> vtbl_MessageBoxMenu{RELOCATION_ID(269561, 215795).address()};
+        ProcessMessage_old = vtbl_MessageBoxMenu.write_vfunc(0x04, ProcessMessage);
+
+        _init = true;
+    }
 }
 
-int32_t UD::MessageboxManager::ShowArrayNonBlocking(const std::string& bodyText, std::vector<std::string>& buttonTexts, bool useHtml)
+int32_t UD::MessageboxManager::ShowArrayNonBlocking(const std::string& bodyText, std::vector<std::string>& buttonTexts, bool useHtml, bool wordWrap)
 {
     std::erase_if(buttonTexts, [](const std::string& text) { return text.empty(); });
     auto messageBoxId = GetNewMessageBoxId();
@@ -37,11 +48,11 @@ int32_t UD::MessageboxManager::ShowArrayNonBlocking(const std::string& bodyText,
     ShowMessageBox(bodyText, buttonTexts, [messageBoxId,this](uint32_t result) 
     {
         if (messageBoxId) _messageBoxResults.insert_or_assign(messageBoxId, result);
-    },useHtml);
+    },useHtml,wordWrap);
     return messageBoxId;
 }
 
-int32_t UD::MessageboxManager::ShowArrayNonBlockingTemplate(RE::BGSMessage* Message, std::string bodyText, std::vector<float>& values, std::vector<std::string>& buttonTexts, bool useHtml)
+int32_t UD::MessageboxManager::ShowArrayNonBlockingTemplate(RE::BGSMessage* Message, std::string bodyText, std::vector<float>& values, std::vector<std::string>& buttonTexts, bool useHtml, bool wordWrap)
 {
     std::erase_if(buttonTexts, [](const std::string& text) { return text.empty(); });
     auto messageBoxId = GetNewMessageBoxId();
@@ -73,11 +84,11 @@ int32_t UD::MessageboxManager::ShowArrayNonBlockingTemplate(RE::BGSMessage* Mess
     ShowMessageBox(loc_text, buttonTexts, [messageBoxId,this](uint32_t result) 
     {
         if (messageBoxId) _messageBoxResults.insert_or_assign(messageBoxId, result);
-    },useHtml);
+    },useHtml,wordWrap);
     return messageBoxId;
 }
 
-int32_t UD::MessageboxManager::ShowNonBlocking(const std::string& bodyText, const std::string& button1, const std::string& button2, const std::string& button3, const std::string& button4, const std::string& button5, const std::string& button6, const std::string& button7, const std::string& button8, const std::string& button9, const std::string& button10, bool useHtml)
+int32_t UD::MessageboxManager::ShowNonBlocking(const std::string& bodyText, const std::string& button1, const std::string& button2, const std::string& button3, const std::string& button4, const std::string& button5, const std::string& button6, const std::string& button7, const std::string& button8, const std::string& button9, const std::string& button10, bool useHtml, bool wordWrap)
 {
     std::vector<std::string> buttonTexts;
     if (!button1.empty()) buttonTexts.push_back(button1);
@@ -135,8 +146,32 @@ bool UD::MessageboxManager::IsMessageResultAvailable(int32_t messageBoxId)
     return _messageBoxResults.contains(messageBoxId);
 }
 
+RE::UI_MESSAGE_RESULTS UD::MessageboxManager::ProcessMessage(RE::MessageBoxMenu* a_this, RE::UIMessage& a_message)
+{
+    GetSingleton()->ProcessMessagebox(a_this,a_message);
+    return ProcessMessage_old(a_this,a_message);
+}
+
+RE::UI_MESSAGE_RESULTS UD::MessageboxManager::ProcessMessagebox(RE::MessageBoxMenu* a_this, RE::UIMessage& a_message)
+{
+    if (loc_injectwordwrap)
+    {
+        loc_injectwordwrap = false;
+        if (a_message.type == RE::UI_MESSAGE_TYPE::kShow)
+        {
+            RE::GFxValue loc_var((bool)false);
+            a_this->uiMovie->SetVariable("_root.MessageMenu.MessageText.wordWrap",loc_var,RE::GFxMovie::SetVarType::kNormal);
+
+            //a_this->uiMovie->InvokeNoReturn("_root.MessageMenu.ResetDimensions",NULL,0);
+            //a_this->uiMovie->Advance(0.0001f);
+        }
+    }
+    return RE::UI_MESSAGE_RESULTS();
+}
+
 void UD::MessageBoxCalibration::Inject(RE::MessageBoxData* aData)
 {
+    lastMsgPtr = (uintptr_t)aData;
     if (inject & 0x01U) aData->unk38 = unk38; else unk38 = aData->unk38;
     if (inject & 0x02U) aData->unk3C = unk3C; else unk3C = aData->unk3C;
     if (inject & 0x04U) aData->unk48 = unk48; else unk48 = aData->unk48;
@@ -144,4 +179,6 @@ void UD::MessageBoxCalibration::Inject(RE::MessageBoxData* aData)
     if (inject & 0x10U) aData->unk4D = unk4D; else unk4D = aData->unk4D;
     if (inject & 0x20U) aData->unk4E = unk4E; else unk4E = aData->unk4E;
     if (inject & 0x40U) aData->unk4F = unk4F; else unk4F = aData->unk4F;
+    if (inject & 0x80U) aData->unk08 = unk08; else unk08 = aData->unk08;
+    sizeof(RE::BSTArray<RE::IMessageBoxCallback>);
 }
