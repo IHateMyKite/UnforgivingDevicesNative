@@ -192,12 +192,12 @@ Result PapyrusDelegate::SendRemoveRenderDeviceEvent(RE::Actor* a_actor, RE::TESO
             LOG("Device object found in cache - using it")
 
             auto loc_device = cached.object;
-            auto isRemovedProperty=loc_device->GetProperty("_isRemoved");
-            if (isRemovedProperty==nullptr)
+            auto is_removed_property = loc_device->GetProperty("_isRemoved");
+            if (is_removed_property == nullptr)
             {
                 continue;
             }
-            const bool loc_isremoved = (isRemovedProperty->GetBool());
+            const bool loc_isremoved = is_removed_property->GetBool();
 
             if (loc_isremoved) continue; //every device can be only removed once
 
