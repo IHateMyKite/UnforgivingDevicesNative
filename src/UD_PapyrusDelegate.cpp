@@ -987,8 +987,8 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
                 #undef GetObject
 
                 _modifiercache[loc_handle].object   = loc_object;
-                _modifiercache[loc_handle].name     = loc_object->GetProperty("NameFull")->GetString();
-                _modifiercache[loc_handle].namealias    = loc_object->GetProperty("NameAlias")->GetString();
+                _modifiercache[loc_handle].name     = (loc_object->GetProperty("NameFull") != nullptr) ? loc_object->GetProperty("NameFull")->GetString() : "";
+                _modifiercache[loc_handle].namealias    = (loc_object->GetProperty("NameAlias") != nullptr) ? loc_object->GetProperty("NameAlias")->GetString() : "";
 
                 const RE::FormID loc_formid = static_cast<RE::FormID>(loc_handle & 0x00000000FFFFFFFF);
 
