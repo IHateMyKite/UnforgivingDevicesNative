@@ -188,8 +188,15 @@ bool UD::ModifierManager::EditModifierStringParam(uint32_t a_vm1, uint32_t a_vm2
 
     auto loc_params = GetStringParamAllInter<std::string>(loc_param,",");
 
-    // set new value
-    loc_params[a_index] = a_newvalue;
+    if (a_index < loc_params.size())
+    {
+        // set new value
+        loc_params[a_index] = a_newvalue;
+    }
+    else
+    {
+        ERROR("EditModifierStringParam(0x{:016X},0x{:08X},{},{},{}) - Index is out of range! Size of array is {}",PapyrusDelegate::GetSingleton()->ToVMHandle(a_vm1,a_vm2),a_device ? a_device->GetFormID() : 0,a_modifier,a_index,a_newvalue,loc_params.size())
+    }
 
     loc_param = boost::join(loc_params,",");
 
