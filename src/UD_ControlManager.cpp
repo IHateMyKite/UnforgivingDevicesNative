@@ -6,6 +6,8 @@
 #include <UD_ModEvents.h>
 #include <UD_PapyrusDelegate.h>
 
+#include <shared_mutex>
+
 SINGLETONBODY(UD::KeyEventSink)
 SINGLETONBODY(UD::CameraEventSink)
 SINGLETONBODY(UD::ControlManager)
@@ -18,35 +20,33 @@ void UD::ControlManager::Setup()
     {
         _installed = true;
 
-        //load memory
-        _OriginalControls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[4];
-        SaveOriginalControls();
+        uint8_t loc_ueflag = Config::GetSingleton()->GetVariable("Disabler.iEventGroupFlag", 13);
+        if (loc_ueflag > 12 && loc_ueflag < 30)
+        {
+            _UDEventGroupFlag = static_cast<UEFlag>(1 << loc_ueflag);
+        }
+        else
+        {
+            LOG("Invalid value for Disabler.iEventGroupFlag")
+        }
 
-        _hardcoreids = Config::GetSingleton()->GetArray<std::string>("Disabler.asHardcoreModeDisable");
+        auto loc_hardcoreids = Config::GetSingleton()->GetArray<std::string>("Disabler.asHardcoreModeDisable");
         _hardcodemessages = Config::GetSingleton()->GetArrayText("Disabler.asHardcoreMessages",false);
+        AddToFilter(_hardcoreFilter,loc_hardcoreids);
+        LOG("Hardcore disable config loaded. Number = {}",_hardcoreFilter.size())
+        for (auto&& it : _hardcoreFilter) LOG("{}", it)
 
-        LOG("Hardcore disable config loaded. Number = {}",_hardcoreids.size())
-        for (auto&& it : _hardcoreids) LOG("{}",it)
-
-        InitControlOverride(&_HardcoreControls,_hardcoreids);
-
-        _disableids = _disablenomoveids; //copy disable which doesnt disable movement
-        _disableids.insert(_disableids.begin(),{"Forward","Back","Strafe Right","Strafe Left"}); //add movement disable
-        for (auto& it : _disableids) std::transform(it.begin(), it.end(), it.begin(), ::tolower);
-        for (auto& it : _disablenomoveids) std::transform(it.begin(), it.end(), it.begin(), ::tolower);
-
-        InitControlOverride(&_DisabledControls,_disableids);
-        InitControlOverride(&_DisabledNoMoveControls,_disablenomoveids);
+        AddToFilter(_disableFilter,_disableids);
+        AddToFilter(_freeCamFilter,_disableids);
+        AddToFilter(_freeCamFilter,_movementids);
 
         SKSE::GetCameraEventSource()->AddEventSink(CameraEventSink::GetSingleton());
 
         LOG("ControlManager installed")
-        //DebugPrintControls(_OriginalControls);
-        //DebugPrintControls(_HardcoreControls);
-        //DebugPrintControls(_DisabledControls);
-        //DebugPrintControls(_DisabledNoMoveControls);
     }
 
+    _state = cEnable;
+    _activeFilter = nullptr;
     _DisableFreeCamera = Config::GetSingleton()->GetVariable<bool>("Disabler.bDisableFreeCamera",true);
     _hardcoreMode = PapyrusDelegate::GetSingleton()->GetScriptVariableBool("UDCustomDeviceMain","UD_HardcoreMode",true);
 }
@@ -68,36 +68,15 @@ void UD::ControlManager::UpdateControl()
 
     //CheckStatusSafe(loc_status);
 
-    if ((loc_minigame || loc_animation))
-    {
-        if (!_ControlsDisabled)
-        {
-            DisableControls();
-            _ControlsDisabled = true;
-        }
-    }
-    else
-    {
-        if (_ControlsDisabled)
-        {
-             ApplyOriginalControls();
-            _ControlsDisabled       = false;
-            _HardcoreModeApplied    = false;
-        }
-        if (!_ControlsDisabled)
-        {
-            if (_hardcoreMode && loc_bound && !_HardcoreModeApplied)
-            {
-                ApplyControls(_HardcoreControls);
-                _HardcoreModeApplied = true;
-            }
-            else if ((!_hardcoreMode || !loc_bound) && _HardcoreModeApplied)
-            {
-                ApplyOriginalControls();
-                _HardcoreModeApplied = false;
-            }
-        }
-    }
+    auto loc_state = _state.load();
+    uint8_t loc_newstate;
+    do {
+        loc_newstate = loc_state & cFreeCam;
+        if (loc_minigame || loc_animation) loc_newstate |= cDisable;
+        if (_hardcoreMode && loc_bound) loc_newstate |= cHardcore;
+    } while(!_state.compare_exchange_weak(loc_state, loc_newstate));
+
+    RefreshFilter();
 }
 
 bool UD::ControlManager::HardcoreMode() const
@@ -105,83 +84,39 @@ bool UD::ControlManager::HardcoreMode() const
     return _hardcoreMode;
 }
 
-void UD::ControlManager::DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls)
-{
-    if (a_controls == nullptr) return;
-
-    DEBUG("==Printing controls , Size={}==",a_controls->size())
-    for (int j = 0; j <= CONTROLSDISABLE; j++)
-    {
-        DEBUG("=INPUT_DEVICES = {:2}",j)
-        for (auto&& it : a_controls[j]) 
-        {
-            DEBUG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
-        }
-    }
-}
-
-void UD::ControlManager::DebugPrintControls()
-{
-    DEBUG("==Printing control==")
-    for (int i = 0; i < RE::UserEvents::INPUT_CONTEXT_IDS::kTotal; i++)
-    {
-        DEBUG("=INPUT_CONTEXT_IDS = {:2}",i)
-        auto loc_control = RE::ControlMap::GetSingleton()->controlMap[i]->deviceMappings;
-        for (int j = 0; j <= CONTROLSDISABLE; j++)
-        {
-            DEBUG("=INPUT_DEVICES = {:2}",j)
-            for (auto&& it : loc_control[j]) 
-            {
-                DEBUG("{:20} , {:6} , {:5} , {:5} , {:6} , {:08X} , {:3}",it.eventID,it.inputKey,it.linked,it.remappable,it.modifier,it.userEventGroupFlag.underlying(),it.indexInContext)
-            }
-        }
-    }
-}
-
 bool UD::ControlManager::HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_DEVICE a_device)
 {
-    for (int i = 0; i <= CONTROLSDISABLE; i++)
+    if (a_device < 0 || a_device > CONTROLSDISABLE) return false;
+
+    const auto controlMap = RE::ControlMap::GetSingleton();
+    const auto loc_context = controlMap->controlMap[RE::UserEvents::INPUT_CONTEXT_ID::kGameplay];
+    const auto& loc_mappings = loc_context->deviceMappings[a_device];
+
+    for (const auto& it : loc_mappings)
     {
-        for (auto&& it : _OriginalControls[i])
+        if (it.inputKey != a_dxkeycode) continue;
+
+        if (std::ranges::contains(_hardcoreFilter.cbegin(), _hardcoreFilter.cend(), it.eventID))
         {
-            const auto loc_it = std::find_if(_hardcoreids.begin(),_hardcoreids.end(),[it,i,a_dxkeycode,a_device](const RE::BSFixedString& a_event)
-                {
-                    if ((a_device == i) && (it.inputKey == a_dxkeycode) && (it.eventID == a_event)) return true;
-                    return false;
-                }
-            );
-            if (loc_it != _hardcoreids.end()) return true;
+            return true;
         }
     }
+
     return false;
 }
 
-void UD::ControlManager::ApplyOriginalControls()
+void UD::ControlManager::EnterFreeCam()
 {
-    LOG("ApplyOriginalControls called")
-    ApplyControls(_OriginalControls);
+    LOG("EnterFreeCam called")
+    _state.fetch_or(cFreeCam);
+    RefreshFilter();
 }
 
-void UD::ControlManager::DisableControls()
+void UD::ControlManager::ExitFreeCam()
 {
-    LOG("DisableControls called")
-    ApplyControls(_DisabledControls);
-}
-
-void UD::ControlManager::DisableControlsFC()
-{
-    LOG("DisableControlsFC called")
-    if (_DisableFreeCamera)
-    {
-        ApplyControls(_DisabledNoMoveControls);
-        _ControlsDisabled = true;
-    }
-    else
-    {
-        ApplyOriginalControls();
-        _ControlsDisabled       = false;
-        _HardcoreModeApplied    = false;
-    }
+    LOG("ExitFreeCam called")
+    _state.fetch_and(~cFreeCam);
+    RefreshFilter();
 }
 
 const std::vector<std::string>& UD::ControlManager::GetHardcoreMessages() const
@@ -295,52 +230,120 @@ void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns
     a_callback->args.push_back({a_funtype,loc_atype,a_argStr,a_argForm,loc_fun});
 }
 
-void UD::ControlManager::SaveOriginalControls()
+void UD::ControlManager::RefreshFilter()
 {
-    LOG("SaveOriginalControls called")
-    auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::UserEvents::INPUT_CONTEXT_IDS::kGameplay]->deviceMappings;
-    for (int i = 0; i <= CONTROLSDISABLE; i++)
-    {
-        _OriginalControls[i] = loc_control[i];
-    }
-}
+    static std::shared_mutex m;
 
-void UD::ControlManager::InitControlOverride(RE::BSTArray<RE::ControlMap::UserEventMapping>** a_controls,const std::vector<std::string>& a_filter)
-{
-    *a_controls = new RE::BSTArray<RE::ControlMap::UserEventMapping>[CONTROLSDISABLE + 1];
-
-    auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::ControlMap::InputContextID::kGameplay]->deviceMappings;
-    for (int i = 0; i <= CONTROLSDISABLE; i++)
+    const auto controlMap = RE::ControlMap::GetSingleton();
     {
-        for (auto&& it : loc_control[i]) 
+        std::unique_lock lock{m};
+
+        const auto loc_context = controlMap->controlMap[RE::UserEvents::INPUT_CONTEXT_IDS::kGameplay];
+        auto& loc_mappings = loc_context->deviceMappings;
+
+        const auto loc_state = _state.load();
+        assert((loc_state & cMask) == loc_state);
+
+        std::vector<RE::BSFixedString>* loc_filter = nullptr;
+        switch (_stateToFilter[loc_state & cMask])
         {
-            {
-                const auto loc_foundit = std::find_if(a_filter.begin(),a_filter.end(),[it](const std::string& a_id)
-                {
-                    std::string loc_eventstr = it.eventID.c_str();
-                    std::transform(loc_eventstr.begin(), loc_eventstr.end(), loc_eventstr.begin(), ::tolower);
-                    if (loc_eventstr == a_id) return true;
-                    return false;
-                    
-                });
+        case ControlState::cDisable:
+            loc_filter = &_disableFilter;
+            break;
+        case ControlState::cHardcore:
+            loc_filter = &_hardcoreFilter;
+            break;
+        case ControlState::cFreeCam:
+            if (_DisableFreeCamera) loc_filter = &_freeCamFilter;
+            break;
+        }
 
-                const bool loc_found = (loc_foundit != a_filter.end());
-                if (!loc_found)
+        if (_activeFilter == loc_filter) return;
+
+        for (int i = 0; i <= CONTROLSDISABLE; i++)
+        {
+            for (auto& it : loc_mappings[i])
+            {
+                if (loc_filter && std::ranges::contains(loc_filter->cbegin(), loc_filter->cend(), it.eventID))
                 {
-                    (*a_controls)[i].push_back(it);
-                } 
+                    if (it.userEventGroupFlag.all(UEFlag::kInvalid))
+                        it.userEventGroupFlag = UEFlag::kNone;
+                    it.userEventGroupFlag.set(_UDEventGroupFlag);
+                }
+                else if (it.userEventGroupFlag.none(UEFlag::kInvalid))
+                {
+                    it.userEventGroupFlag.reset(_UDEventGroupFlag);
+                }
             }
         }
+        _activeFilter = loc_filter;
     }
+    ToggleControls(controlMap, _UDEventGroupFlag, false);
 }
 
-void UD::ControlManager::ApplyControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls)
+void UD::ControlManager::ToggleControls(RE::ControlMap* controlMap, RE::ControlMap::UEFlag a_flags, bool a_enable)
 {
-    if (a_controls == nullptr) return;
-    auto loc_control = RE::ControlMap::GetSingleton()->controlMap[RE::UserEvents::INPUT_CONTEXT_IDS::kGameplay]->deviceMappings;
-    for (int i = 0; i <= CONTROLSDISABLE; i++)
+    using UEFlag = RE::UserEvents::USER_EVENT_FLAG;
+    using UEFlagEnum = SKSE::stl::enumeration<UEFlag, std::uint32_t>;
+
+    UEFlagEnum* loc_enabledControls = &REL::RelocateMember<UEFlagEnum>(controlMap, 0x118, 0x138);
+    UEFlagEnum* loc_unk11C = &REL::RelocateMember<UEFlagEnum>(controlMap, 0x11C, 0x136);
+    if SKYRIM_REL_CONSTEXPR (REL::Module::IsAE())
     {
-        loc_control[i] = a_controls[i];
+        if (REL::Module::get().version().compare(REL::Version(1, 6, 1130, 0)) != std::strong_ordering::less)
+        {
+            loc_enabledControls = &REL::RelocateMember<UEFlagEnum>(controlMap, 0x120);
+            loc_unk11C =  &REL::RelocateMember<UEFlagEnum>(controlMap, 0x124);
+        }
+    }
+
+    auto oldState = *loc_enabledControls;
+
+    if (a_enable)
+    {
+        loc_enabledControls->set(a_flags);
+        if (*loc_unk11C != UEFlag::kInvalid)
+        {
+            loc_unk11C->set(a_flags);
+        }
+    }
+    else
+    {
+        loc_enabledControls->reset(a_flags);
+        if (*loc_unk11C != UEFlag::kInvalid)
+        {
+            loc_unk11C->reset(a_flags);
+        }
+    }
+
+    RE::UserEventEnabled event{ *loc_enabledControls, oldState };
+    controlMap->SendEvent(std::addressof(event));
+}
+
+template <std::ranges::range Range>
+requires std::convertible_to<std::ranges::range_value_t<Range>, std::string_view>
+void UD::ControlManager::AddToFilter(std::vector<RE::BSFixedString>& a_filter, const Range& a_ids)
+{
+    const auto userEvents = RE::UserEvents::GetSingleton();
+    const auto span = std::span(&userEvents->forward, &userEvents->itemZoom + 1);
+    for (auto &id : a_ids)
+    {
+        //lookup canonical value
+        auto loc_it = std::ranges::find_if(span, [&](const RE::BSFixedString& it)
+        {
+            if (it.empty()) return false;
+
+            return std::ranges::equal(static_cast<std::string_view>(it), id,
+                [](char a, char b) { return ::tolower(a) == ::tolower(b); });
+        });
+        if (loc_it != span.cend())
+        {
+            a_filter.push_back(*loc_it);
+        }
+        else
+        {
+            WARN("Unrecognized UserEvent {}", id)
+        }
     }
 }
 
@@ -424,7 +427,7 @@ RE::BSEventNotifyControl UD::CameraEventSink::ProcessEvent(const SKSE::CameraEve
         switch(loc_new->id)
         {
         case RE::CameraState::kFree:
-            ControlManager::GetSingleton()->DisableControlsFC();
+            ControlManager::GetSingleton()->EnterFreeCam();
             return RE::BSEventNotifyControl::kContinue;
             break;
         }
@@ -436,7 +439,7 @@ RE::BSEventNotifyControl UD::CameraEventSink::ProcessEvent(const SKSE::CameraEve
         switch(loc_old->id)
         {
         case RE::CameraState::kFree:
-            ControlManager::GetSingleton()->DisableControls(); //disable untill control manager is updated
+            ControlManager::GetSingleton()->ExitFreeCam();
             return RE::BSEventNotifyControl::kContinue;
             break;
         }

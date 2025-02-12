@@ -39,6 +39,16 @@ namespace UD
         tForm   = 3
     };
 
+    enum ControlState : uint8_t
+    {
+        cEnable  = 0,
+        cDisable = 1,
+        cHardcore = 2,
+        cFreeCam  = 4,
+
+        cMask = (cFreeCam << 1) - 1
+    };
+
     struct DeviceCallbackArg
     {
         CallbackArgFuns funtype;
@@ -57,6 +67,7 @@ namespace UD
     };
 
     using RE::BSScript::Variable;
+    using UEFlag = RE::UserEvents::USER_EVENT_FLAG;
 
     class VarFunctionArguments : public RE::BSScript::ZeroFunctionArguments
     {
@@ -83,13 +94,10 @@ namespace UD
 
         void CheckStatusSafe(bool* a_result);
 
-        void DebugPrintControls();
-
         bool HardcoreButtonPressed(uint32_t a_dxkeycode, RE::INPUT_DEVICE a_device);
 
-        void ApplyOriginalControls();
-        void DisableControls();
-        void DisableControlsFC();
+        void EnterFreeCam();
+        void ExitFreeCam();
 
         const std::vector<std::string>& GetHardcoreMessages() const;
 
@@ -103,18 +111,16 @@ namespace UD
         void AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm);
     private:
         bool _installed = false;
-        RE::BSTArray<RE::ControlMap::UserEventMapping>* _OriginalControls;
-        RE::BSTArray<RE::ControlMap::UserEventMapping>* _HardcoreControls;
-        RE::BSTArray<RE::ControlMap::UserEventMapping>* _DisabledControls;
-        RE::BSTArray<RE::ControlMap::UserEventMapping>* _DisabledNoMoveControls;
+        std::atomic_uint8_t _state = cEnable;
+        std::vector<RE::BSFixedString>* _activeFilter = nullptr;
+        std::vector<RE::BSFixedString> _hardcoreFilter {};
+        std::vector<RE::BSFixedString> _disableFilter {};
+        std::vector<RE::BSFixedString> _freeCamFilter {};
 
         std::unordered_map<uint32_t,DeviceCallback> _DeviceCallbacks;
 
         //can be found in clibs UserEvents.h
-        std::vector<std::string> _hardcoreids;
-        std::vector<std::string> _disableids; 
-
-        std::vector<std::string> _disablenomoveids = 
+        inline static const std::string_view _disableids[] =
         {
             //base player controls
             "Activate"              ,
@@ -157,17 +163,34 @@ namespace UD
             "MapLookMode"
         };
 
-        bool _hardcoreMode = false;
-        bool _ControlsDisabled = false;
-        bool _HardcoreModeApplied = false;
+        inline static const std::string_view _movementids[] =
+        {
+            "Forward",
+            "Back",
+            "Strafe Right",
+            "Strafe Left"
+        };
 
+        inline static const ControlState _stateToFilter[ControlState::cMask + 1] =
+        {
+            cEnable, cDisable, cHardcore, cDisable,
+            cEnable, cFreeCam, cHardcore, cFreeCam
+        };
+
+
+        bool _hardcoreMode = false;
+
+        UEFlag _UDEventGroupFlag = static_cast<UEFlag>(1 << 13);
         bool _DisableFreeCamera = true;
         std::vector<std::string> _hardcodemessages;
 
-        void SaveOriginalControls();
-        void InitControlOverride(RE::BSTArray<RE::ControlMap::UserEventMapping>** a_controls,const std::vector<std::string>& a_filter);
-        void DebugPrintControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
-        void ApplyControls(RE::BSTArray<RE::ControlMap::UserEventMapping>* a_controls);
+        void RefreshFilter();
+
+        static void ToggleControls(RE::ControlMap* controlMap, RE::ControlMap::UEFlag a_flags, bool a_enable);
+
+        template <std::ranges::range Range>
+        requires std::convertible_to<std::ranges::range_value_t<Range>, std::string_view>
+        static void AddToFilter(std::vector<RE::BSFixedString>& a_filter, const Range& a_ids);
     };
 
     inline int GetCameraState(PAPYRUSFUNCHANDLE)
