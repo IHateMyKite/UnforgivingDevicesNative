@@ -16,6 +16,26 @@
         {
             "name": "fmt",
             "version": "8.0.1"
+        },
+        {
+            "name": "boost-algorithm",
+            "version": "1.86.0"
+        },
+        {
+            "name": "boost-math",
+            "version": "1.86.0"
+        },
+        {
+            "name": "boost-lexical-cast",
+            "version": "1.86.0"
+        },
+        {
+            "name": "boost-property-tree",
+            "version": "1.86.0"
+        },
+        {
+            "name": "boost-json",
+            "version": "1.86.0"
         }
     ]
 }

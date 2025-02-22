@@ -37,8 +37,8 @@ void UD::ControlManager::Setup()
         for (auto&& it : _hardcoreFilter) LOG("{}", it)
 
         AddToFilter(_disableFilter,_disableids);
+        AddToFilter(_disableFilter,_movementids);
         AddToFilter(_freeCamFilter,_disableids);
-        AddToFilter(_freeCamFilter,_movementids);
 
         SKSE::GetCameraEventSource()->AddEventSink(CameraEventSink::GetSingleton());
 
@@ -248,12 +248,15 @@ void UD::ControlManager::RefreshFilter()
         switch (_stateToFilter[loc_state & cMask])
         {
         case ControlState::cDisable:
+            LOG("Disabling all controls")
             loc_filter = &_disableFilter;
             break;
         case ControlState::cHardcore:
+            LOG("Disabling hardcore controls")
             loc_filter = &_hardcoreFilter;
             break;
         case ControlState::cFreeCam:
+            LOG("Disabling freecam controls")
             if (_DisableFreeCamera) loc_filter = &_freeCamFilter;
             break;
         }
@@ -267,7 +270,9 @@ void UD::ControlManager::RefreshFilter()
                 if (loc_filter && std::ranges::contains(loc_filter->cbegin(), loc_filter->cend(), it.eventID))
                 {
                     if (it.userEventGroupFlag.all(UEFlag::kInvalid))
+                    {
                         it.userEventGroupFlag = UEFlag::kNone;
+                    }
                     it.userEventGroupFlag.set(_UDEventGroupFlag);
                 }
                 else if (it.userEventGroupFlag.none(UEFlag::kInvalid))

@@ -174,7 +174,7 @@ namespace UD
         inline static const ControlState _stateToFilter[ControlState::cMask + 1] =
         {
             cEnable, cDisable, cHardcore, cDisable,
-            cEnable, cFreeCam, cHardcore, cFreeCam
+            cFreeCam, cFreeCam, cFreeCam, cFreeCam
         };
 
 
