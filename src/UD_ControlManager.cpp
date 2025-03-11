@@ -129,13 +129,29 @@ bool UD::ControlManager::RegisterDeviceCallback(int a_handle1, int a_handle2, RE
     LOG("RegisterDeviceCallback({},{},{},{},{}) called",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0,a_dxkeycode,a_callbackfun)
 
     if (a_device == nullptr || (a_handle1 == 0 && a_handle2 == 0) || a_callbackfun == "" || a_dxkeycode == 0) return false;
-    PapyrusDelegate::GetSingleton()->Lock();
-    auto loc_device = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_handle1,a_handle2,a_device);
-    PapyrusDelegate::GetSingleton()->Unlock();
-    if (loc_device.object == nullptr || loc_device.id == nullptr || loc_device.rd == nullptr) return false;
-    _DeviceCallbacks[a_dxkeycode] = {loc_device,a_callbackfun};
 
-    LOG("RegisterDeviceCallback({},{},{},{},{}) - Callback registered!",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0,a_dxkeycode,a_callbackfun)
+    /* Check keycode if its from gamepad. If yes convert it to mask */
+    if (a_dxkeycode >= 266)
+    {
+        const auto loc_dxkeycode = SKSE::InputMap::GamepadKeycodeToMask(a_dxkeycode);
+        PapyrusDelegate::GetSingleton()->Lock();
+        auto loc_device = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_handle1,a_handle2,a_device);
+        PapyrusDelegate::GetSingleton()->Unlock();
+        if (loc_device.object == nullptr || loc_device.id == nullptr || loc_device.rd == nullptr) return false;
+        _DeviceCallbacksGamepad[loc_dxkeycode] = {loc_device,a_callbackfun};
+
+        LOG("RegisterDeviceCallback({},{},{},{},{}) - Gamepad Callback registered!",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0,a_dxkeycode,a_callbackfun)
+    }
+    else
+    {
+        PapyrusDelegate::GetSingleton()->Lock();
+        auto loc_device = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_handle1,a_handle2,a_device);
+        PapyrusDelegate::GetSingleton()->Unlock();
+        if (loc_device.object == nullptr || loc_device.id == nullptr || loc_device.rd == nullptr) return false;
+        _DeviceCallbacks[a_dxkeycode] = {loc_device,a_callbackfun};
+
+        LOG("RegisterDeviceCallback({},{},{},{},{}) - Callback registered!",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0,a_dxkeycode,a_callbackfun)
+    }
 
     return true;
 }
@@ -146,14 +162,28 @@ bool UD::ControlManager::AddDeviceCallbackArgument(int a_dxkeycode, CallbackArgF
 
     if (a_dxkeycode == 0) return false;
 
-    auto loc_it = _DeviceCallbacks.find(a_dxkeycode);
+    /* Check keycode if its from gamepad. If yes convert it to mask */
+    if (a_dxkeycode >= 266)
+    {
+        const auto loc_dxkeycode = SKSE::InputMap::GamepadKeycodeToMask(a_dxkeycode);
+        auto loc_it = _DeviceCallbacksGamepad.find(loc_dxkeycode);
     
-    if (loc_it == _DeviceCallbacks.end()) return false;
+        if (loc_it == _DeviceCallbacksGamepad.end()) return false;
 
-    DeviceCallback* loc_callback = &loc_it->second;
+        DeviceCallback* loc_callback = &loc_it->second;
 
-    AddArgument(loc_callback,a_type,a_argStr,a_argForm);
+        AddArgument(loc_callback,a_type,a_argStr,a_argForm);
+    }
+    else
+    {
+        auto loc_it = _DeviceCallbacks.find(a_dxkeycode);
+    
+        if (loc_it == _DeviceCallbacks.end()) return false;
 
+        DeviceCallback* loc_callback = &loc_it->second;
+
+        AddArgument(loc_callback,a_type,a_argStr,a_argForm);
+    }
     return true;
 }
 
@@ -174,6 +204,11 @@ bool UD::ControlManager::UnregisterDeviceCallbacks(int a_handle1, int a_handle2,
         auto const& [dxcode, devicecallback] = a_val;
         return devicecallback.device.object.get() == loc_device.object.get();
     });
+    std::erase_if(_DeviceCallbacksGamepad,[&](std::pair<const uint32_t,DeviceCallback> a_val)
+    {
+        auto const& [dxcode, devicecallback] = a_val;
+        return devicecallback.device.object.get() == loc_device.object.get();
+    });
 
     LOG("UnregisterDeviceCallbacks({},{},0x{:08X}) - Callbacks removed",a_handle1,a_handle2,a_device ? a_device->GetFormID() : 0)
 
@@ -183,16 +218,24 @@ bool UD::ControlManager::UnregisterDeviceCallbacks(int a_handle1, int a_handle2,
 void UD::ControlManager::UnregisterAllDeviceCallbacks()
 {
     _DeviceCallbacks.clear();
+    _DeviceCallbacksGamepad.clear();
 }
 
-const std::unordered_map<uint32_t, UD::DeviceCallback>& UD::ControlManager::GetDeviceCallbacks()
+std::unordered_map<uint32_t, UD::DeviceCallback>& UD::ControlManager::GetDeviceCallbacks(bool a_Gamepad)
 {
-    return _DeviceCallbacks;
+    if (a_Gamepad)
+    {
+        return _DeviceCallbacksGamepad;
+    }
+    else
+    {
+        return _DeviceCallbacks;
+    }
 }
 
 bool UD::ControlManager::HaveDeviceCallbacks() const
 {
-    return _DeviceCallbacks.size() > 0;
+    return (_DeviceCallbacks.size() + _DeviceCallbacksGamepad.size()) > 0;
 }
 
 void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_funtype, std::string a_argStr, RE::TESForm* a_argForm)
@@ -364,20 +407,32 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
     if (event->GetEventType() == RE::INPUT_EVENT_TYPE::kButton) 
     {
         const auto*       loc_buttonEvent = event->AsButtonEvent();
+        const RE::INPUT_DEVICE loc_Device = loc_buttonEvent->GetDevice();
         const uint32_t    loc_dxScanCode  = loc_buttonEvent->GetIDCode();
+
         if (loc_buttonEvent->IsRepeating()) return RE::BSEventNotifyControl::kContinue;
-        LOG("KeyEventSink::ProcessEvent(...) dxkeycode = {}",loc_dxScanCode)
 
         static auto loc_utility = Utility::GetSingleton();
         bool loc_ismenuopen = loc_utility->IsBlockingMenuOpen();
 
         if (loc_ismenuopen) return RE::BSEventNotifyControl::kContinue;
 
-        auto loc_callbacks = ControlManager::GetSingleton()->GetDeviceCallbacks();
-        const auto loc_callback = loc_callbacks.find(loc_dxScanCode);
-        if (loc_callback != loc_callbacks.end())
+        std::unordered_map<uint32_t,DeviceCallback>* loc_callbacks;
+
+        /* Check if event is from gamepad, and return the callbacks for gamepad if thats the case*/
+        if (loc_Device == RE::INPUT_DEVICE::kGamepad)
         {
-            LOG("KeyEventSink::ProcessEvent(...) Device callback found - Calling function",loc_dxScanCode)
+            loc_callbacks = &ControlManager::GetSingleton()->GetDeviceCallbacks(true);
+        }
+        else
+        {
+            loc_callbacks = &ControlManager::GetSingleton()->GetDeviceCallbacks(false);
+        }
+
+        const auto loc_callback = loc_callbacks->find(loc_dxScanCode);
+        if (loc_callback != loc_callbacks->end())
+        {
+            LOG("KeyEventSink::ProcessEvent(...) Device callback found for {} - Calling function {}",loc_dxScanCode,loc_callback->second.callback)
             loc_callback->second.Send();
             return RE::BSEventNotifyControl::kContinue;
         }
@@ -385,10 +440,11 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
         typedef UD::PlayerStatus::Status Status;
         const Status loc_status = PlayerStatus::GetSingleton()->GetPlayerStatus();
 
+        /* Show message if player press buttong which they should not. Only works for keyword */
         const bool loc_bound = loc_status & Status::sBound;
-        if ( loc_bound && !(loc_status & Status::sMinigame) && !(loc_status & Status::sAnimation))
+        
+        if ( loc_bound && !(loc_status & Status::sMinigame) && !(loc_status & Status::sAnimation) && (loc_Device == RE::INPUT_DEVICE::kKeyboard))
         {
-            const RE::INPUT_DEVICE loc_Device = loc_buttonEvent->GetDevice();
             const bool loc_hmbuttonpress = ControlManager::GetSingleton()->HardcoreButtonPressed(loc_dxScanCode,loc_Device);
             if (loc_hmbuttonpress)
             {

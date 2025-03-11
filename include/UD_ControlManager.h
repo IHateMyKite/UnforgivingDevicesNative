@@ -105,7 +105,7 @@ namespace UD
         bool AddDeviceCallbackArgument(int a_dxkeycode, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm);
         bool UnregisterDeviceCallbacks(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
         void UnregisterAllDeviceCallbacks();
-        const std::unordered_map<uint32_t,DeviceCallback>& GetDeviceCallbacks();
+        std::unordered_map<uint32_t,DeviceCallback>& GetDeviceCallbacks(bool a_Gamepad);
         bool HaveDeviceCallbacks() const;
     private:
         void AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm);
@@ -118,6 +118,7 @@ namespace UD
         std::vector<RE::BSFixedString> _freeCamFilter {};
 
         std::unordered_map<uint32_t,DeviceCallback> _DeviceCallbacks;
+        std::unordered_map<uint32_t,DeviceCallback> _DeviceCallbacksGamepad;
 
         //can be found in clibs UserEvents.h
         inline static const std::string_view _disableids[] =
