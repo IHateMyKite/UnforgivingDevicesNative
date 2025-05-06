@@ -61,6 +61,8 @@ namespace ORS
         int     GetOrgasmingCount(RE::Actor* a_actor);
         void    Orgasm(RE::Actor* a_actor);
         std::string GetHornyStatus(RE::Actor* a_actor);
+        int     GetOrgasmFlags(RE::Actor* a_actor);
+        bool    SetOrgasmFlags(RE::Actor* a_actor, int a_flags);
 
         void    RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm);
 
@@ -172,5 +174,15 @@ namespace ORS
     inline std::string GetHornyStatus(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
     {
         return OrgasmManager::GetSingleton()->GetHornyStatus(a_actor);
+    }
+
+    inline int GetOrgasmFlags(PAPYRUSFUNCHANDLE,RE::Actor* a_actor)
+    {
+        return OrgasmManager::GetSingleton()->GetOrgasmFlags(a_actor);
+    }
+
+    inline bool SetOrgasmFlags(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, int a_flags)
+    {
+        return OrgasmManager::GetSingleton()->SetOrgasmFlags(a_actor,a_flags);
     }
 }

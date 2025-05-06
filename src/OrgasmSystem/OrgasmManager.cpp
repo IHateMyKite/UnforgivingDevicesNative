@@ -310,6 +310,28 @@ std::string ORS::OrgasmManager::GetHornyStatus(RE::Actor* a_actor)
     return loc_oc.GetHornyStatus();
 }
 
+int ORS::OrgasmManager::GetOrgasmFlags(RE::Actor* a_actor)
+{
+    if (a_actor == nullptr) return 0;
+    //LOG("OrgasmManager::GetOrgasmFlags({})",a_actor->GetName())
+    Utils::UniqueLock lock(_lock);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+    
+    return loc_oc.GetOrgasmFlags();
+}
+
+bool ORS::OrgasmManager::SetOrgasmFlags(RE::Actor* a_actor, int a_flags)
+{
+    if (a_actor == nullptr) return false;
+    //LOG("OrgasmManager::GetOrgasmFlags({})",a_actor->GetName())
+    Utils::UniqueLock lock(_lock);
+
+    GETORGCHANGEANDVALIDATE(loc_oc,a_actor)
+    
+    return loc_oc.SetOrgasmFlags(a_flags);
+}
+
 void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm)
 {
     #define REGISTERPAPYRUSFUNC(name,unhook) vm->RegisterFunction(#name, "OrgasmSystem", ORS::name,unhook);
@@ -332,6 +354,8 @@ void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine 
     REGISTERPAPYRUSFUNC(GetOrgasmingCount,true)
     REGISTERPAPYRUSFUNC(ForceOrgasm,true)
     REGISTERPAPYRUSFUNC(GetHornyStatus,true)
+    REGISTERPAPYRUSFUNC(GetOrgasmFlags,true)
+    REGISTERPAPYRUSFUNC(SetOrgasmFlags,true)
     // ----
     #undef REGISTERPAPYRUSFUNC
 

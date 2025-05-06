@@ -101,12 +101,19 @@ namespace ORS
         eAnal2                  = 0x00000100,
         eDefault                = 0x00000200    //when you dont care about ero zones
     };
+
+    enum OrgasmFlag : uint32_t 
+    {
+        eOfNone           = 0x00000000,
+        eOfPreventOrgasm  = 0x00000001    // Actor cant orgasm while this flag is present
+    };
+
     class OrgasmEroZone
     {
     public:
         char        Alias[6];
         char        DispleyName[14];
-        EroZone     EroZoneSlot = eNone;
+        EroZone     EroZoneSlot = EroZone::eNone;
         float       Multiplier  = 1.0f;
     };
     static_assert(sizeof(OrgasmEroZone) == 28);
@@ -148,7 +155,7 @@ namespace ORS
         float       ArousalRate             = 0.0f;
         float       ArousalRateMult         = 0.0f;
 
-        uint8_t     _reserved[16];
+        uint8_t     _reserved[16]           = {0};
     };
     static_assert(sizeof(OrgasmChangeData) == (64+(14*4)+3+16 + 5));
 
@@ -187,6 +194,9 @@ namespace ORS
         int     GetOrgasmingCount() {return _RDATA.OrgasmCount;};
         void    Orgasm(void);
         std::string GetHornyStatus();
+        uint32_t    GetOrgasmFlags() const;
+        bool        SetOrgasmFlags(int a_flags);
+
 
         RE::Actor*  GetActor();
         void        SetActor(RE::Actor* a_actor);
@@ -252,11 +262,12 @@ namespace ORS
                 {"ANAL2","Anal 2"   ,eAnal2},
                 {"DEFAU","Default"  ,eDefault},
             };
-            float   OrgasmProgress         = 0.0f;
-            float   HornyLevel             = 100.0f;
-            uint8_t Reserved[32]; //reserved 32 bytes for future additiones
+            float       OrgasmProgress  = 0.0f;
+            float       HornyLevel      = 100.0f;
+            uint32_t    OrgasmFlags     = eOfNone;
+            uint8_t     Reserved[28]    = {0}; //reserved 32 bytes for future additiones
         };
-        static_assert(sizeof(PERSIST_DATA) == (32*sizeof(OrgasmEroZone)+8+32));
+        static_assert(sizeof(PERSIST_DATA) == (32*sizeof(OrgasmEroZone)+40));
 
         struct RUNTIME_DATA
         {

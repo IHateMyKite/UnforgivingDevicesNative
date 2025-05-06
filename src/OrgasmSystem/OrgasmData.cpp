@@ -59,7 +59,7 @@ void ORS::OrgasmActorData::Update(const float& a_delta)
     UpdatePosition();
     UpdateExpression(a_delta);
 
-    if (_PDATA.OrgasmProgress >= 100.0) 
+    if ((_PDATA.OrgasmProgress >= 100.0) && !(_PDATA.OrgasmFlags & eOfPreventOrgasm)) 
     {
         Orgasm();
     }
@@ -287,6 +287,17 @@ std::string ORS::OrgasmActorData::GetHornyStatus()
         }
     }
     return "ERROR";
+}
+
+uint32_t ORS::OrgasmActorData::GetOrgasmFlags() const
+{
+    return _PDATA.OrgasmFlags;
+}
+
+bool ORS::OrgasmActorData::SetOrgasmFlags(int a_flags)
+{
+    _PDATA.OrgasmFlags = static_cast<uint32_t>(a_flags);
+    return true;
 }
 
 void ORS::OrgasmActorData::UnlinkActorFromMeter()
