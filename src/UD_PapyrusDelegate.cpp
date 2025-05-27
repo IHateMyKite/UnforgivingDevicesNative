@@ -1000,9 +1000,7 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
                 if (loc_qalias >= 0 && loc_qalias < quest_aliases.size()) {
                     _modifiercache[loc_handle].alias = loc_quest->aliases[loc_qalias];
                 } else {
-                    ERROR("Modifier {}::{} alias not found",
-                          _modifiercache[loc_handle].alias ? _modifiercache[loc_handle].alias->aliasName : "NONE",
-                          _modifiercache[loc_handle].name)
+                    ERROR("Modifier {} - Alias not found with aliasID {}", _modifiercache[loc_handle].name, loc_qalias)
                 }
 
                 //DEBUG("Modifier {}::{} found",
