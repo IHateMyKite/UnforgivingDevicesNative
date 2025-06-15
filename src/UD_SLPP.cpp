@@ -17,20 +17,31 @@ namespace UD
                 std::string lowerOriginalAnimationName(originalAnimationName);
                 std::transform(lowerOriginalAnimationName.begin(), lowerOriginalAnimationName.end(), lowerOriginalAnimationName.begin(), [] (char c) { return std::tolower(c);});
                 for (auto graph : ptr->graphs) {
-                    std::string lowerProjectName(graph->projectName);
-                    std::transform(lowerProjectName.begin(), lowerProjectName.end(), lowerProjectName.begin(), [] (char c) { return std::tolower(c);});
-                    
-                    auto found=lowerProjectName.find(lowerOriginalAnimationName);
-                    
-                    if (found != std::string::npos) {
-                        std::string projectName(graph->projectName);
-                        if (found+lowerOriginalAnimationName.size() == lowerProjectName.size())
-                        {
-                            
-                            SKSE::log::info("animation {}",projectName);
-                            return std::string(graph->projectName);
-                        } else {
-                            SKSE::log::info("incorrect animation {}",projectName);
+                    if (!graph->behaviorGraph) {
+                        continue;
+                    }
+                    if (!graph->behaviorGraph->data) {
+                        continue;    
+                    }
+                    if (!graph->behaviorGraph->data->stringData) {
+                        continue;
+                    }
+                    for (auto eventName: graph->behaviorGraph->data->stringData->eventNames) {
+                        std::string lowerEventName(eventName.c_str());
+                        std::transform(lowerEventName.begin(), lowerEventName.end(), lowerEventName.begin(), [] (char c) { return std::tolower(c);});
+                        
+                        auto found=lowerEventName.find(lowerOriginalAnimationName);
+                        
+                        if (found != std::string::npos) {
+                            std::string eventName2(eventName.c_str());
+                            if (found+lowerOriginalAnimationName.size() == lowerEventName.size())
+                            {
+                                
+                                SKSE::log::info("animation {}",eventName2);
+                                return eventName2;
+                            } else {
+                                SKSE::log::info("incorrect animation {}",eventName2);
+                            }
                         }
                     }
                 }
