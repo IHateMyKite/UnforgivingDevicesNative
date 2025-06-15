@@ -23,41 +23,56 @@ namespace UD {
                         continue;
                     }
 
-                    if (!graph->characterInstance.setup) {
+                    if (!graph->behaviorGraph) {
                         continue;
                     }
-                    if (!graph->characterInstance.setup->data) {
+                    if (!graph->behaviorGraph->eventIDMap) {
                         continue;
                     }
-                    if (!graph->characterInstance.setup->data->stringData) {
+                    if (!graph->projectDBData) {
                         continue;
                     }
+                        
                     for (int prefix_removal = 0; prefix_removal < 4; prefix_removal += 1) {
-                        for (auto eventBundle : graph->characterInstance.setup->data->stringData->animationNames) {
-                            for (auto eventName : eventBundle.assetNames) {
-                                std::string lowerEventName(eventName.c_str());
-                                std::transform(lowerEventName.begin(), lowerEventName.end(), lowerEventName.begin(),
-                                               [](char c) { return std::tolower(c); });
+                        uint64_t** vtable = (uint64_t**)graph->projectDBData;
+                        RE::BSTArray<char*>* array1 = (RE::BSTArray<char*>*)&vtable[0x1a];
+                        //SKSE::log::info("vtable {:016X} array {:016X}", (uint64_t)vtable[0], (uint64_t)array);
 
-                                if (lowerEventName.size() > prefix_removal + 1) {
-                                    auto found = lowerEventName.find(lowerOriginalAnimationName.substr(prefix_removal));
+                        for (auto eventName : *array1) {
+                            if (eventName == nullptr) {
+                                continue;
+                            }
+                            std::string lowerEventName(eventName);
+                            std::transform(lowerEventName.begin(), lowerEventName.end(), lowerEventName.begin(),
+                                           [](char c) { return std::tolower(c); });
 
-                                    if (found != std::string::npos) {
-                                        std::string eventName2(eventName.c_str());
-                                        if (found + (lowerOriginalAnimationName.size() - prefix_removal) ==
-                                            lowerEventName.size()) {
-                                            SKSE::log::info("animation {}", eventName2);
-                                            return eventName2;
-                                        } else {
-                                            SKSE::log::info("incorrect animation {}", eventName2);
-                                        }
+                            if (lowerEventName.size() > prefix_removal + 1) {
+                                auto found = lowerEventName.find(lowerOriginalAnimationName.substr(prefix_removal));
+
+                                if (found != std::string::npos) {
+                                    std::string eventName2(eventName);
+                                    if (found + (lowerOriginalAnimationName.size() - prefix_removal) ==
+                                        lowerEventName.size()) {
+                                        SKSE::log::info("animation {}", eventName2);
+                                        return eventName2;
+                                    } else {
+                                        SKSE::log::info("incorrect animation {}", eventName2);
                                     }
                                 }
                             }
                         }
                     }
+                
+            
+        
+
+ 
+ 
+
                 }
+                   
             }
+            
         }
         return std::string(originalAnimationName);
     }
