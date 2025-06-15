@@ -97,7 +97,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetAllAnimationFilesErrors,true)
         REGISTERPAPYRUSFUNC(GetAllAnimationFilesStatus,true)
         REGISTERPAPYRUSFUNC(SyncAnimationSetting,true)
-
+        REGISTERPAPYRUSFUNC(ConvertAnimationSLPP,true)
         //skill
         REGISTERPAPYRUSFUNC(CalculateSkillFromPerks,true)
 
