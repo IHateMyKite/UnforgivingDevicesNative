@@ -175,7 +175,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                 }
                 else
                 {
-                    return {"ERROR",std::format("Can't find valid animation variant in def {} for actor with constraints 0x{:08X}",a_def,loc_actor_constraints)}; 
+                    return {"ERROR",std::format("Can't find valid animation variant in def {} for Actor with constraints 0x{:08X}",a_def,loc_actor_constraints)}; 
                 }
 
             }
@@ -185,7 +185,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
             }
             else
             {
-                return {"ERROR",std::format("Can't find valid animation variant in def {} for actor with constraints 0x{:08X}",a_def,loc_actor_constraints)};
+                return {"ERROR",std::format("Can't find valid animation variant in def {} for Actor with constraints 0x{:08X}",a_def,loc_actor_constraints)};
             }
         }
         catch(const std::exception& e)
@@ -214,8 +214,8 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
             loc_arr2.clear();
             for (size_t i = 0U; i < loc_size; i++)
             {
-                if (ConvertAnimationSLPPNative(a_actors[0],std::string(loc_arr1_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND" || ConvertAnimationSLPPNative(a_actors[1],std::string(loc_arr2_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND") {
-                    SKSE::log::error("animations {} {} missing",loc_arr1_before_filter[i].as_string().c_str(),loc_arr2_before_filter[i].as_string().c_str());
+                if (ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr1_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND" || ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr2_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND") {
+                    ERROR("animations {} {} missing",loc_arr1_before_filter[i].as_string().c_str(),loc_arr2_before_filter[i].as_string().c_str())
                     continue;
                 }
                 loc_arr1.push_back(loc_arr1_before_filter[i]);
@@ -238,8 +238,8 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
         }
         else if (loc_anim1.is_string() && loc_anim2.is_string())
         {
-            if (ConvertAnimationSLPPNative(a_actors[0],loc_anim1.as_string().c_str()) == "ERROR_NOT_FOUND" || ConvertAnimationSLPPNative(a_actors[1],loc_anim2.as_string().c_str()) == "ERROR_NOT_FOUND") {
-                SKSE::log::error("animations {} {} missing",loc_anim1.as_string().c_str(),loc_anim2.as_string().c_str());
+            if (ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),loc_anim1.as_string().c_str()) == "ERROR_NOT_FOUND" || ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),loc_anim2.as_string().c_str()) == "ERROR_NOT_FOUND") {
+                ERROR("animations {} {} missing",loc_anim1.as_string().c_str(),loc_anim2.as_string().c_str())
             } else {
                 loc_res.push_back("-1");
                 
@@ -259,8 +259,8 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
             size_t loc_size = loc_arr.size();
             for (size_t i = 0U; i < loc_size; i++)
             {
-                if (ConvertAnimationSLPPNative(a_actors[0],std::string(loc_arr_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND") {
-                    SKSE::log::error("animations {} missing",loc_arr_before_filter[i].as_string().c_str());
+                if (ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND") {
+                    ERROR("animations {} missing",loc_arr_before_filter[i].as_string().c_str())
                     continue;
                 }
                 loc_arr.push_back(loc_arr_before_filter[i]);
@@ -279,8 +279,8 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
         }
         else if (loc_anim.is_string())
         {
-             if (ConvertAnimationSLPPNative(a_actors[0],std::string(loc_anim.as_string().c_str())) == "ERROR_NOT_FOUND") {
-                SKSE::log::error("animations {} missing",loc_anim.as_string().c_str());
+             if (ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_anim.as_string().c_str())) == "ERROR_NOT_FOUND") {
+                ERROR("animations {} missing",loc_anim.as_string().c_str())
                 
             } else {
                 loc_res.push_back("-1");
@@ -326,9 +326,9 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                         auto loc_A = RecursiveFind(anim,"A" + std::to_string(i+1));
                         if (loc_A.is_array())
                         {
-                            for (auto&& actor : loc_A.as_array())
+                            for (auto&& Actor : loc_A.as_array())
                             {
-                                loc_check = _CheckConstraints(actor,"",a_ActorConstraints[i]);
+                                loc_check = _CheckConstraints(Actor,"",a_ActorConstraints[i]);
                                 if (loc_check) break;
                             }
                         }
@@ -356,9 +356,9 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                             if (a_ActorConstraints.size() == 2) {
                                 constraints2=a_ActorConstraints[1];
                             }
-                            if (a_ActorConstraints.size() == 1 && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() > 1) {
+                            if ((a_ActorConstraints.size() == 1 || a_ActorConstraints.size() == 0) && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() > 2) {
                                 loc_result.push_back(name + ":" + loc_anim_path);
-                            } else if (a_ActorConstraints.size() == 2 && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() > 1) {
+                            } else if (a_ActorConstraints.size() == 2 && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() > 2) {
                                 loc_result.push_back(name + ":" + loc_anim_path);
                             }
                             
@@ -572,7 +572,7 @@ void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
         loc_canattack = false;
         break;
     case 1:
-        // Only if actor is follower
+        // Only if Actor is follower
         loc_canattack = a_actor->GetActorRuntimeData().boolBits.any(RE::Actor::BOOL_BITS::kPlayerTeammate);
         break;
     case 2:
@@ -580,7 +580,7 @@ void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
         break;
     }
 
-    // Check if actor weapons are disabled
+    // Check if Actor weapons are disabled
     if (a_draw)
     {
         if (AnimationManager::GetSingleton()->CheckWeaponDisabled(a_actor))
@@ -594,7 +594,7 @@ void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
     if (a_draw && (IsAnimating(a_actor) || ActorIsBoundCombatDisabled(a_actor) || (!loc_canattack && ActorIsBound(a_actor))))
     {
         
-        LOG("ControlManager::DrawWeaponMagicHands({}) - actor is animating/bound and because of that cant draw weapon",a_actor ? a_actor->GetName() : "NONE")
+        LOG("ControlManager::DrawWeaponMagicHands({}) - Actor is animating/bound and because of that cant draw weapon",a_actor ? a_actor->GetName() : "NONE")
         return;
     } 
     else
@@ -632,7 +632,8 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::stri
             }
             
             
-            return ((loc_anim_optConstr | loc_anim_reqConstr) & a_ActorConstraints) == a_ActorConstraints;
+            // TODO: sort by most optional constraints
+            return true;
         }
     }
     catch (const std::exception& e)
