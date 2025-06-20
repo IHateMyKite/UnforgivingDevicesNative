@@ -222,6 +222,9 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                 loc_arr2.push_back(loc_arr2_before_filter[i]);
                 
             }
+            if (loc_arr1.size() == 0) {
+                return {"ERROR","No animations found"};
+            }
             loc_size=loc_arr1.size();
             loc_res.push_back(std::to_string(loc_size));
 
@@ -247,6 +250,9 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                 loc_res.push_back(loc_anim2.as_string().c_str());
             }
         }
+        if (loc_res.size() == 0) {
+            return {"ERROR","No animations found"};
+        }
     }
     else if (a_actors.size() == 1U)
     {
@@ -266,6 +272,9 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                 loc_arr.push_back(loc_arr_before_filter[i]);
             }
             loc_size=loc_arr.size();
+            if (loc_arr.size() == 0) {
+                return {"ERROR","No animations found"};
+            }
             loc_res.push_back(std::to_string(loc_size));
         
             std::vector<std::string> loc_anims(loc_size,"ERROR");
@@ -348,7 +357,15 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                     {
                         if (a_field == "")
                         {
-                            loc_result.push_back(name + ":" + loc_anim_path);
+                            if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},0,0)[0] != "ERROR") {
+                                loc_result.push_back(name + ":" + loc_anim_path);
+                            } else if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},0,0)[0] != "ERROR") {
+                                loc_result.push_back(name + ":" + loc_anim_path);
+                            } else {
+                                
+                            }
+                            
+                            
                         }
                         else
                         {
