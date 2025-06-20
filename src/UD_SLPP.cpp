@@ -74,6 +74,6 @@ namespace UD {
             }
             
         }
-        return std::string(originalAnimationName);
+        return std::string("ANIMATION_NOT_FOUND");
     }
 }
