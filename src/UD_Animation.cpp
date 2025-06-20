@@ -3,6 +3,7 @@
 #include <UD_Config.h>
 #include <UD_Inventory.h>
 #include <UD_Keywords.h>
+#include <UD_SLPP.h>
 #include <boost/json/src.hpp>
 #include <boost/algorithm/string.hpp>
 #include <regex>
@@ -203,11 +204,25 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
         auto loc_anim2 = RecursiveFind(loc_object, loc_actor_animVars[1] + ".anim");
         if (loc_anim1.is_array() && loc_anim2.is_array())
         {
+            auto loc_arr1_before_filter = loc_anim1.as_array();
+            auto loc_arr2_before_filter = loc_anim2.as_array();
             auto loc_arr1 = loc_anim1.as_array();
             auto loc_arr2 = loc_anim2.as_array();
-        
-            const size_t loc_size = loc_arr1.size() < loc_arr2.size() ? loc_arr1.size() : loc_arr2.size();
-
+            size_t loc_size = loc_arr1.size() < loc_arr2.size() ? loc_arr1.size() : loc_arr2.size();
+            
+            loc_arr1.clear();
+            loc_arr2.clear();
+            for (size_t i = 0U; i < loc_size; i++)
+            {
+                if (ConvertAnimationSLPPNative(a_actors[0],std::string(loc_arr1_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND" || ConvertAnimationSLPPNative(a_actors[1],std::string(loc_arr2_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND") {
+                    SKSE::log::error("animations {} {} missing",loc_arr1_before_filter[i].as_string().c_str(),loc_arr2_before_filter[i].as_string().c_str());
+                    continue;
+                }
+                loc_arr1.push_back(loc_arr1_before_filter[i]);
+                loc_arr2.push_back(loc_arr2_before_filter[i]);
+                
+            }
+            loc_size=loc_arr1.size();
             loc_res.push_back(std::to_string(loc_size));
 
             std::vector<std::string> loc_anims(2*loc_size);
@@ -219,12 +234,18 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
             }
 
             loc_res.append_range(loc_anims);
+            
         }
         else if (loc_anim1.is_string() && loc_anim2.is_string())
         {
-            loc_res.push_back("-1");
-            loc_res.push_back(loc_anim1.as_string().c_str());
-            loc_res.push_back(loc_anim2.as_string().c_str());
+            if (ConvertAnimationSLPPNative(a_actors[0],loc_anim1.as_string().c_str()) == "ERROR_NOT_FOUND" || ConvertAnimationSLPPNative(a_actors[1],loc_anim2.as_string().c_str()) == "ERROR_NOT_FOUND") {
+                SKSE::log::error("animations {} {} missing",loc_anim1.as_string().c_str(),loc_anim2.as_string().c_str());
+            } else {
+                loc_res.push_back("-1");
+                
+                loc_res.push_back(loc_anim1.as_string().c_str());
+                loc_res.push_back(loc_anim2.as_string().c_str());
+            }
         }
     }
     else if (a_actors.size() == 1U)
@@ -232,9 +253,19 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
         auto loc_anim = RecursiveFind(loc_object, loc_actor_animVars[0] + ".anim");
         if (loc_anim.is_array())
         {
+            auto loc_arr_before_filter = loc_anim.as_array();
             auto loc_arr = loc_anim.as_array();
-        
-            const size_t loc_size = loc_arr.size();
+            loc_arr.clear();
+            size_t loc_size = loc_arr.size();
+            for (size_t i = 0U; i < loc_size; i++)
+            {
+                if (ConvertAnimationSLPPNative(a_actors[0],std::string(loc_arr_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND") {
+                    SKSE::log::error("animations {} missing",loc_arr_before_filter[i].as_string().c_str());
+                    continue;
+                }
+                loc_arr.push_back(loc_arr_before_filter[i]);
+            }
+            loc_size=loc_arr.size();
             loc_res.push_back(std::to_string(loc_size));
         
             std::vector<std::string> loc_anims(loc_size,"ERROR");
@@ -248,8 +279,13 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
         }
         else if (loc_anim.is_string())
         {
-            loc_res.push_back("-1");
-            loc_res.push_back(loc_anim.as_string().c_str());
+             if (ConvertAnimationSLPPNative(a_actors[0],std::string(loc_anim.as_string().c_str())) == "ERROR_NOT_FOUND") {
+                SKSE::log::error("animations {} missing",loc_anim.as_string().c_str());
+                
+            } else {
+                loc_res.push_back("-1");
+                loc_res.push_back(loc_anim.as_string().c_str());
+            }
         }
     }
 

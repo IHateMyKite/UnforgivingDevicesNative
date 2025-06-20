@@ -6,4 +6,5 @@
 namespace UD
 {
     std::string ConvertAnimationSLPP(PAPYRUSFUNCHANDLE,RE::Actor * actor,const std::string originalAnimationName);
+    std::string ConvertAnimationSLPPNative(RE::Actor * actor,const std::string originalAnimationName);
 }

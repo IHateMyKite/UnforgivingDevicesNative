@@ -14,6 +14,7 @@
 #include <UD_Lockpick.h>
 #include <UD_Modifiers.h>
 #include <UD_MessageBox.h>
+#include <UD_SLPP.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
