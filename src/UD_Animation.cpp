@@ -254,9 +254,9 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
         if (loc_anim.is_array())
         {
             auto loc_arr_before_filter = loc_anim.as_array();
+            size_t loc_size = loc_arr_before_filter.size();
             auto loc_arr = loc_anim.as_array();
             loc_arr.clear();
-            size_t loc_size = loc_arr.size();
             for (size_t i = 0U; i < loc_size; i++)
             {
                 if (ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND") {
@@ -345,9 +345,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                     }
 
                     if (loc_check /* && TODO: Check Lewd and Aggro */)
-                    {
-                        
-                            
+                    { 
                             int constraints1=0;
                             int constraints2=0;
                             if (a_ActorConstraints.size() == 1) {
@@ -361,7 +359,6 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                             } else if (a_ActorConstraints.size() == 2 && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() >= 2) {
                                 loc_result.push_back(name + ":" + loc_anim_path);
                             }
-                            
                     }
                     
                 }
@@ -619,6 +616,7 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::stri
         }
         if ((loc_anim_reqConstr & a_ActorConstraints) != loc_anim_reqConstr)
         {
+            ERROR("constraint req {} {}",a_ActorConstraints, loc_anim_reqConstr)
             return false;
         }
         else
@@ -634,6 +632,7 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::stri
             if ((~(loc_anim_optConstr|loc_anim_reqConstr) & a_ActorConstraints)==0) {
                 return true;
             }
+            ERROR("constraint opt {} {}", a_ActorConstraints, loc_anim_optConstr)
             // TODO: sort by most optional constraints
             return false;
         }
