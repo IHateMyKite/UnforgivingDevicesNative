@@ -222,9 +222,6 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                 loc_arr2.push_back(loc_arr2_before_filter[i]);
                 
             }
-            if (loc_arr1.size() == 0) {
-                return {"ERROR","No animations found"};
-            }
             loc_size=loc_arr1.size();
             loc_res.push_back(std::to_string(loc_size));
 
@@ -250,9 +247,6 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                 loc_res.push_back(loc_anim2.as_string().c_str());
             }
         }
-        if (loc_res.size() == 0) {
-            return {"ERROR","No animations found"};
-        }
     }
     else if (a_actors.size() == 1U)
     {
@@ -272,9 +266,6 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                 loc_arr.push_back(loc_arr_before_filter[i]);
             }
             loc_size=loc_arr.size();
-            if (loc_arr.size() == 0) {
-                return {"ERROR","No animations found"};
-            }
             loc_res.push_back(std::to_string(loc_size));
         
             std::vector<std::string> loc_anims(loc_size,"ERROR");
@@ -355,8 +346,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
 
                     if (loc_check /* && TODO: Check Lewd and Aggro */)
                     {
-                        if (a_field == "")
-                        {
+                        
                             
                             int constraints1=0;
                             int constraints2=0;
@@ -366,9 +356,9 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                             if (a_ActorConstraints.size() == 2) {
                                 constraints2=a_ActorConstraints[1];
                             }
-                            if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2)[0] != "ERROR") {
+                            if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() > 0) {
                                 loc_result.push_back(name + ":" + loc_anim_path);
-                            } else if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2)[0] != "ERROR") {
+                            } else if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() > 0) {
                                 loc_result.push_back(name + ":" + loc_anim_path);
                             }
                         }
@@ -376,7 +366,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                         {
                             WARN("AnimationManager::GetAnimationsFromDB({},[{}],{},{},{}) - Use of field is currently not supported",a_type,boost::join(a_kws,","),a_field,a_lewdmin,a_lewdmax)
                         }
-                    }
+                    
                 }
             }
             else
@@ -622,14 +612,29 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::stri
     LOG("AnimationManager::_CheckConstraints({},{})",a_ObjPath,a_ActorConstraints)
     try
     {
-        const int loc_anim_reqConstr = RecursiveFind(a_obj,a_ObjPath + ".req").as_int64();
+        auto req=RecursiveFind(a_obj,a_ObjPath + ".req");
+        int loc_anim_reqConstr = 0;
+        if (req.is_int64()) {
+            loc_anim_reqConstr=req.as_int64();
+            
+        } else {
+            WARN("anim req not int64 {}",req.kind());
+        }
         if ((loc_anim_reqConstr & a_ActorConstraints) != loc_anim_reqConstr)
         {
             return false;
         }
         else
         {
-            const int loc_anim_optConstr = RecursiveFind(a_obj,a_ObjPath + ".opt").as_int64();
+            auto opt=RecursiveFind(a_obj,a_ObjPath + ".opt");
+            int loc_anim_optConstr = 0;
+            if (opt.is_int64()) {
+                loc_anim_optConstr=opt.as_int64();
+            } else {
+                WARN("anim req not int64 {}",req.kind());
+            }
+            
+            
             return ((loc_anim_optConstr | loc_anim_reqConstr) & a_ActorConstraints) == a_ActorConstraints;
         }
     }
