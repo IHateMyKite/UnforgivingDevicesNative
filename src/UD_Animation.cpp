@@ -356,16 +356,13 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                             if (a_ActorConstraints.size() == 2) {
                                 constraints2=a_ActorConstraints[1];
                             }
-                            if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() > 0) {
+                            if (a_ActorConstraints.size() == 1 && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() > 0) {
                                 loc_result.push_back(name + ":" + loc_anim_path);
-                            } else if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() > 0) {
+                            } else if (a_ActorConstraints.size() == 2 && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() > 0) {
                                 loc_result.push_back(name + ":" + loc_anim_path);
                             }
-                        }
-                        else
-                        {
-                            WARN("AnimationManager::GetAnimationsFromDB({},[{}],{},{},{}) - Use of field is currently not supported",a_type,boost::join(a_kws,","),a_field,a_lewdmin,a_lewdmax)
-                        }
+                            
+                    }
                     
                 }
             }
