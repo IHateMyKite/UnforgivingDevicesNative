@@ -223,7 +223,6 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                 
             }
             if (loc_arr1.size() == 0) {
-                return {"ERROR","No animations found"};
             }
             loc_size=loc_arr1.size();
             loc_res.push_back(std::to_string(loc_size));
@@ -251,7 +250,6 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
             }
         }
         if (loc_res.size() == 0) {
-            return {"ERROR","No animations found"};
         }
     }
     else if (a_actors.size() == 1U)
@@ -273,7 +271,6 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
             }
             loc_size=loc_arr.size();
             if (loc_arr.size() == 0) {
-                return {"ERROR","No animations found"};
             }
             loc_res.push_back(std::to_string(loc_size));
         
@@ -357,12 +354,18 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                     {
                         if (a_field == "")
                         {
-                            if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},0,0)[0] != "ERROR") {
+                            int constraints1=0;
+                            int constraints2=0;
+                            if (a_ActorConstraints.size() == 1) {
+                                constraints1=a_ActorConstraints[0];
+                            }
+                            if (a_ActorConstraints.size() == 2) {
+                                constraints2=a_ActorConstraints[1];
+                            }
+                            if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2)[0] != "ERROR") {
                                 loc_result.push_back(name + ":" + loc_anim_path);
-                            } else if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},0,0)[0] != "ERROR") {
+                            } else if (GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2)[0] != "ERROR") {
                                 loc_result.push_back(name + ":" + loc_anim_path);
-                            } else {
-                                
                             }
                             
                             
