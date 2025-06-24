@@ -1,6 +1,7 @@
 #pragma once
 
 #include <UD_Spinlock.h>
+#include <map>
 
 namespace boost::json
 {
@@ -43,7 +44,7 @@ namespace UD
         std::vector<std::string> GetAllAnimationFiles() const;
         std::vector<std::string> GetAllAnimationFilesErrors() const;
         std::vector<int> GetAllAnimationFilesStatus() const;
-        
+        std::map<std::string,std::string> AnimationCacheMap;
         std::vector<std::string> GetAnimationsFromJSON(std::string a_def, std::vector<RE::Actor*> a_actors, int a_constraintsORA1, int a_constraintsORA2);
         std::vector<std::string> GetAnimationsFromDB(std::string a_type,const std::vector<std::string>& a_kws, std::string a_field, const std::vector<int>& a_ActorConstraints, int a_lewdmin, int a_lewdmax, int a_aggromin, int a_aggromax);
         void SyncAnimationSetting(const std::vector<std::string>& a_animationoff);
