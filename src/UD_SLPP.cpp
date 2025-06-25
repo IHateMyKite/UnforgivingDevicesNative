@@ -16,15 +16,17 @@ namespace UD {
         auto animManager=UD::AnimationManager::GetSingleton();
         
         if (actor) {
+            std::string lowerOriginalAnimationName(originalAnimationName);
+            std::transform(lowerOriginalAnimationName.begin(), lowerOriginalAnimationName.end(),
+                            lowerOriginalAnimationName.begin(), [](char c) { return std::tolower(c); });
+            if (animManager->AnimationCacheMap.contains(lowerOriginalAnimationName)) {
+                SKSE::log::info("cache found {} {}",lowerOriginalAnimationName,animManager->AnimationCacheMap[lowerOriginalAnimationName]);
+                return animManager->AnimationCacheMap[lowerOriginalAnimationName];
+            }
             RE::BSAnimationGraphManagerPtr ptr;
             actor->GetAnimationGraphManager(ptr);
             if (ptr) {
-                std::string lowerOriginalAnimationName(originalAnimationName);
-                std::transform(lowerOriginalAnimationName.begin(), lowerOriginalAnimationName.end(),
-                               lowerOriginalAnimationName.begin(), [](char c) { return std::tolower(c); });
-                if (animManager->AnimationCacheMap.contains(lowerOriginalAnimationName)) {
-                    return animManager->AnimationCacheMap[lowerOriginalAnimationName];
-                }
+                
                 for (auto graph : ptr->graphs) {
                     if (!graph) {
                         continue;
@@ -40,7 +42,7 @@ namespace UD {
                         continue;
                     }
                         
-                    for (int prefix_removal = 0; prefix_removal < 4; prefix_removal += 1) {
+                    for (int prefix_removal = 0; prefix_removal < 8; prefix_removal += 1) {
                         uint64_t** vtable = (uint64_t**)graph->projectDBData;
                         RE::BSTArray<char*>* array1 = (RE::BSTArray<char*>*)&vtable[0x1a];
                         //SKSE::log::info("vtable {:016X} array {:016X}", (uint64_t)vtable[0], (uint64_t)array);
@@ -53,7 +55,7 @@ namespace UD {
                             std::transform(lowerEventName.begin(), lowerEventName.end(), lowerEventName.begin(),
                                            [](char c) { return std::tolower(c); });
 
-                            if (lowerEventName.size() > prefix_removal + 1) {
+                            if (lowerEventName.size() > prefix_removal + 4) {
                                 auto found = lowerEventName.find(lowerOriginalAnimationName.substr(prefix_removal));
 
                                 if (found != std::string::npos) {
@@ -61,7 +63,7 @@ namespace UD {
                                     if (found + (lowerOriginalAnimationName.size() - prefix_removal) ==
                                         lowerEventName.size()) {
                                         SKSE::log::info("animation {}", eventName2);
-                                        animManager->AnimationCacheMap[lowerOriginalAnimationName]=eventName2;
+                                        animManager->AnimationCacheMap.insert_or_assign(lowerOriginalAnimationName,eventName2);
                                         return eventName2;
                                     } else {
                                         SKSE::log::info("incorrect animation {}", eventName2);
@@ -78,7 +80,7 @@ namespace UD {
  
 
                 }
-                animManager->AnimationCacheMap[lowerOriginalAnimationName]="ERROR_NOT_FOUND";
+                animManager->AnimationCacheMap.insert_or_assign(lowerOriginalAnimationName,std::string("ERROR_NOT_FOUND"));
             }
             
         }
