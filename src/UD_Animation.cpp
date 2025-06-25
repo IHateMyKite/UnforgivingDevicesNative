@@ -218,8 +218,8 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                     ERROR("animations {} {} missing",loc_arr1_before_filter[i].as_string().c_str(),loc_arr2_before_filter[i].as_string().c_str())
                     continue;
                 }
-                loc_arr1.push_back(loc_arr1_before_filter[i]);
-                loc_arr2.push_back(loc_arr2_before_filter[i]);
+                loc_arr1.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr1_before_filter[i].as_string().c_str())).c_str());
+                loc_arr2.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr2_before_filter[i].as_string().c_str())).c_str());
                 
             }
             loc_size=loc_arr1.size();
@@ -243,8 +243,8 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
             } else {
                 loc_res.push_back("-1");
                 
-                loc_res.push_back(loc_anim1.as_string().c_str());
-                loc_res.push_back(loc_anim2.as_string().c_str());
+                loc_res.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),loc_anim1.as_string().c_str()).c_str());
+                loc_res.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),loc_anim2.as_string().c_str()).c_str());
             }
         }
     }
@@ -263,7 +263,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                     ERROR("animations {} missing",loc_arr_before_filter[i].as_string().c_str())
                     continue;
                 }
-                loc_arr.push_back(loc_arr_before_filter[i]);
+                loc_arr.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr_before_filter[i].as_string().c_str())).c_str());
             }
             loc_size=loc_arr.size();
             loc_res.push_back(std::to_string(loc_size));
@@ -284,7 +284,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                 
             } else {
                 loc_res.push_back("-1");
-                loc_res.push_back(loc_anim.as_string().c_str());
+                loc_res.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_anim.as_string().c_str())).c_str());
             }
         }
     }
