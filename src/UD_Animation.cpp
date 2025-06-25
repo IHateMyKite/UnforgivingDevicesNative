@@ -354,9 +354,9 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                             if (a_ActorConstraints.size() == 2) {
                                 constraints2=a_ActorConstraints[1];
                             }
-                            if ((a_ActorConstraints.size() == 1 || a_ActorConstraints.size() == 0) && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() >= 3) {
+                            if ((a_ActorConstraints.size() == 1 || a_ActorConstraints.size() == 0)) {
                                 loc_result.push_back(name + ":" + loc_anim_path);
-                            } else if (a_ActorConstraints.size() == 2 && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() >= 3) {
+                            } else if (a_ActorConstraints.size() == 2) {
                                 loc_result.push_back(name + ":" + loc_anim_path);
                             }
                     }
@@ -616,7 +616,7 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::stri
         }
         if ((loc_anim_reqConstr & a_ActorConstraints) != loc_anim_reqConstr)
         {
-            ERROR("constraint req {} {}",a_ActorConstraints, loc_anim_reqConstr)
+            //ERROR("constraint req {} {}",a_ActorConstraints, loc_anim_reqConstr)
             return false;
         }
         else
