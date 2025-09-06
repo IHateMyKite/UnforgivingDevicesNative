@@ -297,7 +297,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
 
     return loc_res;
 }
-
+static std::map<std::tuple<std::string,int,int>,bool> valid_anim_cache;
 std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a_type, const std::vector<std::string>& a_kws, std::string a_field, const std::vector<int>& a_ActorConstraints, int a_lewdmin, int a_lewdmax, int a_aggromin, int a_aggromax)
 {
     LOG("AnimationManager::GetAnimationsFromDB({},[{}],{},{},{}) called",a_type,boost::join(a_kws,","),a_field,a_lewdmin,a_lewdmax)
@@ -354,10 +354,24 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                             if (a_ActorConstraints.size() == 2) {
                                 constraints2=a_ActorConstraints[1];
                             }
-                            if ((a_ActorConstraints.size() == 1 || a_ActorConstraints.size() == 0)) {
-                                loc_result.push_back(name + ":" + loc_anim_path);
-                            } else if (a_ActorConstraints.size() == 2) {
-                                loc_result.push_back(name + ":" + loc_anim_path);
+                            std::string anim_name_path(name+":"+loc_anim_path);
+                            std::tuple<std::string,int,int> tp(anim_name_path,constraints1,constraints2);
+                            auto p=valid_anim_cache.find(tp);
+                            if (p != valid_anim_cache.end())
+                            {
+                                if (p->second==true) {
+                                    loc_result.push_back(name + ":" + loc_anim_path);
+                                }
+                            } else {
+                                if ((a_ActorConstraints.size() == 1 || a_ActorConstraints.size() == 0) && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() >= 3) {
+                                    valid_anim_cache.insert_or_assign(tp,true);
+                                    loc_result.push_back(name + ":" + loc_anim_path);
+                                } else if (a_ActorConstraints.size() == 2 && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() >= 3) {
+                                    valid_anim_cache.insert_or_assign(tp,true);
+                                    loc_result.push_back(name + ":" + loc_anim_path);
+                                } else {
+                                    valid_anim_cache.insert_or_assign(tp,false);
+                                }
                             }
                     }
                     
