@@ -11,7 +11,6 @@ namespace ORS
 
     extern ModifyArousal OSLAModifyArousal;
 
-
     #define GETORGCHANGEANDVALIDATE(var,arg)        \
     OrgasmActorData& var = _actors[arg->GetHandle().native_handle()];            \
     var.SetActor(arg);
@@ -63,17 +62,18 @@ namespace ORS
         std::string GetHornyStatus(RE::Actor* a_actor);
         int     GetOrgasmFlags(RE::Actor* a_actor);
         bool    SetOrgasmFlags(RE::Actor* a_actor, int a_flags);
+        bool    UseArousalFallback(void) const;
 
         void    RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm);
 
         void    OnGameLoaded(SKSE::SerializationInterface*);
         void    OnGameSaved(SKSE::SerializationInterface*);
         void    OnRevert(SKSE::SerializationInterface*);
-
     private:
         bool              _installed = false;
         mutable Utils::Spinlock  _lock;
         std::unordered_map<uint32_t,OrgasmActorData> _actors;
+        RE::TESFaction* _arousalfaction = nullptr;
     };
 
     inline bool    AddOrgasmChange(PAPYRUSFUNCHANDLE,
@@ -184,5 +184,10 @@ namespace ORS
     inline bool SetOrgasmFlags(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, int a_flags)
     {
         return OrgasmManager::GetSingleton()->SetOrgasmFlags(a_actor,a_flags);
+    }
+
+    inline bool UseArousalFallback(PAPYRUSFUNCHANDLE)
+    {
+        return OrgasmManager::GetSingleton()->UseArousalFallback();
     }
 }

@@ -22,6 +22,7 @@ namespace UD
 
         bool t1mutex = false;
         bool t3mutex = false;
+        bool t4mutex = false;
     private:
         int _installed = false;
     };

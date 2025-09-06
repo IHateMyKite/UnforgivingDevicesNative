@@ -418,8 +418,22 @@ void ORS::OrgasmActorData::UpdateArousal(const float& a_delta)
         _RDATA.ArousalEventLastValue = _RDATA.Arousal;
     }
 
-    if (OSLAModifyArousal != nullptr && loc_da != 0.0f) _RDATA.Arousal = OSLAModifyArousal(_RDATA.Actor,loc_da,loc_sendarousalevent);
+    if (loc_da != 0.0f) 
+    {
+        if (OSLAModifyArousal != nullptr)
+        {
+            _RDATA.Arousal = OSLAModifyArousal(_RDATA.Actor,loc_da,loc_sendarousalevent);
+        }
+        else
+        {
+            //Not compatible mod. Use fallback
+        }
+    }
+}
 
+void ORS::OrgasmActorData::UpdateArousalFallback(const float& a_value)
+{
+    _RDATA.Arousal = a_value;
 }
 
 void ORS::OrgasmActorData::OnGameLoaded(SKSE::SerializationInterface* serde)

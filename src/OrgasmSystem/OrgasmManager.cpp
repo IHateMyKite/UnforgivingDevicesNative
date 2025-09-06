@@ -12,7 +12,7 @@ SINGLETONBODY(ORS::OrgasmManager)
 namespace ORS
 {
     inline const auto OrgasmSerData = _byteswap_ulong('ORSD');
-    ModifyArousal OSLAModifyArousal;
+    ModifyArousal OSLAModifyArousal = nullptr;
 }
 
 void ORS::OrgasmManager::Setup()
@@ -28,10 +28,19 @@ void ORS::OrgasmManager::Setup()
             LOG("OrgasmManager::Setup() - Modify arousal imported")
             //FreeLibrary(dllHandle);
         }
-        else
+
+        if (UseArousalFallback())
         {
-            ERROR("OrgasmManager::Setup() - ERROR: Cant find OSLAroused.dll!!")
+            WARN("OrgasmManager::Setup() - Using arousal fallback. No compatible mods found!")
         }
+
+        // Get arousal faction
+        _arousalfaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x025837UL,"SexLabAroused.esm"));
+        if (!_arousalfaction)
+        {
+            ERROR("OrgasmManager::Setup() - Can't load arousal faction! Can't use fallback")
+        }
+
         _installed = true;
         LOG("OrgasmConfig::Setup - installed")
     }
@@ -77,6 +86,12 @@ void ORS::OrgasmManager::Update(float a_delta)
         if (loc_actororgasm != nullptr && loc_actor != nullptr && (std::find(loc_actors.begin(),loc_actors.end(), it.first) != loc_actors.end()))
         {
             loc_actororgasm->SetActor(loc_actor);
+            if (UseArousalFallback() && _arousalfaction)
+            {
+                // Set arousal before calling update
+                const float loc_arousal = std::clamp(loc_actor->GetFactionRank(_arousalfaction,loc_actor->IsPlayerRef()),0,100);
+                loc_actororgasm->UpdateArousalFallback(loc_arousal);
+            }
             if (loc_multithd)
             {
                 //create thread for every actor
@@ -86,7 +101,6 @@ void ORS::OrgasmManager::Update(float a_delta)
             {
                 loc_actororgasm->Update(a_delta);
             }
-
         }
         else
         {
@@ -332,6 +346,11 @@ bool ORS::OrgasmManager::SetOrgasmFlags(RE::Actor* a_actor, int a_flags)
     return loc_oc.SetOrgasmFlags(a_flags);
 }
 
+bool ORS::OrgasmManager::UseArousalFallback(void) const
+{
+    return OSLAModifyArousal == nullptr;
+}
+
 void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm)
 {
     #define REGISTERPAPYRUSFUNC(name,unhook) vm->RegisterFunction(#name, "OrgasmSystem", ORS::name,unhook);
@@ -356,6 +375,7 @@ void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine 
     REGISTERPAPYRUSFUNC(GetHornyStatus,true)
     REGISTERPAPYRUSFUNC(GetOrgasmFlags,true)
     REGISTERPAPYRUSFUNC(SetOrgasmFlags,true)
+    REGISTERPAPYRUSFUNC(UseArousalFallback,true)
     // ----
     #undef REGISTERPAPYRUSFUNC
 

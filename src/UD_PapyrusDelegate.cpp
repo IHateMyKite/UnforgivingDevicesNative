@@ -9,6 +9,7 @@
 #include <UD_Utility.h>
 //#include <UD_Spinlock.h>
 #include <UD_DDAPI.h>
+#include <UD_ModuleManager.h>
 
 #undef GetObject
 
@@ -1078,6 +1079,32 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
                 return;
             }
         }
+
+        //auto loc_module = HaveScriptBase(a_script.second,"ud_modulebase");
+        //if (loc_module != nullptr)
+        //{
+        //    RE::VMHandle loc_handle = a_script.first;
+        //    //get script object
+        //    RE::BSTSmartPointer<RE::BSScript::Object> loc_object = nullptr;
+        //
+        //    loc_vm->FindBoundObject(loc_handle,loc_module->GetName(),loc_object);
+        //
+        //    if (loc_object != nullptr)
+        //    {
+        //        //undef this stupidass macro so we can use the GetObject method
+        //        #undef GetObject
+        //
+        //        const RE::FormID loc_formid = static_cast<RE::FormID>(loc_handle & 0x00000000FFFFFFFF);
+        //
+        //        auto loc_quest = reinterpret_cast<RE::TESQuest*>(RE::TESForm::LookupByID(loc_formid));
+        //
+        //        ModuleManager::GetSingleton()->AddModule(loc_handle,{loc_object,loc_quest});
+        //
+        //        DEBUG("Module found : 0x{:016X} / 0x{:08X} ({})",loc_handle,loc_formid,loc_quest ? loc_quest->GetName() : "NONE")
+        //
+        //        return;
+        //    }
+        //}
 
     });
     loc_vm->attachedScriptsLock.Unlock();

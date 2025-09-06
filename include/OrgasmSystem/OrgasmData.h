@@ -9,6 +9,7 @@ using boost::algorithm::clamp;
 
 namespace ORS
 {
+
     // Current orgasm data version
     #define PDATAVERSION    1U
 
@@ -213,7 +214,7 @@ namespace ORS
         OrgasmActorData(){};
 
         void    UpdateArousal(const float& a_delta);
-
+        void    UpdateArousalFallback(const float& a_value);
     private:
         inline float CalculateOrgasmProgress(const float& a_delta);
         inline float CalculateOrgasmRate(const float& a_delta);
@@ -265,7 +266,7 @@ namespace ORS
             float       OrgasmProgress  = 0.0f;
             float       HornyLevel      = 100.0f;
             uint32_t    OrgasmFlags     = eOfNone;
-            uint8_t     Reserved[28]    = {0}; //reserved 32 bytes for future additiones
+            uint8_t     Reserved[28]    = {0}; //reserved 28 bytes for future additiones
         };
         static_assert(sizeof(PERSIST_DATA) == (32*sizeof(OrgasmEroZone)+40));
 

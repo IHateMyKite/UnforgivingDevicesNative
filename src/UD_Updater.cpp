@@ -5,6 +5,7 @@
 #include <UD_MinigameEffect.h>
 #include <UD_ActorSlotManager.h>
 #include <UD_PlayerStatus.h>
+#include <UD_ModuleManager.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 SINGLETONBODY(UD::UpdateManager)
@@ -53,6 +54,17 @@ namespace UD
             });
             std::this_thread::sleep_for(std::chrono::milliseconds(UD::Config::GetSingleton()->GetVariable<int>("General.iUpdateTime",2500))); //only once per 2.5s
             t3mutex = false;
+        }).detach();
+        if (!t4mutex) std::thread([this]
+        {
+            if (t4mutex) return;
+            t4mutex = true;
+            SKSE::GetTaskInterface()->AddTask([]
+            {
+                ModuleManager::GetSingleton()->Update();
+            });
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            t4mutex = false;
         }).detach();
 
         MinigameEffectManager::GetSingleton()->UpdateMinigameEffect(loc_player,a_delta);
