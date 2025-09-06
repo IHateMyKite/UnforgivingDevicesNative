@@ -997,9 +997,16 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
                 _modifiercache[loc_handle].quest = loc_quest;
 
                 const uint32_t loc_qalias = static_cast<uint32_t>((loc_handle >> 32U));
-                _modifiercache[loc_handle].alias = loc_quest->aliases[loc_qalias];;
+                auto quest_aliases = loc_quest->aliases;
+                if (loc_qalias >= 0 && loc_qalias < quest_aliases.size()) {
+                    _modifiercache[loc_handle].alias = loc_quest->aliases[loc_qalias];
+                } else {
+                    ERROR("Modifier {} - Alias not found with aliasID {}", _modifiercache[loc_handle].name, loc_qalias)
+                }
 
-                //DEBUG("Modifier {}::{} found",_modifiercache[loc_handle].alias,_modifiercache[loc_handle].name)
+                //DEBUG("Modifier {}::{} found",
+                //      _modifiercache[loc_handle].alias ? _modifiercache[loc_handle].alias->aliasName : "NONE",
+                //      _modifiercache[loc_handle].name)
                 return;
             }
         }

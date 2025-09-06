@@ -39,6 +39,7 @@ set(source_files ${source_files}
     src/UD_Modifiers.cpp
     src/UD_Messagebox.cpp
 	src/UD_ModuleManager.cpp
+    src/UD_SLPP.cpp
     src/OrgasmSystem/OrgasmEvents.cpp
     src/OrgasmSystem/OrgasmManager.cpp
     src/OrgasmSystem/OrgasmData.cpp

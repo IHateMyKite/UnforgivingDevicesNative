@@ -3,6 +3,7 @@
 #include <UD_Config.h>
 #include <UD_Inventory.h>
 #include <UD_Keywords.h>
+#include <UD_SLPP.h>
 #include <boost/json/src.hpp>
 #include <boost/algorithm/string.hpp>
 #include <regex>
@@ -174,7 +175,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
                 }
                 else
                 {
-                    return {"ERROR",std::format("Can't find valid animation variant in def {} for actor with constraints 0x{:08X}",a_def,loc_actor_constraints)}; 
+                    return {"ERROR",std::format("Can't find valid animation variant in def {} for Actor with constraints 0x{:08X}",a_def,loc_actor_constraints)}; 
                 }
 
             }
@@ -184,7 +185,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
             }
             else
             {
-                return {"ERROR",std::format("Can't find valid animation variant in def {} for actor with constraints 0x{:08X}",a_def,loc_actor_constraints)};
+                return {"ERROR",std::format("Can't find valid animation variant in def {} for Actor with constraints 0x{:08X}",a_def,loc_actor_constraints)};
             }
         }
         catch(const std::exception& e)
@@ -203,11 +204,25 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
         auto loc_anim2 = RecursiveFind(loc_object, loc_actor_animVars[1] + ".anim");
         if (loc_anim1.is_array() && loc_anim2.is_array())
         {
+            auto loc_arr1_before_filter = loc_anim1.as_array();
+            auto loc_arr2_before_filter = loc_anim2.as_array();
             auto loc_arr1 = loc_anim1.as_array();
             auto loc_arr2 = loc_anim2.as_array();
-        
-            const size_t loc_size = loc_arr1.size() < loc_arr2.size() ? loc_arr1.size() : loc_arr2.size();
-
+            size_t loc_size = loc_arr1.size() < loc_arr2.size() ? loc_arr1.size() : loc_arr2.size();
+            
+            loc_arr1.clear();
+            loc_arr2.clear();
+            for (size_t i = 0U; i < loc_size; i++)
+            {
+                if (ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr1_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND" || ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr2_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND") {
+                    ERROR("animations {} {} missing",loc_arr1_before_filter[i].as_string().c_str(),loc_arr2_before_filter[i].as_string().c_str())
+                    continue;
+                }
+                loc_arr1.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr1_before_filter[i].as_string().c_str())).c_str());
+                loc_arr2.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr2_before_filter[i].as_string().c_str())).c_str());
+                
+            }
+            loc_size=loc_arr1.size();
             loc_res.push_back(std::to_string(loc_size));
 
             std::vector<std::string> loc_anims(2*loc_size);
@@ -219,12 +234,18 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
             }
 
             loc_res.append_range(loc_anims);
+            
         }
         else if (loc_anim1.is_string() && loc_anim2.is_string())
         {
-            loc_res.push_back("-1");
-            loc_res.push_back(loc_anim1.as_string().c_str());
-            loc_res.push_back(loc_anim2.as_string().c_str());
+            if (ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),loc_anim1.as_string().c_str()) == "ERROR_NOT_FOUND" || ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),loc_anim2.as_string().c_str()) == "ERROR_NOT_FOUND") {
+                ERROR("animations {} {} missing",loc_anim1.as_string().c_str(),loc_anim2.as_string().c_str())
+            } else {
+                loc_res.push_back("-1");
+                
+                loc_res.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),loc_anim1.as_string().c_str()).c_str());
+                loc_res.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),loc_anim2.as_string().c_str()).c_str());
+            }
         }
     }
     else if (a_actors.size() == 1U)
@@ -232,9 +253,19 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
         auto loc_anim = RecursiveFind(loc_object, loc_actor_animVars[0] + ".anim");
         if (loc_anim.is_array())
         {
+            auto loc_arr_before_filter = loc_anim.as_array();
+            size_t loc_size = loc_arr_before_filter.size();
             auto loc_arr = loc_anim.as_array();
-        
-            const size_t loc_size = loc_arr.size();
+            loc_arr.clear();
+            for (size_t i = 0U; i < loc_size; i++)
+            {
+                if (ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr_before_filter[i].as_string().c_str())) == "ERROR_NOT_FOUND") {
+                    ERROR("animations {} missing",loc_arr_before_filter[i].as_string().c_str())
+                    continue;
+                }
+                loc_arr.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_arr_before_filter[i].as_string().c_str())).c_str());
+            }
+            loc_size=loc_arr.size();
             loc_res.push_back(std::to_string(loc_size));
         
             std::vector<std::string> loc_anims(loc_size,"ERROR");
@@ -248,8 +279,13 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
         }
         else if (loc_anim.is_string())
         {
-            loc_res.push_back("-1");
-            loc_res.push_back(loc_anim.as_string().c_str());
+             if (ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_anim.as_string().c_str())) == "ERROR_NOT_FOUND") {
+                ERROR("animations {} missing",loc_anim.as_string().c_str())
+                
+            } else {
+                loc_res.push_back("-1");
+                loc_res.push_back(ConvertAnimationSLPPNative(RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),std::string(loc_anim.as_string().c_str())).c_str());
+            }
         }
     }
 
@@ -261,7 +297,7 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromJSON(std::string
 
     return loc_res;
 }
-
+static std::map<std::tuple<std::string,int,int>,bool> valid_anim_cache;
 std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a_type, const std::vector<std::string>& a_kws, std::string a_field, const std::vector<int>& a_ActorConstraints, int a_lewdmin, int a_lewdmax, int a_aggromin, int a_aggromax)
 {
     LOG("AnimationManager::GetAnimationsFromDB({},[{}],{},{},{}) called",a_type,boost::join(a_kws,","),a_field,a_lewdmin,a_lewdmax)
@@ -290,9 +326,9 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                         auto loc_A = RecursiveFind(anim,"A" + std::to_string(i+1));
                         if (loc_A.is_array())
                         {
-                            for (auto&& actor : loc_A.as_array())
+                            for (auto&& Actor : loc_A.as_array())
                             {
-                                loc_check = _CheckConstraints(actor,"",a_ActorConstraints[i]);
+                                loc_check = _CheckConstraints(Actor,"",a_ActorConstraints[i]);
                                 if (loc_check) break;
                             }
                         }
@@ -309,16 +345,36 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                     }
 
                     if (loc_check /* && TODO: Check Lewd and Aggro */)
-                    {
-                        if (a_field == "")
-                        {
-                            loc_result.push_back(name + ":" + loc_anim_path);
-                        }
-                        else
-                        {
-                            WARN("AnimationManager::GetAnimationsFromDB({},[{}],{},{},{}) - Use of field is currently not supported",a_type,boost::join(a_kws,","),a_field,a_lewdmin,a_lewdmax)
-                        }
+                    { 
+                            int constraints1=0;
+                            int constraints2=0;
+                            if (a_ActorConstraints.size() == 1) {
+                                constraints1=a_ActorConstraints[0];
+                            }
+                            if (a_ActorConstraints.size() == 2) {
+                                constraints2=a_ActorConstraints[1];
+                            }
+                            std::string anim_name_path(name+":"+loc_anim_path);
+                            std::tuple<std::string,int,int> tp(anim_name_path,constraints1,constraints2);
+                            auto p=valid_anim_cache.find(tp);
+                            if (p != valid_anim_cache.end())
+                            {
+                                if (p->second==true) {
+                                    loc_result.push_back(name + ":" + loc_anim_path);
+                                }
+                            } else {
+                                if ((a_ActorConstraints.size() == 1 || a_ActorConstraints.size() == 0) && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() >= 3) {
+                                    valid_anim_cache.insert_or_assign(tp,true);
+                                    loc_result.push_back(name + ":" + loc_anim_path);
+                                } else if (a_ActorConstraints.size() == 2 && GetAnimationsFromJSON(name+":"+loc_anim_path,{RE::PlayerCharacter::GetSingleton()->As<RE::Actor>(),RE::PlayerCharacter::GetSingleton()->As<RE::Actor>()},constraints1,constraints2).size() >= 3) {
+                                    valid_anim_cache.insert_or_assign(tp,true);
+                                    loc_result.push_back(name + ":" + loc_anim_path);
+                                } else {
+                                    valid_anim_cache.insert_or_assign(tp,false);
+                                }
+                            }
                     }
+                    
                 }
             }
             else
@@ -527,7 +583,7 @@ void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
         loc_canattack = false;
         break;
     case 1:
-        // Only if actor is follower
+        // Only if Actor is follower
         loc_canattack = a_actor->GetActorRuntimeData().boolBits.any(RE::Actor::BOOL_BITS::kPlayerTeammate);
         break;
     case 2:
@@ -535,7 +591,7 @@ void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
         break;
     }
 
-    // Check if actor weapons are disabled
+    // Check if Actor weapons are disabled
     if (a_draw)
     {
         if (AnimationManager::GetSingleton()->CheckWeaponDisabled(a_actor))
@@ -549,7 +605,7 @@ void UD::AnimationManager::DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw)
     if (a_draw && (IsAnimating(a_actor) || ActorIsBoundCombatDisabled(a_actor) || (!loc_canattack && ActorIsBound(a_actor))))
     {
         
-        LOG("ControlManager::DrawWeaponMagicHands({}) - actor is animating/bound and because of that cant draw weapon",a_actor ? a_actor->GetName() : "NONE")
+        LOG("ControlManager::DrawWeaponMagicHands({}) - Actor is animating/bound and because of that cant draw weapon",a_actor ? a_actor->GetName() : "NONE")
         return;
     } 
     else
@@ -564,15 +620,35 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::stri
     LOG("AnimationManager::_CheckConstraints({},{})",a_ObjPath,a_ActorConstraints)
     try
     {
-        const int loc_anim_reqConstr = RecursiveFind(a_obj,a_ObjPath + ".req").as_int64();
+        auto req=RecursiveFind(a_obj,a_ObjPath + ".req");
+        int loc_anim_reqConstr = 0;
+        if (req.is_int64()) {
+            loc_anim_reqConstr=req.as_int64();
+            
+        } else {
+            WARN("anim req not int64 {}",req.kind());
+        }
         if ((loc_anim_reqConstr & a_ActorConstraints) != loc_anim_reqConstr)
         {
+            //ERROR("constraint req {} {}",a_ActorConstraints, loc_anim_reqConstr)
             return false;
         }
         else
         {
-            const int loc_anim_optConstr = RecursiveFind(a_obj,a_ObjPath + ".opt").as_int64();
-            return ((loc_anim_optConstr | loc_anim_reqConstr) & a_ActorConstraints) == a_ActorConstraints;
+            auto opt=RecursiveFind(a_obj,a_ObjPath + ".opt");
+            int loc_anim_optConstr = 0;
+            if (opt.is_int64()) {
+                loc_anim_optConstr=opt.as_int64();
+            } else {
+                WARN("anim opt not int64 {}",req.kind());
+            }
+            
+            if ((~(loc_anim_optConstr|loc_anim_reqConstr) & a_ActorConstraints)==0) {
+                return true;
+            }
+            ERROR("constraint opt {} {}", a_ActorConstraints, loc_anim_optConstr)
+            // TODO: sort by most optional constraints
+            return false;
         }
     }
     catch (const std::exception& e)
