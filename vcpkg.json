@@ -10,7 +10,8 @@
         "boost-lexical-cast",
         "boost-property-tree",
         "spdlog",
-        "boost-json"
+        "boost-json",
+        "rapidcsv"
     ],
     "overrides": [
         {
@@ -36,6 +37,14 @@
         {
             "name": "boost-json",
             "version": "1.86.0"
+        },
+        {
+            "name": "spdlog",
+            "version": "1.15.1"
+        },
+        {
+            "name": "rapidcsv",
+            "version": "8.85"
         }
     ]
 }
