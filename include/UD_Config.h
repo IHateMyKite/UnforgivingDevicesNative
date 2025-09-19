@@ -21,4 +21,13 @@ namespace UD
         mutable Utils::Spinlock  _lock;
         std::vector<std::string> GetArrayRaw(std::string a_name, bool a_tolower, std::string a_sep = ",") const;
     };
+
+    int                         GetIniVariableInt(PAPYRUSFUNCHANDLE,std::string a_name, int a_def);
+    std::string                 GetIniVariableString(PAPYRUSFUNCHANDLE,std::string a_name, std::string a_def);
+    float                       GetIniVariableFloat(PAPYRUSFUNCHANDLE,std::string a_name, float a_def);
+    bool                        GetIniVariableBool(PAPYRUSFUNCHANDLE,std::string a_name, bool a_def);
+    std::vector<int>            GetIniArrayInt(PAPYRUSFUNCHANDLE,std::string a_name, std::string a_sep);
+    std::vector<std::string>    GetIniArrayString(PAPYRUSFUNCHANDLE,std::string a_name, bool a_text, std::string a_sep);
+    std::vector<float>          GetIniArrayFloat(PAPYRUSFUNCHANDLE,std::string a_name, std::string a_sep);
+    std::vector<bool>           GetIniArrayBool(PAPYRUSFUNCHANDLE,std::string a_name, std::string a_sep);
 }

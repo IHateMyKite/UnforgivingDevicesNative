@@ -136,3 +136,51 @@ template std::vector<int> Config::GetArray<int>(std::string a_name, std::string 
 template std::vector<std::string> Config::GetArray<std::string>(std::string a_name, std::string a_sep) const;
 template std::vector<float> Config::GetArray<float>(std::string a_name, std::string a_sep) const;
 template std::vector<bool> Config::GetArray<bool>(std::string a_name, std::string a_sep) const;
+
+int UD::GetIniVariableInt(PAPYRUSFUNCHANDLE, std::string a_name, int a_def)
+{
+    return Config::GetSingleton()->GetVariable<int>(a_name,a_def);
+}
+
+std::string UD::GetIniVariableString(PAPYRUSFUNCHANDLE, std::string a_name, std::string a_def)
+{
+    return Config::GetSingleton()->GetVariable<std::string>(a_name,a_def);
+}
+
+float UD::GetIniVariableFloat(PAPYRUSFUNCHANDLE, std::string a_name, float a_def)
+{
+    return Config::GetSingleton()->GetVariable<float>(a_name,a_def);
+}
+
+bool UD::GetIniVariableBool(PAPYRUSFUNCHANDLE, std::string a_name, bool a_def)
+{
+    return Config::GetSingleton()->GetVariable<bool>(a_name,a_def);
+}
+
+std::vector<int> UD::GetIniArrayInt(PAPYRUSFUNCHANDLE, std::string a_name, std::string a_sep)
+{
+    return Config::GetSingleton()->GetArray<int>(a_name,a_sep);
+}
+
+std::vector<std::string> UD::GetIniArrayString(PAPYRUSFUNCHANDLE, std::string a_name, bool a_text, std::string a_sep)
+{
+    if (a_text)
+    {
+        return Config::GetSingleton()->GetArray<std::string>(a_name,a_sep);
+    }
+    else
+    {
+        return Config::GetSingleton()->GetArrayText(a_name,false,a_sep);
+    }
+    
+}
+
+std::vector<float> UD::GetIniArrayFloat(PAPYRUSFUNCHANDLE, std::string a_name, std::string a_sep)
+{
+    return Config::GetSingleton()->GetArray<float>(a_name,a_sep);
+}
+
+std::vector<bool> UD::GetIniArrayBool(PAPYRUSFUNCHANDLE, std::string a_name, std::string a_sep)
+{
+    return Config::GetSingleton()->GetArray<bool>(a_name,a_sep);
+}

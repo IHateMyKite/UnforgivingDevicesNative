@@ -11,7 +11,8 @@
         "boost-property-tree",
         "spdlog",
         "boost-json",
-        "rapidcsv"
+        "rapidcsv",
+        "detours"
     ],
     "overrides": [
         {

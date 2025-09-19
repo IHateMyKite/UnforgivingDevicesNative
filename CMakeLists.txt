@@ -53,6 +53,21 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 sta
 target_precompile_headers(${PROJECT_NAME} PRIVATE PCH.h) # <--- PCH.h is required!
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
+find_path(DETOURS_INCLUDE_DIRS "detours/detours.h")
+find_library(DETOURS_LIBRARY detours REQUIRED)
+
+target_include_directories(
+    ${PROJECT_NAME} 
+    PRIVATE 
+    ${DETOURS_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+    ${PROJECT_NAME} 
+    PRIVATE 
+    ${DETOURS_LIBRARY}
+)
+
 set(SKSE_USE_XBYAK ON)
 
 # Copy localy compiled dll to bin folder

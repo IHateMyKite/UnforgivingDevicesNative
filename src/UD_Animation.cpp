@@ -646,14 +646,14 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::stri
             if ((~(loc_anim_optConstr|loc_anim_reqConstr) & a_ActorConstraints)==0) {
                 return true;
             }
-            ERROR("constraint opt {} {}", a_ActorConstraints, loc_anim_optConstr)
+            LOG("AnimationManager::_CheckConstraints({},{}) - OptConstr {}",a_ObjPath,a_ActorConstraints,loc_anim_optConstr)
             // TODO: sort by most optional constraints
             return false;
         }
     }
     catch (const std::exception& e)
     {
-        WARN("AnimationManager::_CheckConstraints({},{}) - Cant get values from json - {}",a_ObjPath,a_ActorConstraints,e.what())
+        WARN("AnimationManager::_CheckConstraints({},{}) - Can't get values from json - {}",a_ObjPath,a_ActorConstraints,e.what())
         return false;
     }
 

@@ -44,6 +44,7 @@ namespace UD
         AnimationManager::GetSingleton()->Setup();
         ModifierManager::GetSingleton()->Setup();
         MessageboxManager::GetSingleton()->Setup();
+        SkillManager::GetSingleton()->Setup();
         //remove effect in case that user reloaded the game without exit
         if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
 

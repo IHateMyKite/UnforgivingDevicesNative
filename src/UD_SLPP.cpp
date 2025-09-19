@@ -20,7 +20,7 @@ namespace UD {
             std::transform(lowerOriginalAnimationName.begin(), lowerOriginalAnimationName.end(),
                             lowerOriginalAnimationName.begin(), [](char c) { return std::tolower(c); });
             if (animManager->AnimationCacheMap.contains(lowerOriginalAnimationName)) {
-                SKSE::log::info("cache found {} {}",lowerOriginalAnimationName,animManager->AnimationCacheMap[lowerOriginalAnimationName]);
+                LOG("cache found {} {}",lowerOriginalAnimationName,animManager->AnimationCacheMap[lowerOriginalAnimationName]);
                 return animManager->AnimationCacheMap[lowerOriginalAnimationName];
             }
             RE::BSAnimationGraphManagerPtr ptr;
@@ -62,11 +62,11 @@ namespace UD {
                                     std::string eventName2(eventName);
                                     if (found + (lowerOriginalAnimationName.size() - prefix_removal) ==
                                         lowerEventName.size()) {
-                                        SKSE::log::info("animation {}", eventName2);
+                                        LOG("animation {}", eventName2);
                                         animManager->AnimationCacheMap.insert_or_assign(lowerOriginalAnimationName,eventName2);
                                         return eventName2;
                                     } else {
-                                        SKSE::log::info("incorrect animation {}", eventName2);
+                                        LOG("incorrect animation {}", eventName2);
                                     }
                                 }
                             }

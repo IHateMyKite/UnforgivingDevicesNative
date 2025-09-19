@@ -411,7 +411,7 @@ void UD::PapyrusDelegate::ValidateInvalidDevices() const
                     auto loc_unlocked = loc_object->GetVariable("_IsUnlocked");
                     if (loc_unlocked && (loc_unlocked->GetBool() == true))
                     {
-                        DEBUG("ValidateInvalidDevices - Device 0x{:016X} is unlocked. Skipping",loc_handle)
+                        //DEBUG("ValidateInvalidDevices - Device 0x{:016X} is unlocked. Skipping",loc_handle)
                         return;
                     }
 

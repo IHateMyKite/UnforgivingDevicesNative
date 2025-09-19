@@ -99,8 +99,11 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetAllAnimationFilesStatus,true)
         REGISTERPAPYRUSFUNC(SyncAnimationSetting,true)
         REGISTERPAPYRUSFUNC(ConvertAnimationSLPP,true)
+
         //skill
         REGISTERPAPYRUSFUNC(CalculateSkillFromPerks,true)
+        REGISTERPAPYRUSFUNC(GetPerksForSkill,true)
+        REGISTERPAPYRUSFUNC(AdvanceSkillPerc,true)
 
         //actor slot manager
         REGISTERPAPYRUSFUNC(RegisterSlotQuest,true)
@@ -156,6 +159,16 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetResultText,true)
         REGISTERPAPYRUSFUNC(GetResultIndex,true)
         REGISTERPAPYRUSFUNC(IsMessageResultAvailable,true)
+
+        //Config
+        REGISTERPAPYRUSFUNC(GetIniVariableInt   ,true)
+        REGISTERPAPYRUSFUNC(GetIniVariableString,true)
+        REGISTERPAPYRUSFUNC(GetIniVariableFloat ,true)
+        REGISTERPAPYRUSFUNC(GetIniVariableBool  ,true)
+        REGISTERPAPYRUSFUNC(GetIniArrayInt      ,true)
+        REGISTERPAPYRUSFUNC(GetIniArrayString   ,true)
+        REGISTERPAPYRUSFUNC(GetIniArrayFloat    ,true)
+        REGISTERPAPYRUSFUNC(GetIniArrayBool     ,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 
