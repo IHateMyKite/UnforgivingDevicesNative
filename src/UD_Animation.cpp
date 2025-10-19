@@ -643,12 +643,9 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::stri
                 WARN("anim opt not int64 {}",req.kind());
             }
             
-            if ((~(loc_anim_optConstr|loc_anim_reqConstr) & a_ActorConstraints)==0) {
-                return true;
-            }
             LOG("AnimationManager::_CheckConstraints({},{}) - OptConstr {}",a_ObjPath,a_ActorConstraints,loc_anim_optConstr)
             // TODO: sort by most optional constraints
-            return false;
+            return true;
         }
     }
     catch (const std::exception& e)
