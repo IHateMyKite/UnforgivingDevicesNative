@@ -348,10 +348,10 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                     { 
                             int constraints1=0;
                             int constraints2=0;
-                            if (a_ActorConstraints.size() == 1) {
+                            if (a_ActorConstraints.size() >= 1) {
                                 constraints1=a_ActorConstraints[0];
                             }
-                            if (a_ActorConstraints.size() == 2) {
+                            if (a_ActorConstraints.size() >= 2) {
                                 constraints2=a_ActorConstraints[1];
                             }
                             std::string anim_name_path(name+":"+loc_anim_path);
