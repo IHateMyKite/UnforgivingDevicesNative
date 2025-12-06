@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_set>
+
 namespace UD 
 {
     using InternalVM = RE::BSScript::Internal::VirtualMachine;
