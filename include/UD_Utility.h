@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_set>
+
 namespace UD 
 {
     using InternalVM = RE::BSScript::Internal::VirtualMachine;
@@ -43,6 +45,7 @@ namespace UD
     {
     SINGLETONHEADER(Utility)
     public:
+        std::vector<RE::TESForm*> RemoveDuplicateForms(PAPYRUSFUNCHANDLE, std::vector<RE::TESForm*> modifier_forms);
         int     CodeBit(int a_codedmap,int a_value,int a_size,int a_index) const;
         int     DecodeBit(int i_codedMap,int i_size,int i_index) const;
         int     Round(float a_value) const;
@@ -60,6 +63,24 @@ namespace UD
     private:
 
     };
+    inline  std::vector<RE::TESForm*> RemoveDuplicateForms(PAPYRUSFUNCHANDLE, std::vector<RE::TESForm*> modifier_forms) 
+    {
+        std::unordered_set <RE::TESForm*> modifier_form_set;
+        std::vector<RE::TESForm*> new_modifier_forms;
+        for (auto& form: modifier_forms) 
+        {
+            if (form)
+            {
+                if (modifier_form_set.count(form)==0) 
+                {
+                    modifier_form_set.insert(form);
+                    new_modifier_forms.push_back(form);
+                }
+            }
+        }
+        return new_modifier_forms;
+
+    }
 
     inline int CodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_value,int a_size,int a_index)
     {

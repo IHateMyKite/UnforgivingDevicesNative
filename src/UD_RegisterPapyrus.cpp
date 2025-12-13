@@ -36,6 +36,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(MinigameEffectUpdateMagicka,true)
 
         //UTILITY
+        REGISTERPAPYRUSFUNC(RemoveDuplicateForms,true)
         REGISTERPAPYRUSFUNC(CodeBit,true)
         REGISTERPAPYRUSFUNC(DecodeBit,true)
         REGISTERPAPYRUSFUNC(iRange,true)
