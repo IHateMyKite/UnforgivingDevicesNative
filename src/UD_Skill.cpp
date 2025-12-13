@@ -36,7 +36,7 @@ namespace UD
 
     std::vector<RE::BGSPerk*> GetPerksForSkill(PAPYRUSFUNCHANDLE, std::string a_skill)
     {
-        RE::ActorValue loc_value = RE::ActorValueList::GetSingleton()->LookupActorValueByName(a_skill);
+        RE::ActorValue loc_value = GetActorValueByName(a_skill);
         auto loc_valueinfo = RE::ActorValueList::GetSingleton()->GetActorValue(loc_value);
         std::vector<RE::BGSPerk*> loc_res;
         if (loc_valueinfo != nullptr && loc_valueinfo->perkTree)
@@ -74,7 +74,7 @@ namespace UD
 
         LOG("AdvanceSkillPerc({},{}) - Recalculated perc. = {}, level = {}",a_skill,a_value,loc_val,loc_lvl)
 
-        if (loc_avinfo->skill->useMult)
+        if (loc_avinfo->skill && loc_avinfo->skill->useMult)
         {
             const float loc_xp = (loc_thd*loc_val - loc_avinfo->skill->offsetMult)/loc_avinfo->skill->useMult;
             loc_player->AddSkillExperience(loc_av,loc_xp);
@@ -119,34 +119,36 @@ namespace UD
 
     std::unordered_map<std::string,std::pair<Skill,RE::ActorValue>> g_SkillTable = 
     {
-        {"OneHanded"   ,{Skill::kOneHanded  , RE::ActorValue::kOneHanded  }},
-        {"TwoHanded"   ,{Skill::kTwoHanded  , RE::ActorValue::kTwoHanded  }},
-        {"Archery"     ,{Skill::kArchery    , RE::ActorValue::kArchery    }},
-        {"Block"       ,{Skill::kBlock      , RE::ActorValue::kBlock      }},
-        {"Smithing"    ,{Skill::kSmithing   , RE::ActorValue::kSmithing   }},
-        {"HeavyArmor"  ,{Skill::kHeavyArmor , RE::ActorValue::kHeavyArmor }},
-        {"LightArmor"  ,{Skill::kLightArmor , RE::ActorValue::kLightArmor }},
-        {"Pickpocket"  ,{Skill::kPickpocket , RE::ActorValue::kPickpocket }},
-        {"Lockpicking" ,{Skill::kLockpicking, RE::ActorValue::kLockpicking}},
-        {"Sneak"       ,{Skill::kSneak      , RE::ActorValue::kSneak      }},
-        {"Alchemy"     ,{Skill::kAlchemy    , RE::ActorValue::kAlchemy    }},
-        {"Speech"      ,{Skill::kSpeech     , RE::ActorValue::kSpeech     }},
-        {"Alteration"  ,{Skill::kAlteration , RE::ActorValue::kAlteration }},
-        {"Conjuration" ,{Skill::kConjuration, RE::ActorValue::kConjuration}},
-        {"Destruction" ,{Skill::kDestruction, RE::ActorValue::kDestruction}},
-        {"Illusion"    ,{Skill::kIllusion   , RE::ActorValue::kIllusion   }},
-        {"Restoration" ,{Skill::kRestoration, RE::ActorValue::kRestoration}},
-        {"Enchanting"  ,{Skill::kEnchanting , RE::ActorValue::kEnchanting }}
+        {"onehanded"   ,{Skill::kOneHanded  , RE::ActorValue::kOneHanded  }},
+        {"twohanded"   ,{Skill::kTwoHanded  , RE::ActorValue::kTwoHanded  }},
+        {"marksman"    ,{Skill::kArchery    , RE::ActorValue::kArchery    }}, // Why is it called two things ???
+        {"block"       ,{Skill::kBlock      , RE::ActorValue::kBlock      }},
+        {"smithing"    ,{Skill::kSmithing   , RE::ActorValue::kSmithing   }},
+        {"heavyarmor"  ,{Skill::kHeavyArmor , RE::ActorValue::kHeavyArmor }},
+        {"lightarmor"  ,{Skill::kLightArmor , RE::ActorValue::kLightArmor }},
+        {"pickpocket"  ,{Skill::kPickpocket , RE::ActorValue::kPickpocket }},
+        {"lockpicking" ,{Skill::kLockpicking, RE::ActorValue::kLockpicking}},
+        {"sneak"       ,{Skill::kSneak      , RE::ActorValue::kSneak      }},
+        {"alchemy"     ,{Skill::kAlchemy    , RE::ActorValue::kAlchemy    }},
+        {"speech"      ,{Skill::kSpeech     , RE::ActorValue::kSpeech     }},
+        {"alteration"  ,{Skill::kAlteration , RE::ActorValue::kAlteration }},
+        {"conjuration" ,{Skill::kConjuration, RE::ActorValue::kConjuration}},
+        {"destruction" ,{Skill::kDestruction, RE::ActorValue::kDestruction}},
+        {"illusion"    ,{Skill::kIllusion   , RE::ActorValue::kIllusion   }},
+        {"restoration" ,{Skill::kRestoration, RE::ActorValue::kRestoration}},
+        {"enchanting"  ,{Skill::kEnchanting , RE::ActorValue::kEnchanting }}
     };
 
-    Skill GetSkillByName(std::string asSkill)
+    Skill GetSkillByName(std::string a_skill)
     {
-        return g_SkillTable[asSkill].first;
+        std::transform(a_skill.begin(), a_skill.end(), a_skill.begin(),[](unsigned char c){ return std::tolower(c); });
+        return g_SkillTable[a_skill].first;
     }
 
-    RE::ActorValue GetActorValueByName(std::string asSkill)
+    RE::ActorValue GetActorValueByName(std::string a_skill)
     {
-        return g_SkillTable[asSkill].second;
+        std::transform(a_skill.begin(), a_skill.end(), a_skill.begin(),[](unsigned char c){ return std::tolower(c); });
+        return g_SkillTable[a_skill].second;
     }
     void SkillManager::Setup()
     {

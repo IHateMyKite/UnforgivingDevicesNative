@@ -25,7 +25,7 @@ void ORS::OrgasmManager::Setup()
         {
             FARPROC pModifyArousal = GetProcAddress(HMODULE (dllHandle),"ModifyArousalExt");
             OSLAModifyArousal = ModifyArousal(pModifyArousal);
-            LOG("OrgasmManager::Setup() - Modify arousal imported")
+            DEBUG("OrgasmManager::Setup() - Modify arousal imported")
             //FreeLibrary(dllHandle);
         }
 
@@ -34,8 +34,17 @@ void ORS::OrgasmManager::Setup()
             WARN("OrgasmManager::Setup() - Using arousal fallback. No compatible mods found!")
         }
 
+        const std::string loc_fallbackMod = Config::GetSingleton()->GetVariable<std::string>("Arousal.sArousalFallbackFactionMod","SexLabAroused.esm");
+        const std::string loc_fallbackIDStr = Config::GetSingleton()->GetVariable<std::string>("Arousal.sArousalFallbackFactionFormID","3FC36");
+        
+        RE::FormID loc_fallbackID = std::stoi(loc_fallbackIDStr);
+        std::istringstream loc_converter(loc_fallbackIDStr);
+        loc_converter >> std::hex >> loc_fallbackID;
+
         // Get arousal faction
-        _arousalfaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x025837UL,"SexLabAroused.esm"));
+        //_arousalfaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x025837UL,"SexLabAroused.esm")); //sla_Exposure
+        //_arousalfaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x03FC36UL,"SexLabAroused.esm")); //sla_Arousal
+        _arousalfaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(loc_fallbackID,loc_fallbackMod));
         if (!_arousalfaction)
         {
             ERROR("OrgasmManager::Setup() - Can't load arousal faction! Can't use fallback")
@@ -90,6 +99,7 @@ void ORS::OrgasmManager::Update(float a_delta)
             {
                 // Set arousal before calling update
                 const float loc_arousal = std::clamp(loc_actor->GetFactionRank(_arousalfaction,loc_actor->IsPlayerRef()),0,100);
+                //DEBUG("OrgasmManager::Update({}) - Updating {} arousal -> {}",a_delta,loc_actor->GetName(),loc_arousal)
                 loc_actororgasm->UpdateArousalFallback(loc_arousal);
             }
             if (loc_multithd)
