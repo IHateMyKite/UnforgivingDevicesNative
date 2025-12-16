@@ -130,7 +130,7 @@ namespace UD
         {"lockpicking" ,{Skill::kLockpicking, RE::ActorValue::kLockpicking}},
         {"sneak"       ,{Skill::kSneak      , RE::ActorValue::kSneak      }},
         {"alchemy"     ,{Skill::kAlchemy    , RE::ActorValue::kAlchemy    }},
-        {"speech"      ,{Skill::kSpeech     , RE::ActorValue::kSpeech     }},
+        {"speechcraft" ,{Skill::kSpeech     , RE::ActorValue::kSpeech     }},
         {"alteration"  ,{Skill::kAlteration , RE::ActorValue::kAlteration }},
         {"conjuration" ,{Skill::kConjuration, RE::ActorValue::kConjuration}},
         {"destruction" ,{Skill::kDestruction, RE::ActorValue::kDestruction}},
