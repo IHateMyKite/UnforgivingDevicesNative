@@ -348,10 +348,10 @@ std::vector<std::string> UD::AnimationManager::GetAnimationsFromDB(std::string a
                     { 
                             int constraints1=0;
                             int constraints2=0;
-                            if (a_ActorConstraints.size() == 1) {
+                            if (a_ActorConstraints.size() >= 1) {
                                 constraints1=a_ActorConstraints[0];
                             }
-                            if (a_ActorConstraints.size() == 2) {
+                            if (a_ActorConstraints.size() >= 2) {
                                 constraints2=a_ActorConstraints[1];
                             }
                             std::string anim_name_path(name+":"+loc_anim_path);
@@ -643,12 +643,9 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::stri
                 WARN("anim opt not int64 {}",req.kind());
             }
             
-            if ((~(loc_anim_optConstr|loc_anim_reqConstr) & a_ActorConstraints)==0) {
-                return true;
-            }
             LOG("AnimationManager::_CheckConstraints({},{}) - OptConstr {}",a_ObjPath,a_ActorConstraints,loc_anim_optConstr)
             // TODO: sort by most optional constraints
-            return false;
+            return true;
         }
     }
     catch (const std::exception& e)
