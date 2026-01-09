@@ -22,12 +22,14 @@
 #include <OrgasmSystem/OrgasmManager.h>
 #include <UD_DDAPI.h>
 #include <UD_Macros.h>
+#include <UD_ModuleManager.h>
 
 namespace UD
 {
-    inline void _OnGameLoad()
+    inline void _OnGameLoad(bool a_newGame)
     {
         UD::ReloadLib();
+        ModuleManager::GetSingleton()->Reload(a_newGame); // If new game, add delay, so update does not happen during char creation
         PapyrusDelegate::GetSingleton()->Setup();
         RandomGenerator::GetSingleton()->Setup();
         PlayerStatus::GetSingleton()->Setup();
@@ -45,6 +47,7 @@ namespace UD
         ModifierManager::GetSingleton()->Setup();
         MessageboxManager::GetSingleton()->Setup();
         SkillManager::GetSingleton()->Setup();
+
         //remove effect in case that user reloaded the game without exit
         if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
 
@@ -65,9 +68,12 @@ namespace UD
                 RE::BSInputDeviceManager::GetSingleton()->AddEventSink(KeyEventSink::GetSingleton());
                 break;
             case SKSE::MessagingInterface::kPostLoadGame:
+                if (!DeviousDevicesAPI::LoadAPI()) ERROR("Could not load DD API!")
+                _OnGameLoad(false);
+                break;
             case SKSE::MessagingInterface::kNewGame:
                 if (!DeviousDevicesAPI::LoadAPI()) ERROR("Could not load DD API!")
-                _OnGameLoad();
+                _OnGameLoad(true);
                 break;
             case SKSE::MessagingInterface::kPostPostLoad:
                 _OnPostPostLoad();

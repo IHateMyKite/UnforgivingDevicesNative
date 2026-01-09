@@ -6,24 +6,43 @@ namespace UD
     {
         RE::BSTSmartPointer<RE::BSScript::Object> object = nullptr;
         RE::TESQuest* quest     = nullptr;
-        uint32_t PRIORITY = 0xFFFFFFFFU;
-        bool _SetupCalled  = false;
-        bool _SetupDone    = false;
-        bool _Updating  = false;
-        bool _Disabled  = false;
+
+        uint32_t    Priority = 0xFFFFFFFFU;
+        std::string Name;
+        std::string Alias;
+        std::string Description;
+        std::vector<RE::TESQuest*> Dependency;
+        bool Setup          = true;
+        bool Reload         = false;
+        bool SetupCalled    = false;
+        bool SetupDone      = false;
+        bool ReloadCalled   = false;
+        bool ReloadDone     = false;
+        bool QuestStarting  = false;
     };
 
     class ModuleManager
     {
     SINGLETONHEADER(ModuleManager)
     public:
-        void Setup();
-        void Update();
+        void Update(float a_delta);
+        void Reload(bool a_setDelay);
         void AddModule(RE::VMHandle a_handle, Module a_module);
+        void Clean();
+        void SetPapyrusReady();
+        void SetDelay(float a_time);
     private:
         void UpdateModuleVariables();
-        void CallSetupOrUpdate();
-        int _installed = false;
-        mutable std::map<RE::VMHandle,Module>   _modules;
+        void CallSetup();
+        void CallReload();
+        Module* GetModuleByQuest(RE::TESQuest* a_quest);
+        bool IsQuestReady(RE::TESQuest* a_quest, bool a_checkreload = false);
+        bool AllModulesReady();
+        bool AllModulesReloaded();
+        void ResetReloaded();
+        bool _WaitingForPapyrus = true;
+        bool _WaitForReload = false;
+        float _Delay = 0.0f;
+        mutable std::unordered_map<RE::VMHandle,Module>   _modules;
     };
 };

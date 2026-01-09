@@ -61,7 +61,7 @@ namespace UD
             t4mutex = true;
             SKSE::GetTaskInterface()->AddTask([]
             {
-                ModuleManager::GetSingleton()->Update();
+                ModuleManager::GetSingleton()->Update(0.1F);
             });
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             t4mutex = false;

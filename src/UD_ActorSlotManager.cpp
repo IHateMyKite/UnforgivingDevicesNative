@@ -102,11 +102,13 @@ void UD::ActorSlotManager::ValidateAliases()
 
     LOG("ActorSlotManager::ValidateAliases() called")
 
+    static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
     std::unordered_map<RE::Actor*,ActorStorage>* loc_slots = new std::unordered_map<RE::Actor*,ActorStorage>();
 
     for (auto&& it1 : _slotquests)
     {
         auto loc_aliases = it1->refAliasMap;
+
         for (auto&& it2 : loc_aliases)
         {
             RE::Actor* loc_actor = reinterpret_cast<RE::Actor*>(it2.second.get().get());
@@ -125,10 +127,15 @@ void UD::ActorSlotManager::ValidateAliases()
             }
         }
     }
+
+    if (loc_slots->find(loc_player) == loc_slots->end() && loc_player)
+    {
+        // Player should ba always registered !!
+        //(*loc_slots)[loc_player] = ActorStorage();
+    }
+
     delete _slots;
     _slots = loc_slots;
-
-    static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
 
     _closeactors.clear();
     const int loc_distance = UD::Config::GetSingleton()->GetVariable<int>("General.iUpdateDistance",5000);

@@ -33,23 +33,8 @@ void PapyrusDelegate::Setup()
     {
         _udrdkw = reinterpret_cast<RE::BGSKeyword*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x11A352,"UnforgivingDevices.esp"));
         _installed = true;
+        Reload();
         LOG("PapyrusDelegate::Setup - installed")
-    }
-
-    // update static scripts
-    const auto loc_vm = InternalVM::GetSingleton();
-    for (auto&& [form,formvm] : _modscripts)
-    {
-        auto loc_form = RE::TESDataHandler::GetSingleton()->LookupForm(form.formid,form.modname);
-        if (loc_form)
-        {
-            formvm.handle = loc_vm->GetObjectHandlePolicy()->GetHandleForObject(loc_form->GetFormType(),loc_form);
-            loc_vm->FindBoundObject(formvm.handle, form.scriptname.c_str(), formvm.object);
-
-            if (formvm.handle && formvm.object) DEBUG("Script {} loaded",form.scriptname)
-            else ERROR("Could not load script {}",form.scriptname)
-        }
-        else ERROR("Cant find form {}:{}",form.formid,form.modname)
     }
 }
 
@@ -61,6 +46,22 @@ void UD::PapyrusDelegate::Reload()
         ResetCache();
 
         Utils::UniqueLock lock(_SaveLock);
+
+        // update static scripts
+        const auto loc_vm = InternalVM::GetSingleton();
+        for (auto&& [form,formvm] : _modscripts)
+        {
+            auto loc_form = RE::TESDataHandler::GetSingleton()->LookupForm(form.formid,form.modname);
+            if (loc_form)
+            {
+                formvm.handle = loc_vm->GetObjectHandlePolicy()->GetHandleForObject(loc_form->GetFormType(),loc_form);
+                loc_vm->FindBoundObject(formvm.handle, form.scriptname.c_str(), formvm.object);
+
+                if (formvm.handle && formvm.object) DEBUG("Script {} loaded",form.scriptname)
+                else ERROR("Could not load script {}",form.scriptname)
+            }
+            else ERROR("Cant find form {}:{}",form.formid,form.modname)
+        }
         UpdateVMHandles();
     });
 }
@@ -921,6 +922,8 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
 
     const auto loc_vm = InternalVM::GetSingleton();
 
+    ModuleManager::GetSingleton()->Clean();
+
     loc_vm->attachedScriptsLock.Lock();
     std::for_each(std::execution::seq,loc_vm->attachedScripts.begin(),loc_vm->attachedScripts.end(),[&](Script& a_script)
     {
@@ -1087,35 +1090,35 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
             }
         }
 
-        //auto loc_module = HaveScriptBase(a_script.second,"ud_modulebase");
-        //if (loc_module != nullptr)
-        //{
-        //    RE::VMHandle loc_handle = a_script.first;
-        //    //get script object
-        //    RE::BSTSmartPointer<RE::BSScript::Object> loc_object = nullptr;
-        //
-        //    loc_vm->FindBoundObject(loc_handle,loc_module->GetName(),loc_object);
-        //
-        //    if (loc_object != nullptr)
-        //    {
-        //        //undef this stupidass macro so we can use the GetObject method
-        //        #undef GetObject
-        //
-        //        const RE::FormID loc_formid = static_cast<RE::FormID>(loc_handle & 0x00000000FFFFFFFF);
-        //
-        //        auto loc_quest = reinterpret_cast<RE::TESQuest*>(RE::TESForm::LookupByID(loc_formid));
-        //
-        //        ModuleManager::GetSingleton()->AddModule(loc_handle,{loc_object,loc_quest});
-        //
-        //        DEBUG("Module found : 0x{:016X} / 0x{:08X} ({})",loc_handle,loc_formid,loc_quest ? loc_quest->GetName() : "NONE")
-        //
-        //        return;
-        //    }
-        //}
+        auto loc_module = HaveScriptBase(a_script.second,"ud_modulebase");
+        if (loc_module != nullptr)
+        {
+            RE::VMHandle loc_handle = a_script.first;
+            //get script object
+            RE::BSTSmartPointer<RE::BSScript::Object> loc_object = nullptr;
+        
+            loc_vm->FindBoundObject(loc_handle,loc_module->GetName(),loc_object);
+        
+            if (loc_object != nullptr)
+            {
+                //undef this stupidass macro so we can use the GetObject method
+                #undef GetObject
+        
+                const RE::FormID loc_formid = static_cast<RE::FormID>(loc_handle & 0x00000000FFFFFFFF);
+        
+                auto loc_quest = reinterpret_cast<RE::TESQuest*>(RE::TESForm::LookupByID(loc_formid));
+        
+                ModuleManager::GetSingleton()->AddModule(loc_handle,{loc_object,loc_quest});
+        
+                DEBUG("Module found : 0x{:016X} / 0x{:08X} ({})",loc_handle,loc_formid,loc_quest ? loc_quest->GetName() : "NONE")
+        
+                return;
+            }
+        }
 
     });
     loc_vm->attachedScriptsLock.Unlock();
-
+    
     ValidateCache();
 
     DEBUG("Cache size: {}",_cache.size())
@@ -1136,6 +1139,8 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
     {
         DEBUG("0x{:08X} - 0x{:016X}, Actor = {}, Storage = {} , Alias = {}",npcslot.id,vmhandle,npcslot.alias ? (npcslot.alias->GetActorReference() ? npcslot.alias->GetActorReference()->GetName() : "NONE") : "NONE",npcslot.quest ? npcslot.quest->GetName() : "NONE", npcslot.alias ? npcslot.alias->aliasName : "NONE")
     }
+
+    ModuleManager::GetSingleton()->SetPapyrusReady();
 }
 
 UD::Device UD::PapyrusDelegate::GetDeviceScript(int a_handle1, int a_handle2, RE::TESObjectARMO* a_device)

@@ -19,7 +19,6 @@ void ORS::OrgasmManager::Setup()
 {
     if (!_installed)
     {
-        //g_ArousalFaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x1579C0,"UnforgivingDevices.esp"));
         HINSTANCE dllHandle = LoadLibrary(TEXT("OSLAroused.dll"));
         if (dllHandle != NULL)
         {
@@ -42,8 +41,6 @@ void ORS::OrgasmManager::Setup()
         loc_converter >> std::hex >> loc_fallbackID;
 
         // Get arousal faction
-        //_arousalfaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x025837UL,"SexLabAroused.esm")); //sla_Exposure
-        //_arousalfaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(0x03FC36UL,"SexLabAroused.esm")); //sla_Arousal
         _arousalfaction = reinterpret_cast<RE::TESFaction*>(RE::TESDataHandler::GetSingleton()->LookupForm(loc_fallbackID,loc_fallbackMod));
         if (!_arousalfaction)
         {
@@ -77,7 +74,7 @@ void ORS::OrgasmManager::Update(float a_delta)
     for (auto&& it : loc_toremove) _actors.erase(it); //remove invalid actors
 
     //Log only once per 60 frames
-    if (loc_callcnt == 60)
+    if (loc_callcnt >= 60)
     {
         loc_callcnt = 0;
         LOG("OrgasmManager::Update({}) - Updating {} actors",a_delta,_actors.size())
@@ -122,7 +119,6 @@ void ORS::OrgasmManager::Update(float a_delta)
     {
         for (auto&& it : loc_threads) it.join();
     }
-
     //LOG("OrgasmManager::Update({}) - Done",a_delta)
 }
 
@@ -442,7 +438,6 @@ void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde)
             }
         }
     }
-
 }
 
 void ORS::OrgasmManager::OnGameSaved(SKSE::SerializationInterface* serde)
