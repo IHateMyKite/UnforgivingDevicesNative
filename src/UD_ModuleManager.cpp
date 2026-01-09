@@ -7,6 +7,7 @@ SINGLETONBODY(UD::ModuleManager)
 
 void UD::ModuleManager::Update(float a_delta)
 {
+    //DEBUG("Update({},{},{}) called",a_delta,_WaitingForPapyrus,_Delay)
     if (!_WaitingForPapyrus)
     {
         _Delay -= a_delta;
@@ -28,6 +29,7 @@ void UD::ModuleManager::Update(float a_delta)
 
 void UD::ModuleManager::Reload(bool a_setDelay)
 {
+    DEBUG("Reload called. Set delay ? : {}", a_setDelay)
     Clean();
     _WaitForReload = true;
     if (a_setDelay) SetDelay(1.0); // Wait for one sec
@@ -35,12 +37,14 @@ void UD::ModuleManager::Reload(bool a_setDelay)
 
 void UD::ModuleManager::Clean()
 {
+    DEBUG("Clean called")
     _WaitingForPapyrus = true;
     _modules.clear();
 }
 
 void UD::ModuleManager::SetPapyrusReady()
 {
+    DEBUG("SetPapyrusReady called")
     _WaitingForPapyrus = false;
     UpdateModuleVariables();
     if (_WaitForReload)
@@ -62,6 +66,7 @@ void UD::ModuleManager::AddModule(RE::VMHandle a_handle, Module a_module)
 
 void UD::ModuleManager::UpdateModuleVariables()
 {
+    //DEBUG("UpdateModuleVariables called")
     for (auto&& [handle,module] : _modules)
     {
         auto loc_object     = module.object;
@@ -70,8 +75,6 @@ void UD::ModuleManager::UpdateModuleVariables()
         module.Priority     = (loc_object->GetProperty("MODULE_PRIO")   != nullptr) ? loc_object->GetProperty("MODULE_PRIO")->GetUInt()  : 0x0U;
         module.Alias        = (loc_object->GetProperty("MODULE_ALIAS")  != nullptr) ? loc_object->GetProperty("MODULE_ALIAS")->GetString()  : "";
         module.Description  = (loc_object->GetProperty("MODULE_DESC")   != nullptr) ? loc_object->GetProperty("MODULE_DESC")->GetString()  : "";
-        module.Setup        = (loc_object->GetProperty("MODULE_SETUP")  != nullptr) ? loc_object->GetProperty("MODULE_SETUP")->GetBool() : false;
-        module.Reload       = (loc_object->GetProperty("MODULE_RELOAD") != nullptr) ? loc_object->GetProperty("MODULE_RELOAD")->GetBool()  : false;
         module.SetupCalled  = (loc_object->GetVariable("_SetupCalled")  != nullptr) ? loc_object->GetVariable("_SetupCalled")->GetBool() : false;
         module.SetupDone    = (loc_object->GetVariable("_SetupDone")    != nullptr) ? loc_object->GetVariable("_SetupDone")->GetBool()   : false;
         module.ReloadCalled = (loc_object->GetVariable("_ReloadCalled") != nullptr) ? loc_object->GetVariable("_ReloadCalled")->GetBool()  : false;
@@ -111,7 +114,7 @@ void UD::ModuleManager::CallSetup()
         return a_m1->Priority > a_m2->Priority;
     });
 
-    DEBUG("Checking {} module(s)",_modulesSorted.size())
+    //DEBUG("Checking {} module(s) for setup",_modulesSorted.size())
 
     for (auto&& module : _modulesSorted)
     {
@@ -132,11 +135,6 @@ void UD::ModuleManager::CallSetup()
 
             if (loc_dependency)
             {
-                //DEBUG("IsStarting = {}",module->quest->IsStarting())
-                //DEBUG("StartsEnabled = {}",module->quest->StartsEnabled())
-                //DEBUG("Running = {}",module->quest->IsRunning())
-                //DEBUG("alreadyRun = {}",module->quest->alreadyRun)
-                //DEBUG("flags = 0x{:04X}",module->quest->data.flags.underlying())
                 if (module->quest->IsRunning())
                 {
                     auto loc_setupcalled = loc_object->GetVariable("_SetupCalled");
@@ -192,6 +190,7 @@ void UD::ModuleManager::CallReload()
 {
     if (AllModulesReloaded())
     {
+        //DEBUG("All modules already reloaded, skipping")
         return;
     }
 
@@ -209,7 +208,7 @@ void UD::ModuleManager::CallReload()
         return a_m1->Priority > a_m2->Priority;
     });
 
-    DEBUG("Checking {} module(s)",_modulesSorted.size())
+    //DEBUG("Checking {} module(s) for reload",_modulesSorted.size())
 
     for (auto&& module : _modulesSorted)
     {
@@ -280,6 +279,7 @@ bool UD::ModuleManager::AllModulesReady()
     {
         loc_res = loc_res && module.SetupDone;
     }
+    //DEBUG("AllModulesReady() -> {}",loc_res)
     return loc_res;
 }
 
@@ -288,8 +288,9 @@ bool UD::ModuleManager::AllModulesReloaded()
     bool loc_res = true;
     for (auto&& [handle,module] : _modules)
     {
-        loc_res = loc_res && (module.ReloadDone || !module.Reload);
+        loc_res = loc_res && module.ReloadDone;
     }
+    //DEBUG("AllModulesReloaded() -> {}",loc_res)
     return loc_res;
 }
 
@@ -306,9 +307,7 @@ void UD::ModuleManager::ResetReloaded()
 
             auto loc_reloaddone = loc_object->GetVariable("_ReloadDone");
             if (loc_reloaddone) loc_reloaddone->SetBool(false);
-
-            DEBUG("Ressetting reloaded module {}",module.Alias)
+            DEBUG("Ressetting reloaded module {}({})",module.Name,module.Alias)
         }
-
     }
 }

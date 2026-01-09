@@ -12,8 +12,6 @@ namespace UD
         std::string Alias;
         std::string Description;
         std::vector<RE::TESQuest*> Dependency;
-        bool Setup          = true;
-        bool Reload         = false;
         bool SetupCalled    = false;
         bool SetupDone      = false;
         bool ReloadCalled   = false;
