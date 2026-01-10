@@ -80,7 +80,7 @@ bool UD::ActorSlotManager::RegisterSlotQuest(RE::TESQuest* a_quest)
 {
     Utils::UniqueLock lock(_lock);
 
-    LOG("ActorSlotManager::ValidateAliases({}) called", a_quest ? a_quest->GetName() : "NONE")
+    LOG("ActorSlotManager::RegisterSlotQuest({}) called", a_quest ? a_quest->GetName() : "NONE")
 
     if (a_quest == nullptr) return false;
     if (std::find(_slotquests.begin(),_slotquests.end(),a_quest) == _slotquests.end())

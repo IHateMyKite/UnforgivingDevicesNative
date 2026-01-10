@@ -32,7 +32,7 @@ void UD::ModuleManager::Reload(bool a_setDelay)
     DEBUG("Reload called. Set delay ? : {}", a_setDelay)
     Clean();
     _WaitForReload = true;
-    if (a_setDelay) SetDelay(1.0); // Wait for one sec
+    if (a_setDelay) SetDelay(2.0); // Wait for one sec
 }
 
 void UD::ModuleManager::Clean()
@@ -135,7 +135,7 @@ void UD::ModuleManager::CallSetup()
 
             if (loc_dependency)
             {
-                if (module->quest->IsRunning())
+                if (module->quest->IsRunning() && (module->quest->data.flags.underlying() & 0x0001U))
                 {
                     auto loc_setupcalled = loc_object->GetVariable("_SetupCalled");
                     if (loc_setupcalled) loc_setupcalled->SetBool(true);
@@ -165,7 +165,6 @@ void UD::ModuleManager::CallSetup()
                 {
                     // Quest is starting, wait
                     DEBUG("Quest for module {} not running. Waiting for it to start",module->Alias)
-                    module->quest->Start();
                     return; // Only one operation per update to prevent VM from breaking
                 }
             }
@@ -269,7 +268,7 @@ bool UD::ModuleManager::IsQuestReady(RE::TESQuest* a_quest, bool a_checkreload)
         loc_ready = true; // If quest doesnt have script, just ignore it
     }
 
-    return loc_ready && a_quest->IsRunning() /*&& (a_quest->data.flags.underlying() & 0x0001U)*/;
+    return loc_ready && a_quest->IsRunning() && (a_quest->data.flags.underlying() & 0x0001U);
 }
 
 bool UD::ModuleManager::AllModulesReady()
@@ -277,7 +276,7 @@ bool UD::ModuleManager::AllModulesReady()
     bool loc_res = true;
     for (auto&& [handle,module] : _modules)
     {
-        loc_res = loc_res && module.SetupDone;
+        loc_res = loc_res && module.SetupDone && module.quest->IsRunning() && (module.quest->data.flags.underlying() & 0x0001U);
     }
     //DEBUG("AllModulesReady() -> {}",loc_res)
     return loc_res;
