@@ -645,7 +645,7 @@ bool UD::AnimationManager::_CheckConstraints(boost::json::value a_obj, std::stri
             
             LOG("AnimationManager::_CheckConstraints({},{}) - OptConstr {}",a_ObjPath,a_ActorConstraints,loc_anim_optConstr)
             // TODO: sort by most optional constraints
-            return true;
+            return ((loc_anim_optConstr | loc_anim_reqConstr) & a_ActorConstraints) == a_ActorConstraints;
         }
     }
     catch (const std::exception& e)
