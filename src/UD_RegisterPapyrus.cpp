@@ -15,6 +15,7 @@
 #include <UD_Modifiers.h>
 #include <UD_MessageBox.h>
 #include <UD_SLPP.h>
+#include <UD_ModuleManager.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
@@ -170,6 +171,13 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetIniArrayString   ,true)
         REGISTERPAPYRUSFUNC(GetIniArrayFloat    ,true)
         REGISTERPAPYRUSFUNC(GetIniArrayBool     ,true)
+
+        //Module manager
+        REGISTERPAPYRUSFUNC(AreModulesReady     ,true)
+        REGISTERPAPYRUSFUNC(GetModules          ,true)
+        REGISTERPAPYRUSFUNC(GetModuleDependency ,true)
+        REGISTERPAPYRUSFUNC(GetDependantModules ,true)
+        REGISTERPAPYRUSFUNC(ResetModule         ,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

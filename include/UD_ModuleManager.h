@@ -29,10 +29,16 @@ namespace UD
         void Clean();
         void SetPapyrusReady();
         void SetDelay(float a_time);
+        bool IsReady(bool a_CheckReload);
+        std::vector<RE::TESQuest*> GetModules();
+        std::vector<RE::TESQuest*> GetModuleDependency(RE::TESQuest* a_module);
+        std::vector<RE::TESQuest*> GetDependantModules(RE::TESQuest* a_module);
+        void ResetModule(RE::TESQuest* a_module);
     private:
         void UpdateModuleVariables();
         void CallSetup();
         void CallReload();
+        std::vector<Module*> GetSortedModuleList();
         Module* GetModuleByQuest(RE::TESQuest* a_quest);
         bool IsQuestReady(RE::TESQuest* a_quest, bool a_checkreload = false);
         bool AllModulesReady();
@@ -43,4 +49,29 @@ namespace UD
         float _Delay = 0.0f;
         mutable std::unordered_map<RE::VMHandle,Module>   _modules;
     };
+
+    inline bool AreModulesReady(PAPYRUSFUNCHANDLE,bool a_CheckReload)
+    {
+        return ModuleManager::GetSingleton()->IsReady(a_CheckReload);
+    }
+
+    inline std::vector<RE::TESQuest*> GetModules(PAPYRUSFUNCHANDLE)
+    {
+        return ModuleManager::GetSingleton()->GetModules();
+    }
+
+    inline std::vector<RE::TESQuest*> GetModuleDependency(PAPYRUSFUNCHANDLE, RE::TESQuest* a_Module)
+    {
+        return ModuleManager::GetSingleton()->GetModuleDependency(a_Module);
+    }
+
+    inline std::vector<RE::TESQuest*> GetDependantModules(PAPYRUSFUNCHANDLE, RE::TESQuest* a_Module)
+    {
+        return ModuleManager::GetSingleton()->GetDependantModules(a_Module);
+    }
+
+    inline void ResetModule(PAPYRUSFUNCHANDLE, RE::TESQuest* a_Module)
+    {
+        return ModuleManager::GetSingleton()->ResetModule(a_Module);
+    }
 };

@@ -59,6 +59,68 @@ void UD::ModuleManager::SetDelay(float a_time)
     _Delay = a_time;
 }
 
+bool UD::ModuleManager::IsReady(bool a_CheckReload)
+{
+    return !_WaitingForPapyrus && AllModulesReady() && (AllModulesReloaded() || !a_CheckReload);
+}
+
+std::vector<RE::TESQuest*> UD::ModuleManager::GetModules()
+{
+    if (_WaitingForPapyrus)
+    {
+        return std::vector<RE::TESQuest*>();
+    }
+
+    const std::vector<Module*> loc_modulesSorted = GetSortedModuleList();
+
+    std::vector<RE::TESQuest*> loc_res;
+
+    std::for_each(loc_modulesSorted.begin(),loc_modulesSorted.end(),[&](Module* a_m){loc_res.push_back(a_m->quest);});
+
+    return loc_res;
+}
+
+std::vector<RE::TESQuest*> UD::ModuleManager::GetModuleDependency(RE::TESQuest* a_module)
+{
+    if (_WaitingForPapyrus)
+    {
+        return std::vector<RE::TESQuest*>();
+    }
+
+    Module* loc_module = GetModuleByQuest(a_module);
+    return loc_module->Dependency;
+}
+
+std::vector<RE::TESQuest*> UD::ModuleManager::GetDependantModules(RE::TESQuest* a_module)
+{
+    if (_WaitingForPapyrus)
+    {
+        return std::vector<RE::TESQuest*>();
+    }
+
+    //Module* loc_module = GetModuleByQuest(a_module);
+    std::vector<RE::TESQuest*> loc_res;
+    const std::vector<Module*> loc_modulesSorted = GetSortedModuleList();
+    std::for_each(loc_modulesSorted.begin(),loc_modulesSorted.end(),[&](Module* a_m)
+    {
+        if (std::find(a_m->Dependency.begin(),a_m->Dependency.end(),a_module) == a_m->Dependency.end()) loc_res.push_back(a_m->quest);
+    });
+
+    return loc_res;
+}
+
+void UD::ModuleManager::ResetModule(RE::TESQuest* a_module)
+{
+    Module* loc_module = GetModuleByQuest(a_module);
+    //loc_module->SetupDone       = false;
+    //loc_module->SetupCalled     = false;
+    //loc_module->ReloadDone      = false;
+    //loc_module->ReloadCalled    = false;
+    //loc_module->QuestStarting   = false;
+    //loc_module->quest->Stop();
+    loc_module->quest->ResetAndUpdate();
+}
+
 void UD::ModuleManager::AddModule(RE::VMHandle a_handle, Module a_module)
 {
     _modules[a_handle] = a_module;
@@ -102,21 +164,11 @@ void UD::ModuleManager::CallSetup()
 
     const auto loc_vm = InternalVM::GetSingleton();
 
-    std::vector<Module*> _modulesSorted;
-    for (auto&& [handle,module] : _modules)
-    {
-        _modulesSorted.push_back(&module);
-    }
-
-    // Order modules by priority
-    std::sort(_modulesSorted.begin(),_modulesSorted.end(),[&](const Module * const a_m1,const Module * const a_m2) -> bool
-    {
-        return a_m1->Priority > a_m2->Priority;
-    });
+    std::vector<Module*> loc_modulesSorted = GetSortedModuleList();
 
     //DEBUG("Checking {} module(s) for setup",_modulesSorted.size())
 
-    for (auto&& module : _modulesSorted)
+    for (auto&& module : loc_modulesSorted)
     {
         auto loc_object = module->object;
         //DEBUG("Checking if module {} is running",module->Alias)
@@ -195,21 +247,10 @@ void UD::ModuleManager::CallReload()
 
     const auto loc_vm = InternalVM::GetSingleton();
 
-    std::vector<Module*> _modulesSorted;
-    for (auto&& [handle,module] : _modules)
-    {
-        _modulesSorted.push_back(&module);
-    }
-
-    // Order modules by priority
-    std::sort(_modulesSorted.begin(),_modulesSorted.end(),[&](const Module * const a_m1,const Module * const a_m2) -> bool
-    {
-        return a_m1->Priority > a_m2->Priority;
-    });
-
+    std::vector<Module*> loc_modulesSorted = GetSortedModuleList();
     //DEBUG("Checking {} module(s) for reload",_modulesSorted.size())
 
-    for (auto&& module : _modulesSorted)
+    for (auto&& module : loc_modulesSorted)
     {
         auto loc_object = module->object;
         //DEBUG("Checking if module {} is running",module->Alias)
@@ -241,6 +282,22 @@ void UD::ModuleManager::CallReload()
             // Reload finished
         }
     }
+}
+
+std::vector<UD::Module*> UD::ModuleManager::GetSortedModuleList()
+{
+    std::vector<Module*> loc_modulesSorted;
+    for (auto&& [handle,module] : _modules)
+    {
+        loc_modulesSorted.push_back(&module);
+    }
+
+    // Order modules by priority
+    std::sort(loc_modulesSorted.begin(),loc_modulesSorted.end(),[&](const Module * const a_m1,const Module * const a_m2) -> bool
+    {
+        return a_m1->Priority > a_m2->Priority;
+    });
+    return loc_modulesSorted;
 }
 
 UD::Module* UD::ModuleManager::GetModuleByQuest(RE::TESQuest* a_quest)
