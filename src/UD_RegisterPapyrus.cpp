@@ -174,10 +174,13 @@ namespace UD
 
         //Module manager
         REGISTERPAPYRUSFUNC(AreModulesReady     ,true)
+        REGISTERPAPYRUSFUNC(GetModuleByAlias    ,true)
         REGISTERPAPYRUSFUNC(GetModules          ,true)
         REGISTERPAPYRUSFUNC(GetModuleDependency ,true)
         REGISTERPAPYRUSFUNC(GetDependantModules ,true)
         REGISTERPAPYRUSFUNC(ResetModule         ,true)
+        REGISTERPAPYRUSFUNC(GetModulesByScript  ,true)
+        REGISTERPAPYRUSFUNC(GetModulesAliasesByScript ,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

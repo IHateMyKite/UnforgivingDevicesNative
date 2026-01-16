@@ -59,11 +59,14 @@ namespace UD
         {
             if (t4mutex) return;
             t4mutex = true;
-            SKSE::GetTaskInterface()->AddTask([]
+
+            const int loc_time = UD::Config::GetSingleton()->GetVariable<int>("General.iModuleUpdateTime",100);
+            const float loc_timeSec = static_cast<float>(loc_time)/1000.0F;
+            SKSE::GetTaskInterface()->AddTask([loc_timeSec]
             {
-                ModuleManager::GetSingleton()->Update(0.1F);
+                ModuleManager::GetSingleton()->Update(loc_timeSec);
             });
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(loc_time));
             t4mutex = false;
         }).detach();
 

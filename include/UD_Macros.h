@@ -21,6 +21,9 @@
 #define ERROR(...)  {SKSE::log::error(__VA_ARGS__);}
 #define DEBUG(...)  {SKSE::log::debug(__VA_ARGS__);}
 
+//print message to console
+#define CLOG(...) {if(RE::ConsoleLog::GetSingleton() != nullptr) RE::ConsoleLog::GetSingleton()->Print((std::string("[DDNG] ") + std::format(__VA_ARGS__)).c_str());} 
+
 #define SINGLETONHEADER(cname)                          \
         public:                                         \
             cname(cname &) = delete;                    \

@@ -990,6 +990,8 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
                 //undef this stupidass macro so we can use the GetObject method
                 #undef GetObject
 
+                DEBUG("{}",loc_object->GetTypeInfo() ? loc_object->GetTypeInfo()->GetName() : "NONE")
+
                 _modifiercache[loc_handle].object   = loc_object;
                 _modifiercache[loc_handle].name     = (loc_object->GetProperty("NameFull") != nullptr) ? loc_object->GetProperty("NameFull")->GetString() : "";
                 _modifiercache[loc_handle].namealias    = (loc_object->GetProperty("NameAlias") != nullptr) ? loc_object->GetProperty("NameAlias")->GetString() : "";
@@ -1110,7 +1112,7 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
         
                 ModuleManager::GetSingleton()->AddModule(loc_handle,{loc_object,loc_quest});
         
-                DEBUG("Module found : 0x{:016X} / 0x{:08X} ({})",loc_handle,loc_formid,loc_quest ? loc_quest->GetName() : "NONE")
+                DEBUG("Module found : 0x{:016X} / 0x{:08X} ({}) - Object = 0x{:016X}",loc_handle,loc_formid,loc_quest ? loc_quest->GetName() : "NONE",(uintptr_t)loc_object.get())
         
                 return;
             }

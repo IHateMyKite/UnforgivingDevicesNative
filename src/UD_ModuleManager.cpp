@@ -17,11 +17,40 @@ void UD::ModuleManager::Update(float a_delta)
             UpdateModuleVariables();
             if (AllModulesReady())
             {
-                CallReload();
+                if (!_SetupMessagePrinted)
+                {
+                    _SetupMessagePrinted = true;
+                    CLOG("[Unforgiving Devices] INITIATED! - {} modules Ready",_modules.size())
+                }
+                const int loc_res = CallReload();
+                if ((loc_res == 2) && _ReloadMessagePrinted)
+                {
+                    CLOG("[Unforgiving Devices] RELOADED! - {} modules Reloaded",_modules.size())
+                    _ReloadMessagePrinted = true;
+                }
+                else if (loc_res == 0)
+                {
+                    _MessageTimer -= a_delta;
+                    if (_MessageTimer <= 0.0f) 
+                    {
+                        CLOG("[Unforgiving Devices] Reloading in progress.....")
+                        _MessageTimer = 1.0;
+                    }
+                }
             }
             else
             {
-                CallSetup();
+                _SetupMessagePrinted = false;
+                const int loc_res = CallSetup();
+                if (loc_res == 0)
+                {
+                    _MessageTimer -= a_delta;
+                    if (_MessageTimer <= 0.0f) 
+                    {
+                        CLOG("[Unforgiving Devices] Initialization in progress.....")
+                        _MessageTimer = 1.0;
+                    }
+                }
             }
         }
     }
@@ -62,6 +91,27 @@ void UD::ModuleManager::SetDelay(float a_time)
 bool UD::ModuleManager::IsReady(bool a_CheckReload)
 {
     return !_WaitingForPapyrus && AllModulesReady() && (AllModulesReloaded() || !a_CheckReload);
+}
+
+RE::TESQuest* UD::ModuleManager::GetModuleByAlias(std::string a_alias)
+{
+    if (_WaitingForPapyrus)
+    {
+        return nullptr;
+    }
+    std::transform(a_alias.begin(), a_alias.end(), a_alias.begin(), ::tolower);
+
+    for (auto&& [handle,module] : _modules)
+    {
+        std::string loc_alias = module.Alias;
+        std::transform(loc_alias.begin(), loc_alias.end(), loc_alias.begin(), ::tolower);
+
+        if (loc_alias == a_alias)
+        {
+            return module.quest;
+        }
+    }
+    return nullptr;
 }
 
 std::vector<RE::TESQuest*> UD::ModuleManager::GetModules()
@@ -112,17 +162,49 @@ std::vector<RE::TESQuest*> UD::ModuleManager::GetDependantModules(RE::TESQuest* 
 void UD::ModuleManager::ResetModule(RE::TESQuest* a_module)
 {
     Module* loc_module = GetModuleByQuest(a_module);
-    //loc_module->SetupDone       = false;
-    //loc_module->SetupCalled     = false;
-    //loc_module->ReloadDone      = false;
-    //loc_module->ReloadCalled    = false;
-    //loc_module->QuestStarting   = false;
-    //loc_module->quest->Stop();
+    loc_module->SetupCalled2 = false;
     loc_module->quest->ResetAndUpdate();
+}
+
+std::vector<RE::TESQuest*> UD::ModuleManager::GetModulesByScript(std::string a_script)
+{
+    if (_WaitingForPapyrus)
+    {
+        return std::vector<RE::TESQuest*>();
+    }
+    std::vector<RE::TESQuest*> loc_res;
+
+    for (auto&& [handle,module] : _modules)
+    {
+        if (module.object.get() && PapyrusDelegate::GetSingleton()->HaveScriptBase(module.object->GetTypeInfo(),a_script))
+        {
+            loc_res.push_back(module.quest);
+        }
+    }
+    return loc_res;
+}
+
+std::vector<RE::BGSBaseAlias*> UD::ModuleManager::GetModulesAliasesByScript(std::string a_script)
+{
+    if (_WaitingForPapyrus)
+    {
+        return std::vector<RE::BGSBaseAlias*>();
+    }
+    std::vector<RE::BGSBaseAlias*> loc_res;
+
+    std::vector<RE::TESQuest*> loc_modules = GetModulesByScript(a_script);
+
+    for (auto&& it : loc_modules)
+    {
+        loc_res.insert(loc_res.end(),it->aliases.begin(),it->aliases.end());
+    }
+
+    return loc_res;
 }
 
 void UD::ModuleManager::AddModule(RE::VMHandle a_handle, Module a_module)
 {
+    DEBUG("AddModule called")
     _modules[a_handle] = a_module;
 }
 
@@ -155,23 +237,42 @@ void UD::ModuleManager::UpdateModuleVariables()
     }
  }
 
-void UD::ModuleManager::CallSetup()
+ // https://github.com/powerof3/SKSEPlugins/blob/2d55e7f0966bfd23c330ef05a692213965554eda/Skyrim/include/Skyrim/BSScript/BSScriptIForEachScriptObjectFunctor.h#L10
+class IForEachScriptObjectFunctor
+{
+public:
+	enum ResultType
+	{
+		kResult_Abort = 0,
+		kResult_Continue = 1,
+	};
+
+	IForEachScriptObjectFunctor() {};
+	virtual ~IForEachScriptObjectFunctor() {};
+
+	// return true to continue
+	virtual uint32_t Visit(RE::BSScript::Object * object, bool bConditional) = 0;
+};
+
+int UD::ModuleManager::CallSetup()
 {
     if (AllModulesReady())
     {
-        return;
+        return 2;
     }
 
     const auto loc_vm = InternalVM::GetSingleton();
 
     std::vector<Module*> loc_modulesSorted = GetSortedModuleList();
 
+
     //DEBUG("Checking {} module(s) for setup",_modulesSorted.size())
 
     for (auto&& module : loc_modulesSorted)
     {
+        //DEBUG("{} = 0x{:016X}",module->Alias,(uintptr_t)module)
         auto loc_object = module->object;
-        //DEBUG("Checking if module {} is running",module->Alias)
+ 
         if (module->SetupCalled == false)
         {
             // Check dependency first
@@ -184,40 +285,40 @@ void UD::ModuleManager::CallSetup()
                     break;
                 }
             }
-
+            
             if (loc_dependency)
             {
                 if (module->quest->IsRunning() && (module->quest->data.flags.underlying() & 0x0001U))
                 {
-                    auto loc_setupcalled = loc_object->GetVariable("_SetupCalled");
-                    if (loc_setupcalled) loc_setupcalled->SetBool(true);
-                
                     DEBUG("Quest for module {} running. Calling papyrus _Setup function",module->Alias)
 
                     //init unused callback
                     RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback;
-            
+                    
                     auto loc_arg = RE::MakeFunctionArguments();
-    
+                    
                     //call papyrus method
                     loc_vm->DispatchMethodCall(loc_object,"_Setup",loc_arg,loc_callback);
-    
+                    
                     delete loc_arg;
-                    return; // Only one operation per update to prevent VM from breaking
+                    
+                    return 0; // Only one operation per update to prevent VM from breaking
                 }
                 else if (module->QuestStarting == false)
                 {
                     DEBUG("Quest for module {} not running, starting quest",module->Alias)
                     // Try to start quest
+                    //module->quest->ResetAndUpdate();
+                    module->quest->Stop();
                     module->quest->Start();
                     module->QuestStarting = true;
-                    return; // Only one operation per update to prevent VM from breaking
+                    return 0; // Only one operation per update to prevent VM from breaking
                 }
                 else
                 {
                     // Quest is starting, wait
                     DEBUG("Quest for module {} not running. Waiting for it to start",module->Alias)
-                    return; // Only one operation per update to prevent VM from breaking
+                    return 0; // Only one operation per update to prevent VM from breaking
                 }
             }
             else
@@ -233,16 +334,19 @@ void UD::ModuleManager::CallSetup()
         else
         {
             // Waiting for module to finish setup
+            DEBUG("Waiting for Module {} to finish its setup",module->Alias)
+            return 0;
         }
     }
+    return 2;
 }
 
-void UD::ModuleManager::CallReload()
+int UD::ModuleManager::CallReload()
 {
     if (AllModulesReloaded())
     {
         //DEBUG("All modules already reloaded, skipping")
-        return;
+        return 2;
     }
 
     const auto loc_vm = InternalVM::GetSingleton();
@@ -256,6 +360,7 @@ void UD::ModuleManager::CallReload()
         //DEBUG("Checking if module {} is running",module->Alias)
         if (!module->ReloadCalled)
         {
+            DEBUG("Flag 0x{:04X}",module->quest->data.flags.underlying())
             auto loc_setupcalled = loc_object->GetVariable("_ReloadCalled");
             if (loc_setupcalled) loc_setupcalled->SetBool(true);
 
@@ -270,18 +375,19 @@ void UD::ModuleManager::CallReload()
             loc_vm->DispatchMethodCall(loc_object,"_GameReload",loc_arg,loc_callback);
     
             delete loc_arg;
-            return;
+            return 0;
         }
         else if (!module->ReloadDone)
         {
             // Waiting for reload to finish
-            return;
+            return 0;
         }
         else
         {
             // Reload finished
         }
     }
+    return 2;
 }
 
 std::vector<UD::Module*> UD::ModuleManager::GetSortedModuleList()
@@ -352,6 +458,7 @@ bool UD::ModuleManager::AllModulesReloaded()
 
 void UD::ModuleManager::ResetReloaded()
 {
+    _ReloadMessagePrinted = false;
     for (auto&& [handle,module] : _modules)
     {
         auto loc_object = module.object;

@@ -105,12 +105,13 @@ namespace UD
 
         void Lock();
         void Unlock();
+
+        RE::BSScript::ObjectTypeInfo* HaveScriptBase(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts, const std::string& a_base) const;
+        RE::BSScript::ObjectTypeInfo* HaveScriptBase(RE::BSScript::ObjectTypeInfo* a_type, const std::string& a_base) const;
     private:
         RE::VMHandle ValidateVMHandle(RE::VMHandle a_handle,RE::TESObjectARMO* a_device);
         void ValidateCache() const;
         void ValidateInvalidDevices() const;
-        RE::BSScript::ObjectTypeInfo* HaveScriptBase(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts, const std::string& a_base) const;
-        RE::BSScript::ObjectTypeInfo* HaveScriptBase(RE::BSScript::ObjectTypeInfo* a_type, const std::string& a_base) const;
         FilterDeviceResult CheckRegisterDevice(RE::VMHandle a_handle,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices);
         FilterDeviceResult ProcessDevice(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::Actor* a_actor, std::vector<RE::TESObjectARMO*>& a_devices,std::function<void(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
         FilterDeviceResult ProcessDevice2(RE::VMHandle a_handle,RE::VMHandle a_handle2,RE::BSScript::ObjectTypeInfo* a_type,RE::TESObjectARMO* a_device,std::function<bool(RE::BSTSmartPointer<RE::BSScript::Object>,RE::TESObjectARMO*,RE::TESObjectARMO*)> a_fun);
