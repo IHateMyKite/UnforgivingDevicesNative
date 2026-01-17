@@ -179,6 +179,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetModuleDependency ,true)
         REGISTERPAPYRUSFUNC(GetDependantModules ,true)
         REGISTERPAPYRUSFUNC(ResetModule         ,true)
+        REGISTERPAPYRUSFUNC(ResetAllModules     ,true)
         REGISTERPAPYRUSFUNC(GetModulesByScript  ,true)
         REGISTERPAPYRUSFUNC(GetModulesAliasesByScript ,true)
 

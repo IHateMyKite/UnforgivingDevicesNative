@@ -162,8 +162,17 @@ std::vector<RE::TESQuest*> UD::ModuleManager::GetDependantModules(RE::TESQuest* 
 void UD::ModuleManager::ResetModule(RE::TESQuest* a_module)
 {
     Module* loc_module = GetModuleByQuest(a_module);
-    loc_module->SetupCalled2 = false;
     loc_module->quest->ResetAndUpdate();
+}
+
+void UD::ModuleManager::ResetAllModules()
+{
+    auto loc_modules = GetSortedModuleList();
+    for (auto&& module : loc_modules)
+    {
+        module->quest->ResetAndUpdate();
+    }
+    _Delay = 1.0;
 }
 
 std::vector<RE::TESQuest*> UD::ModuleManager::GetModulesByScript(std::string a_script)

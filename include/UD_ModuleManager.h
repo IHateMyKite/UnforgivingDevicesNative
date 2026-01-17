@@ -13,7 +13,6 @@ namespace UD
         std::string Description;
         std::vector<RE::TESQuest*> Dependency;
         bool SetupCalled    = false;
-        bool SetupCalled2   = false; //For some reason, sometimes the main variable is not updated
         bool SetupDone      = false;
         bool ReloadCalled   = false;
         bool ReloadDone     = false;
@@ -36,6 +35,7 @@ namespace UD
         std::vector<RE::TESQuest*> GetModuleDependency(RE::TESQuest* a_module);
         std::vector<RE::TESQuest*> GetDependantModules(RE::TESQuest* a_module);
         void ResetModule(RE::TESQuest* a_module);
+        void ResetAllModules();
         std::vector<RE::TESQuest*> GetModulesByScript(std::string a_script);
         std::vector<RE::BGSBaseAlias*> GetModulesAliasesByScript(std::string a_script);
     private:
@@ -85,6 +85,11 @@ namespace UD
     inline void ResetModule(PAPYRUSFUNCHANDLE, RE::TESQuest* a_Module)
     {
         return ModuleManager::GetSingleton()->ResetModule(a_Module);
+    }
+
+    inline void ResetAllModules(PAPYRUSFUNCHANDLE)
+    {
+        return ModuleManager::GetSingleton()->ResetAllModules();
     }
 
     inline std::vector<RE::TESQuest*> GetModulesByScript(PAPYRUSFUNCHANDLE, std::string a_script)
