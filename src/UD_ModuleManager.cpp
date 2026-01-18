@@ -23,7 +23,7 @@ void UD::ModuleManager::Update(float a_delta)
                     CLOG("[Unforgiving Devices] INITIATED! - {} modules Ready",_modules.size())
                 }
                 const int loc_res = CallReload();
-                if ((loc_res == 2) && _ReloadMessagePrinted)
+                if ((loc_res == 2) && !_ReloadMessagePrinted)
                 {
                     CLOG("[Unforgiving Devices] RELOADED! - {} modules Reloaded",_modules.size())
                     _ReloadMessagePrinted = true;
@@ -479,7 +479,7 @@ void UD::ModuleManager::ResetReloaded()
 
             auto loc_reloaddone = loc_object->GetVariable("_ReloadDone");
             if (loc_reloaddone) loc_reloaddone->SetBool(false);
-            DEBUG("Ressetting reloaded module {}({})",module.Name,module.Alias)
+            DEBUG("Resetting reloaded module {}({})",module.Name,module.Alias)
         }
     }
 }
