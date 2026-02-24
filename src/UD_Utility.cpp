@@ -4,12 +4,13 @@
 #include <UD_Macros.h>
 #include <UD_Config.h>
 #include <UD_PapyrusDelegate.h>
-
-#include <boost/algorithm/clamp.hpp>
-#include <boost/math/special_functions/round.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
+#include <boost/json/src.hpp>
+//#include <boost/algorithm/clamp.hpp>
+//#include <boost/math/special_functions/round.hpp>
+//#include <boost/algorithm/string/predicate.hpp>
+//#include <boost/algorithm/string.hpp>
+//#include <boost/lexical_cast.hpp>
+//#include <boost/json/src.hpp>
 
 #include <numeric>
 
@@ -364,6 +365,82 @@ namespace UD
         return false;
     }
 
+    int Utility::GetPropertyInt(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, int a_defval)
+    {
+        auto loc_property = a_var ? a_object->GetVariable(a_name) : a_object->GetProperty(a_name);
+        int loc_res = loc_property ? loc_property->GetSInt() : a_defval;
+        return loc_res;
+    }
+
+    std::string Utility::GetPropertyString(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, std::string a_defval)
+    {
+        auto loc_property = a_var ? a_object->GetVariable(a_name) : a_object->GetProperty(a_name);
+        std::string loc_res = loc_property ? loc_property->GetString().data() : a_defval;
+        return loc_res;
+    }
+
+    float Utility::GetPropertyFloat(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, float a_defval)
+    {
+        auto loc_property = a_var ? a_object->GetVariable(a_name) : a_object->GetProperty(a_name);
+        float loc_res = loc_property ? loc_property->GetFloat() : a_defval;
+        return loc_res;
+    }
+
+    bool Utility::GetPropertyBool(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, bool a_defval)
+    {
+        auto loc_property = a_var ? a_object->GetVariable(a_name) : a_object->GetProperty(a_name);
+        bool loc_res = loc_property ? loc_property->GetBool() : a_defval;
+        return loc_res;
+    }
+
+    void* Utility::GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID a_type)
+    {
+        auto loc_property = a_var ? a_object->GetVariable(a_name) : a_object->GetProperty(a_name);
+        RE::BSTSmartPointer<RE::BSScript::Object> loc_object = loc_property ? loc_property->GetObject() : nullptr;
+        void * loc_res = nullptr;
+        if (loc_object)
+        {
+            loc_res = (RE::TESObjectARMO*)loc_object->Resolve((RE::VMTypeID)a_type);
+        }
+        return loc_res;
+    }
+
+    void* Utility::GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::FormType a_type)
+    {
+        return GetPropertyObject(a_object, a_name, a_var, (RE::VMTypeID)a_type);
+    }
+
+    std::vector<void*> Utility::GetPropertyObjectArray(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID a_type)
+    {
+        auto loc_property = a_var ? a_object->GetVariable(a_name) : a_object->GetProperty(a_name);
+        auto loc_array = loc_property ? loc_property->GetArray() : nullptr;
+        std::vector<void*> loc_res;
+        if (loc_array)
+        {
+            for (auto&& it : *loc_array)
+            {
+                RE::BSTSmartPointer<RE::BSScript::Object> loc_object = it.GetObject();
+                loc_res.push_back((RE::TESObjectARMO*)loc_object->Resolve((RE::VMTypeID)a_type));
+            }
+        }
+        return loc_res;
+    }
+
+    std::vector<RE::BSTSmartPointer<RE::BSScript::Object>> Utility::GetPropertyObjectArrayRaw(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var)
+    {
+        auto loc_property = a_var ? a_object->GetVariable(a_name) : a_object->GetProperty(a_name);
+        auto loc_array = loc_property ? loc_property->GetArray() : nullptr;
+        std::vector<RE::BSTSmartPointer<RE::BSScript::Object>> loc_res;
+        if (loc_array)
+        {
+            for (auto&& it : *loc_array)
+            {
+                loc_res.push_back(it.GetObject());
+            }
+        }
+        return loc_res;
+    }
+
     template<class T>
     T GetStringParam(const std::string& a_param, int a_Index, T a_DefaultValue)
     {
@@ -503,5 +580,83 @@ namespace UD
     bool IsConcentrationEnch(PAPYRUSFUNCHANDLE, RE::EnchantmentItem* a_ench)
     {
         return a_ench ? a_ench->GetCastingType() == RE::MagicSystem::CastingType::kConcentration : false;
+    }
+
+    SINGLETONBODY(JSONUtility)
+
+    boost::json::value JSONUtility::RecursiveFind(boost::json::value a_obj, std::string a_path)
+    {
+        LOG("RecursiveFind({})",a_path)
+        boost::json::value loc_val = a_obj;
+    
+        std::vector<std::string> loc_objects;
+        boost::split(loc_objects,a_path,boost::is_any_of("."));
+    
+        int      loc_arrindx = -1;
+        std::regex  loc_arrregex("\\b(.*)\\[(\\d*)\\]");
+    
+        for (auto&& it : loc_objects)
+        {
+            if (it == "")
+            {
+                continue;
+            }
+            if (std::regex_match(it,loc_arrregex))
+            {
+                try {loc_arrindx = std::stoi(std::regex_replace(it,loc_arrregex,"$2"));}
+                catch(...) {loc_arrindx = 0;} 
+                it = std::regex_replace(it,loc_arrregex,"$1");
+            }
+    
+            try
+            {
+                if (loc_val.is_object())
+                {
+                    loc_val = loc_val.as_object()[it];
+                }
+    
+                // Immidiatly dereference array
+                if (loc_val.is_array() && loc_arrindx >= 0)
+                {
+                    if (loc_arrindx < loc_val.as_array().size())
+                    {
+                        loc_val = loc_val.as_array()[loc_arrindx];
+                        loc_arrindx = -1;
+                    }
+                    else
+                    {
+                        WARN("AnimationManager::RecursiveFind - Cant find {} - Array index out of range. Array size is {}",a_path,loc_val.as_array().size())
+                        return boost::json::value();
+                    }
+    
+                }
+            }
+            catch(const std::exception& e)
+            {
+                WARN("AnimationManager::RecursiveFind - Cant find {} - {}",a_path,e.what())
+                return boost::json::value();
+            }
+        }
+        return loc_val;
+    }
+    std::vector<boost::json::value> JSONUtility::RecursiveFindArray(boost::json::value a_obj, std::string a_path)
+    {
+        auto loc_array = RecursiveFind(a_obj,a_path);
+        if (loc_array.is_array() && loc_array.get_array().size() > 0)
+        {
+            std::vector<boost::json::value> loc_res(loc_array.get_array().size());
+            for (int i = 0; i < loc_array.get_array().size(); i++)
+            {
+                loc_res[i] = loc_array.get_array()[i];
+            }
+            return loc_res;
+        }
+        return std::vector<boost::json::value>();
+    }
+    std::string JSONUtility::RecursiveGetString(boost::json::value a_obj, std::string a_path, std::string a_def)
+    {
+        auto loc_var = RecursiveFind(a_obj,a_path);
+        if (loc_var.is_null()) return a_def;
+        return loc_var.as_string().c_str();
     }
 }

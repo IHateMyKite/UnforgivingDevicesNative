@@ -429,6 +429,17 @@ void ORS::OrgasmActorData::UpdateArousal(const float& a_delta)
             //Not compatible mod. Use fallback
         }
     }
+    else
+    {
+        if (OSLAGetArousal != nullptr)
+        {
+            _RDATA.Arousal = OSLAGetArousal(_RDATA.Actor);
+        }
+        else
+        {
+            //Not compatible mod. Use fallback
+        }
+    }
 }
 
 void ORS::OrgasmActorData::UpdateArousalFallback(const float& a_value)

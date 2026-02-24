@@ -11,8 +11,9 @@ SINGLETONBODY(ORS::OrgasmManager)
 
 namespace ORS
 {
-    inline const auto OrgasmSerData = _byteswap_ulong('ORSD');
-    ModifyArousal OSLAModifyArousal = nullptr;
+    inline const auto OrgasmSerData     = _byteswap_ulong('ORSD');
+    ModifyArousal   OSLAModifyArousal   = nullptr;
+    GetArousal      OSLAGetArousal      = nullptr;
 }
 
 void ORS::OrgasmManager::Setup()
@@ -24,7 +25,9 @@ void ORS::OrgasmManager::Setup()
         {
             FARPROC pModifyArousal = GetProcAddress(HMODULE (dllHandle),"ModifyArousalExt");
             OSLAModifyArousal = ModifyArousal(pModifyArousal);
-            DEBUG("OrgasmManager::Setup() - Modify arousal imported")
+            FARPROC pGetArousal = GetProcAddress(HMODULE (dllHandle),"GetArousalExt");
+            OSLAGetArousal    = GetArousal(pGetArousal);
+            DEBUG("OrgasmManager::Setup() - OSL Aroused functions linked")
             //FreeLibrary(dllHandle);
         }
 

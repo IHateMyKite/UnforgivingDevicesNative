@@ -2,6 +2,7 @@
 #include <UD_Inventory.h>
 #include <UD_Config.h>
 #include <UD_Utility.h>
+#include <UD_ModuleManager.h>
 
 SINGLETONBODY(UD::ActorSlotManager)
 
@@ -26,6 +27,8 @@ void UD::ActorSlotManager::Update()
         //LOG("Updating {}",it.first->GetName())
         slot.BestWeapon = InventoryHandler::GetSingleton()->GetSharpestWeapon(actor);
     }
+
+    InitSlots();
 }
 
 std::vector<uint32_t> UD::ActorSlotManager::GetValidActors()
@@ -96,6 +99,24 @@ bool UD::ActorSlotManager::RegisterSlotQuest(RE::TESQuest* a_quest)
     }
 }
 
+RE::BGSBaseAlias* UD::ActorSlotManager::GetSlot(RE::Actor* a_actor)
+{
+    auto loc_aliases = ModuleManager::GetSingleton()->GetModulesAliasesByScript("ud_customdevice_npcslot");
+    if (loc_aliases.size() > 0)
+    {
+        const auto loc_vm = InternalVM::GetSingleton();
+        for (auto&& it : loc_aliases)
+        {
+            RE::BSTSmartPointer<RE::BSScript::Object> loc_object;
+            auto loc_handle = loc_vm->GetObjectHandlePolicy()->GetHandleForObject(it->GetVMTypeID(),it);
+            bool loc_res = loc_vm->FindBoundObject(loc_handle, "ud_customdevice_npcslot", loc_object);
+            DEBUG("Object get for {}[{}] fornd ? {}",it->owningQuest->GetName(),it->aliasID,loc_res)
+        }
+    }
+
+    return nullptr;
+}
+
 void UD::ActorSlotManager::ValidateAliases()
 {
     Utils::UniqueLock lock(_lock);
@@ -162,4 +183,26 @@ void UD::ActorSlotManager::ValidateAliases()
     LOG("===Close actors===")
     for (auto&& it : _closeactors) LOG("\t{}",RE::Actor::LookupByHandle(it) ? RE::Actor::LookupByHandle(it)->GetName() : "NONE")
 
+}
+
+void UD::ActorSlotManager::InitSlots()
+{
+    //DEBUG("Init slots")
+    _slots2.clear();
+    auto loc_aliases = ModuleManager::GetSingleton()->GetModulesAliasesByScript("UD_CustomDevices_NPCSlotsManager");
+    if (loc_aliases.size() > 0)
+    {
+        const auto loc_vm = InternalVM::GetSingleton();
+        for (auto&& it : loc_aliases)
+        {
+            RE::BSTSmartPointer<RE::BSScript::Object> loc_object;
+            auto loc_handle = loc_vm->GetObjectHandlePolicy()->GetHandleForObject(it->GetVMTypeID(),it);
+            bool loc_res = loc_vm->FindBoundObject(loc_handle, "ud_customdevice_npcslot", loc_object);
+            //DEBUG("Object get for {}[{}] found ? {}",it->owningQuest->GetName(),it->aliasID,loc_res)
+            if (loc_res)
+            {
+                _slots2[it] = loc_object;
+            }
+        }
+    }
 }

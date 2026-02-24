@@ -16,6 +16,7 @@
 #include <UD_MessageBox.h>
 #include <UD_SLPP.h>
 #include <UD_ModuleManager.h>
+#include <UD_MinigameManager.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
@@ -182,6 +183,13 @@ namespace UD
         REGISTERPAPYRUSFUNC(ResetAllModules     ,true)
         REGISTERPAPYRUSFUNC(GetModulesByScript  ,true)
         REGISTERPAPYRUSFUNC(GetModulesAliasesByScript ,true)
+
+        //UI
+        REGISTERPAPYRUSFUNC(ShowDeviceMenu ,true)
+        REGISTERPAPYRUSFUNC(IsMenuOpen ,true)
+
+        //MinigameManager
+        REGISTERPAPYRUSFUNC(GetListOfMinigames ,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

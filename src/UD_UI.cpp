@@ -1,6 +1,13 @@
 #include <UD_UI.h>
+//#include <boost/algorithm/string.hpp>
+#include <UD_ModuleManager.h>
+#include <UD_Utility.h>
 
 SINGLETONBODY(UD::MeterManager)
+SINGLETONBODY(UD::UIManager)
+
+PRISMA_UI_API::IVPrismaUI1* UD::UIManager::PrismaUI = nullptr;
+bool UD::UIManager::ViewReady = false;
 
 namespace UD
 {
@@ -213,6 +220,237 @@ namespace UD
 
             loc_ui->processMessagesLock.Unlock();
         }
+    }
+
+    void UIManager::Reload()
+    {
+        ViewReady = false;
+
+        auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
+        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
+        
+        if (PrismaUI)
+        {
+            _view = PrismaUI->CreateView("UD/DeviceMenu.html",[](PrismaView view) -> void
+            {
+                DEBUG("View DOM is ready {}", view);
+                ViewReady = true;
+                PrismaUI->Hide(view);
+            });
+
+            // Listen for UI events
+            PrismaUI->RegisterJSListener(_view, "ExitMenu", [](const char* a_type)
+            {
+                UIManager::GetSingleton()->HideMenu((UIMenu)std::stoi(a_type));
+            });
+
+            PrismaUI->RegisterJSListener(_view, "SendCallback", [](const char* a_arg)
+            {
+                std::string loc_str = a_arg;
+                std::vector<std::string> loc_indx;
+
+                try
+                {
+                    boost::split(loc_indx,loc_str,boost::is_any_of(","));
+                }
+                catch(...)
+                {
+                    ERROR("Error spliting argument received by SendCallback - {}",a_arg)
+                    return;
+                }
+                
+                if (loc_indx.size() == 2)
+                {
+                    UIManager::GetSingleton()->SendCallback(std::stoi(loc_indx[0]),std::stoi(loc_indx[1]));
+                }
+                else
+                {
+                    ERROR("Incorrect number of indexes received for SendCallback!")
+                }
+            });
+        }
+    }
+
+    void UIManager::Update()
+    {
+
+    }
+
+    bool UIManager::ShowDeviceMenu(RE::Actor* a_actor, RE::Actor* a_helper, std::vector<std::string> a_callbacks)
+    {
+        DEBUG("ShowDeviceMenu() called")
+        if (ViewReady && _currentMenu == eNone && a_actor)
+        {
+            _devMenuData.Callbacks = ParseCallbacks(a_callbacks);
+            _devMenuData.List.clear();
+            _devMenuData.Wearer = a_actor;
+            _devMenuData.Helper = a_helper;
+
+            PrismaUI->Show(_view);
+            PrismaUI->Focus(_view,true);
+
+            auto loc_Devices = PapyrusDelegate::GetSingleton()->FindAllDeviceScripts(a_actor);
+            DEBUG("ShowDeviceMenu() - Showing list of {} devices",loc_Devices.size())
+
+            std::vector<std::string> loc_devicesList;
+            for (auto&& it : loc_Devices)
+            {
+                #undef GetObject
+
+                RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(it,"DeviceInventory",false,(RE::VMTypeID)RE::TESObjectARMO::FORMTYPE);
+                if (loc_id)
+                {
+                    std::string loc_arg = "{";
+
+                    loc_arg += "name: \"" + std::string(loc_id->GetName()) + "\",";
+
+                    loc_arg += "values: [";
+                    CreateValueDetail(loc_arg, true,"Level:",std::to_string(Utility::GetPropertyInt(it,"_level",true,1)),"dm_det_value_level");
+                    CreateValueDetail(loc_arg, true,"Health:",std::to_string(Utility::GetPropertyFloat(it,"current_device_health",true,0.0)),"dm_det_value_health");
+                    CreateValueDetail(loc_arg, true,"Condition::",std::to_string(Utility::GetPropertyInt(it,"UD_condition",false,0)),"dm_det_value_cond");
+                    CreateValueDetail(loc_arg, true,"Physical Res.:",std::to_string(Utility::GetPropertyFloat(it,"UD_ResistPhysical",false,0.0)),"dm_det_value_resphys");
+                    CreateValueDetail(loc_arg, true,"Magickal Res.:",std::to_string(Utility::GetPropertyFloat(it,"UD_ResistMagicka",false,0.0)),"dm_det_value_resmag");
+                    CreateValueDetail(loc_arg,false,"Cut chance:",std::to_string(Utility::GetPropertyFloat(it,"UD_CutChance",false,0.0)),"dm_det_value_cut");
+                    loc_arg += "],";
+
+                    RE::BSString loc_str = "";
+                    loc_id->GetDescription(loc_str,loc_id);
+                    loc_arg += "desc: \"" + std::string(loc_str) + "\",";
+
+                    auto loc_mods = Utility::GetPropertyObjectArrayRaw(it,"UD_ModifiersRef",false);
+
+                    
+                    std::vector<std::string> loc_modlist;
+                    for (auto&& mod : loc_mods)
+                    {
+                        std::string loc_modname = Utility::GetPropertyString(mod,"NameFull",false,"");
+                        std::string loc_moddesc = Utility::GetPropertyString(mod,"Description",false,"");
+
+                        if (loc_modname != "")
+                        {
+                            std::string loc_modclass = std::format("{{name: \"{}\",desc: \"{}\"}}",loc_modname,loc_moddesc);
+                            loc_modlist.push_back(loc_modclass);
+                        }
+                    }
+                    std::string loc_modstr = "[" + boost::join(loc_modlist,",") + "]";
+                    loc_arg += "mods: " + loc_modstr;
+                    loc_arg += "}";
+
+                    _devMenuData.List.push_back(it);
+                    loc_devicesList.push_back(loc_arg);
+                }
+
+            }
+            std::string loc_devicestr = "[" + boost::join(loc_devicesList,",") + "]";
+            std::string loc_arg = "{";
+            loc_arg += "wearer: \"" + std::string(a_actor->GetName()) + "\",";
+            loc_arg += "helper: \"" + (a_helper ? std::string(a_helper->GetName()) : "none") + "\",";
+            loc_arg += "arousal: " + std::to_string(ORS::OrgasmManager::GetSingleton()->GetOrgasmVariable(a_actor,ORS::OrgasmVariable::vArousal)) + ",";
+            loc_arg += "orgasm: \"" + std::to_string(ORS::OrgasmManager::GetSingleton()->GetOrgasmProgress(a_actor,1)*100.0f) + " %\",";
+
+            std::vector<std::string> loc_buttonNames(_devMenuData.Callbacks.size());
+            for (int i =0; i < loc_buttonNames.size(); i++)
+            {
+                std::string tmp_callback = std::format("{{name: \"{}\",module: \"{}\"}}",_devMenuData.Callbacks[i].Name,_devMenuData.Callbacks[i].Module);
+                loc_buttonNames[i] = tmp_callback;
+            }
+            loc_arg += "callbacks: [" + boost::join(loc_buttonNames,",") + "],";
+
+            loc_arg += "devices: " + loc_devicestr;
+            loc_arg += "}";
+            std::string loc_call = std::format("InitDeviceList({})",loc_arg);
+            DEBUG("ShowDeviceMenu() - Sending {}",loc_call)
+            PrismaUI->Invoke(_view,loc_call.c_str());
+
+            _currentMenu = UIMenu::eDeviceMenu;
+            return true;
+        }
+        return false;
+    }
+
+    bool UIManager::IsMenuOpen()
+    {
+        return _currentMenu != eNone;
+    }
+
+    void UIManager::HideMenu(UIMenu arg_type)
+    {
+        _currentMenu = UIMenu::eNone;
+        PrismaUI->Unfocus(_view);
+        PrismaUI->Hide(_view);
+
+        switch(arg_type)
+        {
+            case UIMenu::eDeviceMenu:
+                _devMenuData.List.clear();
+                _devMenuData = DeviceMenuData();
+            break;
+            default:
+
+            break;
+        }
+    }
+
+    void UIManager::SendCallback(int a_indxDev, int a_indxCall)
+    {
+        if (_devMenuData.Callbacks[a_indxCall].Module != "")
+        {
+            const auto loc_vm = InternalVM::GetSingleton();
+            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback;
+
+            if (_devMenuData.Callbacks[a_indxCall].Module == "this")
+            {
+                auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, std::string>(std::forward<RE::Actor*>(_devMenuData.Helper),std::forward<std::string>(_devMenuData.Callbacks[a_indxCall].Argument));
+                loc_vm->DispatchMethodCall(_devMenuData.List[a_indxDev],_devMenuData.Callbacks[a_indxCall].Callback,loc_args,loc_callback);
+            }
+            else
+            {
+                auto loc_module = ModuleManager::GetSingleton()->GetModuleObjectByAlias(_devMenuData.Callbacks[a_indxCall].Module);
+                if (loc_module && loc_module->object)
+                {
+                    auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, RE::Actor*, RE::TESObjectARMO*, std::string>(
+                    std::forward<RE::Actor*>(_devMenuData.Wearer),
+                    std::forward<RE::Actor*>(_devMenuData.Helper),
+                    std::forward<RE::TESObjectARMO*>(a_indxDev >= 0 ? (RE::TESObjectARMO*)Utility::GetPropertyObject(_devMenuData.List[a_indxDev],"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE):nullptr),
+                    std::forward<std::string>(_devMenuData.Callbacks[a_indxCall].Argument));
+                    loc_vm->DispatchMethodCall(loc_module->object,_devMenuData.Callbacks[a_indxCall].Callback,loc_args,loc_callback);
+                }
+                else
+                {
+                    ERROR("Can't find module {}",_devMenuData.Callbacks[a_indxCall].Module)
+                }
+            }
+        }
+        else
+        {
+            // Void Callback, dont dispatch callback
+        }
+        HideMenu(UIMenu::eDeviceMenu);
+    }
+
+    std::vector<ButtonCallback> UIManager::ParseCallbacks(std::vector<std::string> a_callbacks)
+    {
+        static const std::regex loc_ParseRegex(R"(\[(.+)\](?:(.+)::(.+)\((.*)\))*)");
+        std::vector<ButtonCallback> loc_res(a_callbacks.size());
+        for (int i = 0; i < a_callbacks.size(); i++)
+        {
+            ButtonCallback loc_ballback;
+            loc_ballback.Name       = std::regex_replace(a_callbacks[i], loc_ParseRegex, "$1");
+            loc_ballback.Module     = std::regex_replace(a_callbacks[i], loc_ParseRegex, "$2");
+            std::transform(loc_ballback.Module.begin(), loc_ballback.Module.end(), loc_ballback.Module.begin(), ::tolower);
+            loc_ballback.Callback   = std::regex_replace(a_callbacks[i], loc_ParseRegex, "$3");
+            loc_ballback.Argument   = std::regex_replace(a_callbacks[i], loc_ParseRegex, "$4");
+            loc_res[i] = loc_ballback;
+        }
+        
+        return loc_res;
+    }
+
+    void UIManager::CreateValueDetail(std::string& a_input,bool a_sep,std::string a_name, std::string a_value, std::string a_id)
+    {
+        std::string loc_value = std::format("{{name: \"{}\",value: \"{}\", id: \"{}\"}}",a_name,a_value,a_id);
+        a_input += loc_value;
+        if (a_sep) a_input += ",";
     }
 
 }

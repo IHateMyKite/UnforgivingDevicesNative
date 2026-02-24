@@ -10,6 +10,7 @@
 //#include <UD_Spinlock.h>
 #include <UD_DDAPI.h>
 #include <UD_ModuleManager.h>
+#include <UD_ActorSlotManager.h>
 
 #undef GetObject
 
@@ -18,6 +19,68 @@ SINGLETONBODY(UD::PapyrusDelegate)
 using UD::PapyrusDelegate;
 typedef PapyrusDelegate::Result Result;
 typedef PapyrusDelegate::FilterDeviceResult FilterDeviceResult;
+
+namespace UD
+{
+    class IItemChangeVisitorBase
+    {
+    public:
+	    virtual ~IItemChangeVisitorBase(){}  // 00
+
+	    // add
+	    virtual RE::BSContainer::ForEachResult Visit(RE::InventoryEntryData* a_entryData) = 0;                                                                                // 01
+	    virtual bool                       ShouldVisit([[maybe_unused]] RE::InventoryEntryData* a_entryData, [[maybe_unused]] RE::TESBoundObject* a_object) { return true; }  // 02
+	    virtual RE::BSContainer::ForEachResult Unk_03(RE::InventoryEntryData* a_entryData, [[maybe_unused]] void* a_arg2, bool* a_arg3)                                       // 03
+	    {
+		    *a_arg3 = true;
+		    return Visit(a_entryData);
+	    }
+        RE::InventoryChanges::IItemChangeVisitor* GetNativeVisitor()
+        {
+            return reinterpret_cast<RE::InventoryChanges::IItemChangeVisitor*>(this);
+        }
+    };
+
+
+    class ObjectRefVisitor : public IItemChangeVisitorBase
+    {
+    public:
+        ObjectRefVisitor(std::string a_script) : _script(a_script) {}
+        virtual RE::BSContainer::ForEachResult Visit(RE::InventoryEntryData* a_entryData)
+        {
+            if (a_entryData->extraLists)
+            {
+                for(auto&& it : *a_entryData->extraLists)
+                {
+                    if (it)
+                    {
+                        auto loc_data = it->GetByType<RE::ExtraUniqueID>();
+                        if (loc_data)
+                        {
+                            RE::VMHandle loc_handle = (uint64_t)loc_data->baseID | (((uint64_t)loc_data->uniqueID | 0x10000U) << 32U);
+                            Object loc_object;
+                            const auto loc_vm = InternalVM::GetSingleton();
+                            bool loc_res = loc_vm->FindBoundObject(loc_handle,"form",loc_object);
+                            if (loc_res && PapyrusDelegate::GetSingleton()->HaveScriptBase(loc_object->GetTypeInfo(), _script)) 
+                            {
+                                _res.push_back(loc_object);
+                            }
+                        }
+                    }
+                }
+            }
+            return RE::BSContainer::ForEachResult::kContinue;
+        }
+        std::vector<Object> GetResult()
+        {
+            //DEBUG("Devices found: {}",_res.size())
+            return _res;
+        }
+    public:
+        std::string _script;
+        std::vector<Object> _res;
+    };
+}
 
 RE::VMHandle UD::PapyrusDelegate::ToVMHandle(const int a_1, const int a_2)
 {
@@ -782,7 +845,7 @@ void UD::PapyrusDelegate::ResetCache()
     _removeddevices.clear();
 }
 
-UD::Object UD::PapyrusDelegate::FindDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
+Object UD::PapyrusDelegate::FindDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
 {
     if (!a_actor || !a_device) return Object();
 
@@ -821,99 +884,43 @@ UD::Object UD::PapyrusDelegate::FindDeviceScript(RE::Actor* a_actor, RE::TESObje
     return loc_object;
 }
 
-UD::Object UD::PapyrusDelegate::FindInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
+Object UD::PapyrusDelegate::FindInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
 {
     if (!a_actor || !a_device) return Object();
 
-    const auto loc_vm = InternalVM::GetSingleton();
-    auto loc_formid = a_actor->GetFormID();
-     
-    loc_vm->attachedScriptsLock.Lock();
+    auto loc_devices = FindAllDeviceScripts(a_actor);
 
-    RE::VMHandle loc_handle = 0x0001000000000000 | loc_formid;
-
-    const RE::VMHandle loc_scriptstep = 0x100000000;
-    Object loc_object;
-
-    int loc_nonefound = 15;
-    while (loc_nonefound > 0)
+    for (auto&& it : loc_devices)
     {
-        loc_vm->FindBoundObject(loc_handle,"ud_customdevice_equipscript",loc_object);
-        if (loc_object)
+        const auto loc_id = GetScriptProperty<RE::TESObjectARMO>(it,"deviceInventory",RE::FormType::Armor);
+        if (loc_id == a_device)
         {
-            auto loc_id = GetScriptProperty<RE::TESObjectARMO>(loc_object,"deviceInventory",RE::FormType::Armor);
-            if (loc_id == a_device)
-            {
-                break;
-            }
-            loc_nonefound = 15;
+            return it;
         }
-        else
-        {
-            loc_nonefound--;
-        }
-        loc_handle += loc_scriptstep;
     }
-    
-    loc_vm->attachedScriptsLock.Unlock();
-    return loc_object;
+    return nullptr;
 }
 
-std::vector<UD::Object> UD::PapyrusDelegate::FindAllDeviceScripts(RE::Actor* a_actor)
+std::vector<Object> UD::PapyrusDelegate::FindAllDeviceScripts(RE::Actor* a_actor)
 {
     if (!a_actor) return std::vector<Object>();
+    auto loc_visitor = ObjectRefVisitor("ud_customdevice_renderscript");
+    a_actor->GetInventoryChanges()->VisitInventory(*loc_visitor.GetNativeVisitor());
+    return loc_visitor.GetResult();
+}
 
-    const auto loc_vm = InternalVM::GetSingleton();
-    auto loc_formid = a_actor->GetFormID();
-     
-    loc_vm->attachedScriptsLock.Lock();
-
-    RE::VMHandle loc_handle = 0x0001000000000000 | loc_formid;
-
-    const RE::VMHandle loc_scriptstep = 0x100000000;
-    std::vector<Object> loc_objects;
-
-    int loc_nonefound = 15;
-    while (loc_nonefound > 0)
+Object UD::PapyrusDelegate::FindDeviceScriptID(RE::Actor* a_actor, RE::TESObjectARMO* a_id)
+{
+    auto loc_devices = FindAllDeviceScripts(a_actor);
+    for (auto&& it : loc_devices)
     {
-        Object loc_object;
-        loc_vm->FindBoundObject(loc_handle,"form",loc_object);
-        if (loc_object)
+        if (a_id)
         {
-            auto loc_info = loc_object->GetTypeInfo();
-            bool loc_isud = false;
-            while (loc_info != nullptr)
-            {
-                std::string loc_scriptname = loc_info->GetName();
-                std::transform(loc_scriptname.begin(), loc_scriptname.end(), loc_scriptname.begin(), ::tolower);
-                
-                //check if script is ud
-                if (loc_scriptname == "ud_customdevice_renderscript")
-                {
-                    loc_isud = true;
-                    break;
-                }
-                else
-                {
-                    loc_info = loc_info->GetParent();
-                }
-            }
-
-            if (loc_isud)
-            {
-                loc_objects.push_back(loc_object);
-            }
-            loc_nonefound = 15;
+            RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(it,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE);
+            if (loc_id == a_id) return it;
         }
-        else
-        {
-            loc_nonefound--;
-        }
-        loc_handle += loc_scriptstep;
     }
-    
-    loc_vm->attachedScriptsLock.Unlock();
-    return loc_objects;
+    return nullptr;
 }
 
 void UD::PapyrusDelegate::UpdateVMHandles() const
@@ -1143,6 +1150,7 @@ void UD::PapyrusDelegate::UpdateVMHandles() const
     }
 
     ModuleManager::GetSingleton()->SetPapyrusReady();
+    ActorSlotManager::GetSingleton()->InitSlots();
 }
 
 UD::Device UD::PapyrusDelegate::GetDeviceScript(int a_handle1, int a_handle2, RE::TESObjectARMO* a_device)

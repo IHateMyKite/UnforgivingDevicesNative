@@ -2,6 +2,11 @@
 
 #include <unordered_set>
 
+namespace boost::json
+{
+    class value;
+}
+
 namespace UD 
 {
     using InternalVM = RE::BSScript::Internal::VirtualMachine;
@@ -60,6 +65,17 @@ namespace UD
         RE::TESObjectARMO* CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_device) const;
 
         bool IsBlockingMenuOpen();
+
+        static int GetPropertyInt(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, int a_defval);
+        static std::string GetPropertyString(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, std::string a_defval);
+        static float GetPropertyFloat(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, float a_defval);
+        static bool GetPropertyBool(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, bool a_defval);
+        static void* GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID a_type);
+        static void* GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::FormType a_type);
+
+        static std::vector<void*> GetPropertyObjectArray(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID);
+        static std::vector<RE::BSTSmartPointer<RE::BSScript::Object>> GetPropertyObjectArrayRaw(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var);
+
     private:
 
     };
@@ -264,6 +280,14 @@ namespace UD
     bool IsConcentrationSpell(PAPYRUSFUNCHANDLE,RE::SpellItem* a_spell);
     bool IsConcentrationEnch(PAPYRUSFUNCHANDLE,RE::EnchantmentItem* a_ench);
 
-    
+    class JSONUtility
+    {
+    SINGLETONHEADER(JSONUtility)
+    public:
+        boost::json::value RecursiveFind(boost::json::value a_obj,std::string a_path);
+        std::vector<boost::json::value> RecursiveFindArray(boost::json::value a_obj,std::string a_path);
+        std::string RecursiveGetString(boost::json::value a_obj,std::string a_path,std::string a_def = "");
+    };
+
 
 }

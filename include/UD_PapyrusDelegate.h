@@ -4,11 +4,6 @@
 
 namespace UD
 {
-    using InternalVM = RE::BSScript::Internal::VirtualMachine;
-    using Script = RE::BSTTuple<const RE::VMHandle, RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>>;
-    using Object = RE::BSTSmartPointer<RE::BSScript::Object>;
-    using Variable = RE::BSScript::Variable;
-
     struct Device
     {
         RE::BSTSmartPointer<RE::BSScript::Object> object = nullptr;
@@ -87,6 +82,8 @@ namespace UD
         void UpdateVMHandles() const;
         Device GetDeviceScript(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
         Device GetCachedDevice(RE::VMHandle,RE::Actor* a_actor, RE::TESObjectARMO* a_device);
+        std::vector<Object> FindAllDeviceScripts(RE::Actor* a_actor);
+        Object FindDeviceScriptID(RE::Actor* a_actor, RE::TESObjectARMO* a_id);
 
         const std::map<RE::VMHandle,Modifier>& GetModifiers() const;
         std::vector<Modifier> GetModifiers(RE::VMHandle a_handle, RE::TESObjectARMO* a_device);
@@ -119,8 +116,6 @@ namespace UD
 
         Object FindDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device);
         Object FindInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device);
-        std::vector<Object> FindAllDeviceScripts(RE::Actor* a_actor);
-
     private:
         bool _installed = false;
         RE::BGSKeyword* _udrdkw;

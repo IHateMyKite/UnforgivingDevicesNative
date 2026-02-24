@@ -19,6 +19,8 @@ namespace UD
         bool QuestStarting  = false;
     };
 
+    typedef std::shared_ptr<Module> ModulePtr;
+
     class ModuleManager
     {
     SINGLETONHEADER(ModuleManager)
@@ -31,6 +33,7 @@ namespace UD
         void SetDelay(float a_time);
         bool IsReady(bool a_CheckReload);
         RE::TESQuest* GetModuleByAlias(std::string a_alias);
+        ModulePtr GetModuleObjectByAlias(std::string a_alias);
         std::vector<RE::TESQuest*> GetModules();
         std::vector<RE::TESQuest*> GetModuleDependency(RE::TESQuest* a_module);
         std::vector<RE::TESQuest*> GetDependantModules(RE::TESQuest* a_module);
@@ -42,8 +45,8 @@ namespace UD
         void UpdateModuleVariables();
         int CallSetup();
         int CallReload();
-        std::vector<Module*> GetSortedModuleList();
-        Module* GetModuleByQuest(RE::TESQuest* a_quest);
+        std::vector<ModulePtr> GetSortedModuleList();
+        ModulePtr GetModuleByQuest(RE::TESQuest* a_quest);
         bool IsQuestReady(RE::TESQuest* a_quest, bool a_checkreload = false);
         bool AllModulesReady();
         bool AllModulesReloaded();
@@ -54,7 +57,7 @@ namespace UD
         float _MessageTimer = 0.0f;
         bool _ReloadMessagePrinted  = false;
         bool _SetupMessagePrinted   = false;
-        mutable std::unordered_map<RE::VMHandle,Module>   _modules;
+        mutable std::unordered_map<RE::VMHandle,ModulePtr>   _modules;
     };
 
     inline bool AreModulesReady(PAPYRUSFUNCHANDLE,bool a_CheckReload)

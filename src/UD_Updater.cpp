@@ -1,5 +1,6 @@
 #include <UD_Updater.h>
 
+#include <UD_Utility.h>
 #include <UD_Config.h>
 #include <UD_ControlManager.h>
 #include <UD_MinigameEffect.h>
