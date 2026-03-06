@@ -105,11 +105,12 @@ namespace UD
             //void SendCallback(MinigameCallback a_callback);
             void SetMinigameState(MinigameState a_state);
             void StopMinigame(int a_id);
-            void OpenMinigameUI(int a_id);
+            void OpenMinigameUI(int a_id,std::string a_callback);
             void CloseMinigameUI(int a_id);
             void SetViewReady() {_viewReady = true;}
             void InvokeUI(std::string a_command);
             void CheckActionCallback(uint32_t a_dxcode);
+            void SendOpenMinigameUICallback();
             void SendPapCallback(int a_id,std::string a_callback,VariableValue& a_var);
             lua_State* GetMinigameScriptById(int a_id);
         private:
@@ -120,8 +121,10 @@ namespace UD
             void PushMinigameData(lua_State* L,MinigameData& a_data);
         private:
             static PRISMA_UI_API::IVPrismaUI1* PrismaUI;
-            PrismaView _view = 0x0UL;
-            bool _viewReady = false;
+            PrismaView  _view = 0x0UL;
+            bool        _viewReady = false;
+            std::string _callback = "";
+            int         _focusedMinigameId = 0;
             //MinigameData _data;
             bool _init = false;
             std::unordered_map<std::string,MinigameSetting> _jsoncache;

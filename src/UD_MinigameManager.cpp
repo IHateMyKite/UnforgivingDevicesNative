@@ -13,10 +13,16 @@ void UD::MinigameManager::Reload()
     auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
     PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
 
+    _minigames.clear();
+    CloseMinigameUI(0);
+
     if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
     {
         _init = true;
         _jsoncache.clear();
+
+        for(auto&& [name,script] : _scripts) lua_close(script);
+        _scripts.clear();
 
         std::string loc_devconfpath = RelToAbsPath("UD\\MinigameConfig");
         std::regex loc_regex(R"regex(.*\\(.*\.[jJ][sS][oO][nN]))regex");
@@ -185,7 +191,7 @@ UD::MinigameDataPtr UD::MinigameManager::GetMinigameDataById(uint32_t a_id)
 {
     for(auto&& it : _minigames)
     {
-        if (it->id == a_id)
+        if ((uint32_t)it->id == a_id)
         {
             return it;
         }
@@ -215,7 +221,7 @@ void UD::MinigameManager::StopMinigame(int a_id)
     }));
 }
 
-void UD::MinigameManager::OpenMinigameUI(int a_id)
+void UD::MinigameManager::OpenMinigameUI(int a_id,std::string a_callback)
 {
     auto loc_data = GetMinigameDataById(a_id);
     if (loc_data)
@@ -225,10 +231,14 @@ void UD::MinigameManager::OpenMinigameUI(int a_id)
         
         if (PrismaUI)
         {
+            _focusedMinigameId = a_id;
+            _callback = a_callback;
             _view = PrismaUI->CreateView(loc_data->Setting->config.uiobject.c_str(),[](PrismaView view) -> void
             {
                 DEBUG("Minigame DOM is ready {}", view);
+                MinigameManager::GetSingleton()->SendOpenMinigameUICallback();
                 MinigameManager::GetSingleton()->SetViewReady();
+
             });
         }
     }
@@ -236,8 +246,8 @@ void UD::MinigameManager::OpenMinigameUI(int a_id)
 
 void UD::MinigameManager::CloseMinigameUI(int a_id)
 {
-    auto loc_data = GetMinigameDataById(a_id);
-    if (loc_data)
+    //auto loc_data = GetMinigameDataById(a_id);
+    //if (loc_data)
     {
         auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
         PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
@@ -278,6 +288,18 @@ void UD::MinigameManager::CheckActionCallback(uint32_t a_dxcode)
     }
 
 
+}
+
+void UD::MinigameManager::SendOpenMinigameUICallback()
+{
+    if (_callback != "")
+    {
+        auto loc_data = GetMinigameDataById(_focusedMinigameId);
+        auto L = GetMinigameScriptById(_focusedMinigameId);
+        lua_getglobal(L,_callback.c_str());
+        PushMinigameData(L,*loc_data);
+        lua_pcall(L,1,0,0);
+    }
 }
 
 void UD::MinigameManager::SendPapCallback(int a_id, std::string a_callback, VariableValue& a_var)

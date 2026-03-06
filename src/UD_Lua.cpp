@@ -517,13 +517,13 @@ int Lua::HostFunctions::lua_StopMinigame(lua_State* L)
 
 int Lua::HostFunctions::lua_OpenMinigameUI(lua_State* L)
 {
-    if (!lua_isinteger(L,1))
+    if (!lua_isinteger(L,1) || !lua_isstring(L,2))
     {
-        ERROR("lua_StopMinigame - Incorrect variables passed!")
+        ERROR("lua_OpenMinigameUI - Incorrect variables passed!")
         return 0;
     }
-    DEBUG("lua_OpenMinigameUI({})",lua_tointeger(L,1))
-    UD::MinigameManager::GetSingleton()->OpenMinigameUI(lua_tointeger(L,1));
+    DEBUG("lua_OpenMinigameUI({},{})",lua_tointeger(L,1),lua_tostring(L,2))
+    UD::MinigameManager::GetSingleton()->OpenMinigameUI(lua_tointeger(L,1),lua_tostring(L,2));
     return 0;
 }
 
@@ -602,7 +602,7 @@ int Lua::HostFunctions::lua_RegisterActionCallback(lua_State* L)
         UD::MinigameActionCallback loc_callback;
         loc_callback.control    = loc_control;
         loc_callback.callback   = lua_tostring(L,3);
-        //DEBUG("Action callback registered - {} , {} , {}",loc_callback.callback,loc_callback.control.alias,loc_callback.control.codekeyboard)
+        DEBUG("Action callback registered - {} , {} , {}",loc_callback.callback,loc_callback.control.alias,loc_callback.control.codekeyboard)
         loc_data->Controls.push_back(loc_callback);
     }
 
