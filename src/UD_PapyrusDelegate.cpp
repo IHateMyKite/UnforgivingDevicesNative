@@ -63,7 +63,7 @@ namespace UD
                             bool loc_res = loc_vm->FindBoundObject(loc_handle,"form",loc_object);
                             if (loc_res && PapyrusDelegate::GetSingleton()->HaveScriptBase(loc_object->GetTypeInfo(), _script)) 
                             {
-                                _res.push_back(loc_object);
+                                _res.push_back({a_entryData->GetObject()->As<RE::TESObjectARMO>(),loc_object});
                             }
                         }
                     }
@@ -71,14 +71,14 @@ namespace UD
             }
             return RE::BSContainer::ForEachResult::kContinue;
         }
-        std::vector<Object> GetResult()
+        std::vector<DeviceObj> GetResult()
         {
             //DEBUG("Devices found: {}",_res.size())
             return _res;
         }
     public:
         std::string _script;
-        std::vector<Object> _res;
+        std::vector<DeviceObj> _res;
     };
 }
 
@@ -181,7 +181,7 @@ int PapyrusDelegate::RegisterDeviceScripts(RE::Actor* a_actor)
     int loc_registered = 0;
     for (auto&& object : loc_devicescripts)
     {
-        auto loc_rd = GetScriptVariable<RE::TESObjectARMO>(object,"_DeviceRendered",RE::FormType::Armor);
+        auto loc_rd = GetScriptVariable<RE::TESObjectARMO>(object.second,"_DeviceRendered",RE::FormType::Armor);
         if (loc_rd && (std::find(loc_devices.begin(),loc_devices.end(),loc_rd) != loc_devices.end()))
         {
             auto loc_emptyslot = std::find_if(loc_arr->begin(),loc_arr->end(),[](Variable& a_var)
@@ -192,7 +192,7 @@ int PapyrusDelegate::RegisterDeviceScripts(RE::Actor* a_actor)
 
             if (loc_emptyslot)
             {
-                loc_emptyslot->SetObject(object,loc_emptyslot->GetType().GetRawType());
+                loc_emptyslot->SetObject(object.second,loc_emptyslot->GetType().GetRawType());
                 loc_registered++;
                 continue;
             }
@@ -796,9 +796,9 @@ bool UD::PapyrusDelegate::GetInventoryDeviceScript(RE::Actor* a_actor, RE::TESOb
     }
 
     // Find device script
-    Object loc_device = FindInventoryDeviceScript(a_actor,a_device);
+    DeviceObj loc_device = FindInventoryDeviceScript(a_actor,a_device);
 
-    if (loc_device == nullptr)
+    if (loc_device.second == nullptr)
     {
         ERROR("GetInventoryDeviceScript({},0x{:08X},{},{}) - Could not find script object",a_actor->GetName(),a_device->GetFormID(),a_script,a_variable)
         return false;
@@ -818,7 +818,7 @@ bool UD::PapyrusDelegate::GetInventoryDeviceScript(RE::Actor* a_actor, RE::TESOb
                 Variable* loc_var = loc_object->GetProperty(a_variable) ? loc_object->GetProperty(a_variable) : loc_object->GetVariable(a_variable);
                 if (loc_var != nullptr)
                 {
-                    loc_var->SetObject(loc_device,loc_var->GetType().GetRawType());
+                    loc_var->SetObject(loc_device.second,loc_var->GetType().GetRawType());
                     return true;
                 }
                 else
@@ -884,43 +884,43 @@ Object UD::PapyrusDelegate::FindDeviceScript(RE::Actor* a_actor, RE::TESObjectAR
     return loc_object;
 }
 
-Object UD::PapyrusDelegate::FindInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
+DeviceObj UD::PapyrusDelegate::FindInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device)
 {
-    if (!a_actor || !a_device) return Object();
+    if (!a_actor || !a_device) return DeviceObj();
 
     auto loc_devices = FindAllDeviceScripts(a_actor);
 
     for (auto&& it : loc_devices)
     {
-        const auto loc_id = GetScriptProperty<RE::TESObjectARMO>(it,"deviceInventory",RE::FormType::Armor);
+        const auto loc_id = GetScriptProperty<RE::TESObjectARMO>(it.second,"deviceInventory",RE::FormType::Armor);
         if (loc_id == a_device)
         {
             return it;
         }
     }
-    return nullptr;
+    return DeviceObj();
 }
 
-std::vector<Object> UD::PapyrusDelegate::FindAllDeviceScripts(RE::Actor* a_actor)
+std::vector<DeviceObj> UD::PapyrusDelegate::FindAllDeviceScripts(RE::Actor* a_actor)
 {
-    if (!a_actor) return std::vector<Object>();
+    if (!a_actor) return std::vector<DeviceObj>();
     auto loc_visitor = ObjectRefVisitor("ud_customdevice_renderscript");
     a_actor->GetInventoryChanges()->VisitInventory(*loc_visitor.GetNativeVisitor());
     return loc_visitor.GetResult();
 }
 
-Object UD::PapyrusDelegate::FindDeviceScriptID(RE::Actor* a_actor, RE::TESObjectARMO* a_id)
+DeviceObj UD::PapyrusDelegate::FindDeviceScriptID(RE::Actor* a_actor, RE::TESObjectARMO* a_id)
 {
     auto loc_devices = FindAllDeviceScripts(a_actor);
     for (auto&& it : loc_devices)
     {
         if (a_id)
         {
-            RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(it,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE);
+            RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(it.second,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE);
             if (loc_id == a_id) return it;
         }
     }
-    return nullptr;
+    return DeviceObj();
 }
 
 void UD::PapyrusDelegate::UpdateVMHandles() const

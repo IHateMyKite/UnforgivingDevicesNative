@@ -2,6 +2,7 @@
 //#include <boost/algorithm/string.hpp>
 #include <UD_ModuleManager.h>
 #include <UD_Utility.h>
+#include <UD_MinigameManager.h>
 
 SINGLETONBODY(UD::MeterManager)
 SINGLETONBODY(UD::UIManager)
@@ -268,6 +269,32 @@ namespace UD
                     ERROR("Incorrect number of indexes received for SendCallback!")
                 }
             });
+
+            PrismaUI->RegisterJSListener(_view, "StartMinigame", [](const char* a_arg)
+            {
+                DEBUG("StartMinigame({}) called",a_arg)
+                std::string loc_str = a_arg;
+                std::vector<std::string> loc_indx;
+
+                try
+                {
+                    boost::split(loc_indx,loc_str,boost::is_any_of(","));
+                }
+                catch(...)
+                {
+                    ERROR("Error spliting argument received by SendCallback - {}",a_arg)
+                    return;
+                }
+                
+                if (loc_indx.size() == 2)
+                {
+                    UIManager::GetSingleton()->StartMinigame(std::stoi(loc_indx[0]),std::stoi(loc_indx[1]));
+                }
+                else
+                {
+                    ERROR("Incorrect number of indexes received for SendCallback!")
+                }
+            });
         }
     }
 
@@ -297,7 +324,9 @@ namespace UD
             {
                 #undef GetObject
 
-                RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(it,"DeviceInventory",false,(RE::VMTypeID)RE::TESObjectARMO::FORMTYPE);
+                auto loc_obj = it.second;
+
+                RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(loc_obj,"DeviceInventory",false,(RE::VMTypeID)RE::TESObjectARMO::FORMTYPE);
                 if (loc_id)
                 {
                     std::string loc_arg = "{";
@@ -305,19 +334,19 @@ namespace UD
                     loc_arg += "name: \"" + std::string(loc_id->GetName()) + "\",";
 
                     loc_arg += "values: [";
-                    CreateValueDetail(loc_arg, true,"Level:",std::to_string(Utility::GetPropertyInt(it,"_level",true,1)),"dm_det_value_level");
-                    CreateValueDetail(loc_arg, true,"Health:",std::to_string(Utility::GetPropertyFloat(it,"current_device_health",true,0.0)),"dm_det_value_health");
-                    CreateValueDetail(loc_arg, true,"Condition::",std::to_string(Utility::GetPropertyInt(it,"UD_condition",false,0)),"dm_det_value_cond");
-                    CreateValueDetail(loc_arg, true,"Physical Res.:",std::to_string(Utility::GetPropertyFloat(it,"UD_ResistPhysical",false,0.0)),"dm_det_value_resphys");
-                    CreateValueDetail(loc_arg, true,"Magickal Res.:",std::to_string(Utility::GetPropertyFloat(it,"UD_ResistMagicka",false,0.0)),"dm_det_value_resmag");
-                    CreateValueDetail(loc_arg,false,"Cut chance:",std::to_string(Utility::GetPropertyFloat(it,"UD_CutChance",false,0.0)),"dm_det_value_cut");
+                    CreateValueDetail(loc_arg, true,"Level:",std::to_string(Utility::GetPropertyInt(loc_obj,"_level",true,1)),"dm_det_value_level");
+                    CreateValueDetail(loc_arg, true,"Health:",std::to_string(Utility::GetPropertyFloat(loc_obj,"current_device_health",true,0.0)),"dm_det_value_health");
+                    CreateValueDetail(loc_arg, true,"Condition::",std::to_string(Utility::GetPropertyInt(loc_obj,"UD_condition",false,0)),"dm_det_value_cond");
+                    CreateValueDetail(loc_arg, true,"Physical Res.:",std::to_string(Utility::GetPropertyFloat(loc_obj,"UD_ResistPhysical",false,0.0)*100.0)+"%","dm_det_value_resphys");
+                    CreateValueDetail(loc_arg, true,"Magickal Res.:",std::to_string(Utility::GetPropertyFloat(loc_obj,"UD_ResistMagicka",false,0.0)*100.0)+"%","dm_det_value_resmag");
+                    CreateValueDetail(loc_arg,false,"Cut chance:",std::to_string(Utility::GetPropertyFloat(loc_obj,"UD_CutChance",false,0.0)),"dm_det_value_cut");
                     loc_arg += "],";
 
                     RE::BSString loc_str = "";
                     loc_id->GetDescription(loc_str,loc_id);
                     loc_arg += "desc: \"" + std::string(loc_str) + "\",";
 
-                    auto loc_mods = Utility::GetPropertyObjectArrayRaw(it,"UD_ModifiersRef",false);
+                    auto loc_mods = Utility::GetPropertyObjectArrayRaw(loc_obj,"UD_ModifiersRef",false);
 
                     
                     std::vector<std::string> loc_modlist;
@@ -332,11 +361,28 @@ namespace UD
                             loc_modlist.push_back(loc_modclass);
                         }
                     }
-                    std::string loc_modstr = "[" + boost::join(loc_modlist,",") + "]";
+                    std::string loc_modstr = "[" + boost::join(loc_modlist,",") + "],";
                     loc_arg += "mods: " + loc_modstr;
+
+                    std::vector<std::string> loc_minigamelist;
+                    auto loc_minigames = MinigameManager::GetSingleton()->GetListOfMinigames(a_actor,a_helper,loc_id);
+                    for (auto&& min : loc_minigames)
+                    {
+                        std::string loc_minname = min->config.name;
+                        std::string loc_mindesc = min->config.description;
+                        if (loc_minname != "")
+                        {
+                            uint32_t    loc_state   = MinigameManager::GetSingleton()->GetMinigameCondition(a_actor,a_helper,loc_id,min);
+                            std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {}}}",loc_minname,loc_mindesc,loc_state,min->id);
+                            loc_minigamelist.push_back(loc_minclass);
+                        }
+                    }
+                    std::string loc_minstr = "[" + boost::join(loc_minigamelist,",") + "]";
+                    loc_arg += "minigames: " + loc_minstr;
+
                     loc_arg += "}";
 
-                    _devMenuData.List.push_back(it);
+                    _devMenuData.List.push_back({it.second,loc_id,it.first});
                     loc_devicesList.push_back(loc_arg);
                 }
 
@@ -401,7 +447,7 @@ namespace UD
             if (_devMenuData.Callbacks[a_indxCall].Module == "this")
             {
                 auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, std::string>(std::forward<RE::Actor*>(_devMenuData.Helper),std::forward<std::string>(_devMenuData.Callbacks[a_indxCall].Argument));
-                loc_vm->DispatchMethodCall(_devMenuData.List[a_indxDev],_devMenuData.Callbacks[a_indxCall].Callback,loc_args,loc_callback);
+                loc_vm->DispatchMethodCall(_devMenuData.List[a_indxDev].obj,_devMenuData.Callbacks[a_indxCall].Callback,loc_args,loc_callback);
             }
             else
             {
@@ -411,7 +457,7 @@ namespace UD
                     auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, RE::Actor*, RE::TESObjectARMO*, std::string>(
                     std::forward<RE::Actor*>(_devMenuData.Wearer),
                     std::forward<RE::Actor*>(_devMenuData.Helper),
-                    std::forward<RE::TESObjectARMO*>(a_indxDev >= 0 ? (RE::TESObjectARMO*)Utility::GetPropertyObject(_devMenuData.List[a_indxDev],"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE):nullptr),
+                    std::forward<RE::TESObjectARMO*>(a_indxDev >= 0 ? (RE::TESObjectARMO*)Utility::GetPropertyObject(_devMenuData.List[a_indxDev].obj,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE):nullptr),
                     std::forward<std::string>(_devMenuData.Callbacks[a_indxCall].Argument));
                     loc_vm->DispatchMethodCall(loc_module->object,_devMenuData.Callbacks[a_indxCall].Callback,loc_args,loc_callback);
                 }
@@ -424,6 +470,17 @@ namespace UD
         else
         {
             // Void Callback, dont dispatch callback
+        }
+        HideMenu(UIMenu::eDeviceMenu);
+    }
+
+    void UIManager::StartMinigame(int a_indxDev, int a_minId)
+    {
+        auto loc_dev = _devMenuData.List[a_indxDev];
+        MinigameSetting loc_min;
+        if (MinigameManager::GetSingleton()->GetMinigameById(a_minId,loc_min))
+        {
+            MinigameManager::GetSingleton()->StartMinigame(loc_min,_devMenuData.Wearer,_devMenuData.Helper,loc_dev.id);
         }
         HideMenu(UIMenu::eDeviceMenu);
     }

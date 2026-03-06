@@ -20,7 +20,7 @@ void UD::MinigameManager::Reload()
 
         std::string loc_devconfpath = RelToAbsPath("UD\\MinigameConfig");
         std::regex loc_regex(R"regex(.*\\(.*\.[jJ][sS][oO][nN]))regex");
-    
+        uint32_t loc_id = 0;
         for (const auto & entry : std::filesystem::directory_iterator(loc_devconfpath))
         {
             std::string loc_path = entry.path().string();
@@ -42,7 +42,7 @@ void UD::MinigameManager::Reload()
                 std::regex loc_regexname(R"regex((.*\\)(.*)(\.[jJ][sS][oO][nN]))regex");
                 const std::string loc_name = std::regex_replace(loc_path,loc_regexname,"$2");
     
-                auto loc_config = std::shared_ptr<MinigameConfigJson>(new MinigameConfigJson{loc_json,MinigameConfigStatus::sOK,"OK"});
+                auto loc_config = std::shared_ptr<MinigameConfigJson>(new MinigameConfigJson{loc_id++,loc_json,MinigameConfigStatus::sOK,"OK"});
                 InitConfig(loc_config);
                 
                 _jsoncache[loc_name] = loc_config;
@@ -57,38 +57,48 @@ void UD::MinigameManager::Reload()
     }
 }
 
-std::vector<std::string> UD::MinigameManager::GetListOfMinigames(RE::Actor* a_actor, RE::TESObjectARMO* a_id)
+std::vector<std::string> UD::MinigameManager::GetListOfMinigamesStr(RE::Actor* a_actor, RE::TESObjectARMO* a_id)
+{
+    DEBUG("GetListOfMinigamesStr called")
+    std::vector<std::string> loc_res;
+    auto loc_minigames = GetListOfMinigames(a_actor,nullptr,a_id);
+    for(auto&& it : loc_minigames) loc_res.push_back(it->config.name);
+    return loc_res;
+}
+
+std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id)
 {
     DEBUG("GetListOfMinigames called")
-    std::vector<std::string> loc_res;
+    std::vector<std::shared_ptr<UD::MinigameConfigJson>> loc_res;
 
-    Object loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
+    DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
 
-    if (a_actor && loc_device)
+    if (a_actor && loc_device.second)
     {
-        DEBUG("GetListOfMinigames - Device found")
-
         for (auto&& [path,config] : _jsoncache)
         {
             auto L = _scripts[config->config.script];
             if (!L) continue;
 
-            Lua::LuaContext loc_context;
-            loc_context.Wearer      = a_actor;
-            loc_context.Helper      = nullptr;
-            loc_context.DeviceObj   = loc_device;
-
             lua_getglobal(L,"Precondition");
-            lua_pushlightuserdata(L,&loc_context);
+            DEBUG("loc_device = 0x{:016X}",(uintptr_t)&loc_device)
+            Lua::PushTable(L,
+            {
+                {"Wearer",a_actor},
+                {"Helper",a_helper},
+                {"ID",a_id},
+                {"RD",loc_device.first},
+                {"DeviceObj",loc_device.second.get()},
+                {"Json",config->json.get()}
+            });
 
             lua_pcall(L,1,1,0);
             const auto loc_precond = lua_toboolean(L,-1);
             lua_pop(L,1);
-            DEBUG("Precondition = {}",loc_precond)
 
             if (loc_precond)
             {
-                loc_res.push_back(config->config.name);
+                loc_res.push_back(config);
             }
         }
     }
@@ -96,79 +106,195 @@ std::vector<std::string> UD::MinigameManager::GetListOfMinigames(RE::Actor* a_ac
     return loc_res;
 }
 
-bool UD::MinigameManager::StartMinigame(RE::BGSBaseAlias* a_minigame, RE::Actor* a_actor, RE::TESObjectARMO* a_rd)
+bool UD::MinigameManager::GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id, MinigameSetting a_setting)
 {
-    if (_data.State != MinigameState::eNotStarted) return false;
+    DEBUG("GetMinigameCondition called")
+    auto L = GetMinigameScript(a_setting);
+    if (!L) return false;
 
-    const auto loc_vm = InternalVM::GetSingleton();
-    RE::BSTSmartPointer<RE::BSScript::Object> loc_object;
-    const auto loc_handle = loc_vm->GetObjectHandlePolicy()->GetHandleForObject(a_minigame->GetVMTypeID(),a_minigame);
-    const bool loc_found = loc_vm->FindBoundObject(loc_handle, "ud_minigame", loc_object);
-    if (loc_found)
+    DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
+    
+    lua_getglobal(L,"Condition");
+    Lua::PushTable(L,
     {
-        std::string loc_path = Utility::GetPropertyString(loc_object,"UIPath",false,"");
-        if (PrismaUI)
+        {"Wearer",a_actor},
+        {"Helper",a_helper},
+        {"ID",a_id},
+        {"RD",loc_device.first},
+        {"DeviceObj",loc_device.second.get()},
+        {"Json",a_setting->json.get()}
+    });
+    lua_pcall(L,1,1,0);
+    const auto loc_cond = lua_toboolean(L,-1);
+    lua_pop(L,1);
+    return loc_cond;
+}
+
+bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id)
+{
+    if (!a_id || !a_setting) return false;
+
+    DEBUG("Starting minigame {} for {}",a_setting->config.name,a_id->GetName())
+    auto L = GetMinigameScript(a_setting);
+    if (!L)
+    {
+        DEBUG("Error reading script {}. Probably runtime error on init of script",a_setting->config.script)
+        return false;
+    }
+
+    static int loc_cntr = 0;
+
+    DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
+
+    MinigameData loc_data;
+    loc_data.Wearer = a_actor;
+    loc_data.Helper = a_helper;
+    loc_data.Device.obj = loc_device.second;
+    loc_data.Device.id = a_id;
+    loc_data.Device.rd = loc_device.first;
+    loc_data.id = loc_cntr;
+    loc_data.Setting = a_setting;
+    loc_cntr++;
+
+    _minigames.push_back(MinigameDataPtr(new MinigameData(loc_data)));
+
+    auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
+    PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
+        
+    lua_getglobal(L,"OnStart");
+    PushMinigameData(L,loc_data);
+    lua_pcall(L,1,0,0);
+
+    return true;
+}
+
+bool UD::MinigameManager::GetMinigameById(uint32_t a_id,UD::MinigameSetting& a_output)
+{
+    for(auto&& [key,setting] : _jsoncache)
+    {
+        if (setting->id == a_id)
         {
-            SetMinigameState(MinigameState::eStarting);
-            _view = PrismaUI->CreateView(loc_path.c_str(),[](PrismaView view) -> void
-            {
-                DEBUG("View DOM is ready {}", view);
-                MinigameManager::GetSingleton()->SetMinigameState(MinigameState::eRunning);
-                PrismaUI->Focus(view,false,false);
-            });
-
-            PrismaUI->RegisterJSListener(_view, "SendCallback", [](const char* a_arg)
-            {
-                std::string loc_str = a_arg;
-                MinigameCallback loc_callback = MinigameManager::GetSingleton()->ParseCallback(loc_str);
-                //MinigameManager::GetSingleton()->SendCallback(loc_callback);
-            });
-
+            a_output = setting;
             return true;
         }
     }
     return false;
 }
 
-//void UD::MinigameManager::SendCallback(MinigameCallback a_callback)
-//{
-//        if (a_callback.Module != "")
-//        {
-//            const auto loc_vm = InternalVM::GetSingleton();
-//            RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback;
-//
-//            if (a_callback.Module == "this")
-//            {
-//                auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, std::string>(std::forward<RE::Actor*>(_data.Helper),std::forward<std::string>(a_callback.Argument));
-//                loc_vm->DispatchMethodCall(_data.DeviceObj,a_callback.Callback,loc_args,loc_callback);
-//            }
-//            else
-//            {
-//                auto loc_module = ModuleManager::GetSingleton()->GetModuleObjectByAlias(a_callback.Module);
-//                if (loc_module && loc_module->object)
-//                {
-//                    auto loc_args = new RE::BSScript::FunctionArguments<void, RE::Actor*, RE::Actor*, RE::TESObjectARMO*, std::string>(
-//                    std::forward<RE::Actor*>(_data.Wearer),
-//                    std::forward<RE::Actor*>(_data.Helper),
-//                    std::forward<RE::TESObjectARMO*>((RE::TESObjectARMO*)Utility::GetPropertyObject(_data.DeviceObj,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE)),
-//                    std::forward<std::string>(a_callback.Argument));
-//                    loc_vm->DispatchMethodCall(loc_module->object,a_callback.Callback,loc_args,loc_callback);
-//                }
-//                else
-//                {
-//                    ERROR("Can't find module {}",a_callback.Module)
-//                }
-//            }
-//        }
-//        else
-//        {
-//            // Void Callback, dont dispatch callback
-//        }
-//}
+UD::MinigameDataPtr UD::MinigameManager::GetMinigameDataById(uint32_t a_id)
+{
+    for(auto&& it : _minigames)
+    {
+        if (it->id == a_id)
+        {
+            return it;
+        }
+    }
+    return nullptr;
+}
+
+void UD::MinigameManager::Update(float a_delta)
+{
+    for (auto&& it : _minigames)
+    {
+        UpdateMinigame(*it,a_delta);
+    }
+}
 
 void UD::MinigameManager::SetMinigameState(MinigameState a_state)
 {
-    _data.State = a_state;
+    //_data.State = a_state;
+}
+
+void UD::MinigameManager::StopMinigame(int a_id)
+{
+    _minigames.erase(std::find_if(_minigames.begin(),_minigames.end(),[a_id](MinigameDataPtr& data)
+    {
+        if (data->id == a_id) return true;
+        return false;
+    }));
+}
+
+void UD::MinigameManager::OpenMinigameUI(int a_id)
+{
+    auto loc_data = GetMinigameDataById(a_id);
+    if (loc_data)
+    {
+        auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
+        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
+        
+        if (PrismaUI)
+        {
+            _view = PrismaUI->CreateView(loc_data->Setting->config.uiobject.c_str(),[](PrismaView view) -> void
+            {
+                DEBUG("Minigame DOM is ready {}", view);
+                MinigameManager::GetSingleton()->SetViewReady();
+            });
+        }
+    }
+}
+
+void UD::MinigameManager::CloseMinigameUI(int a_id)
+{
+    auto loc_data = GetMinigameDataById(a_id);
+    if (loc_data)
+    {
+        auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
+        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
+        
+        if (PrismaUI)
+        {
+            PrismaUI->Destroy(_view);
+            _view = 0;
+            _viewReady = false;
+        }
+    }
+}
+
+void UD::MinigameManager::InvokeUI(std::string a_command)
+{
+    if (_viewReady)
+    {
+        PrismaUI->Invoke(_view,a_command.c_str());
+    }
+}
+
+void UD::MinigameManager::CheckActionCallback(uint32_t a_dxcode)
+{
+    for (auto&& it1 : _minigames)
+    {
+        for(auto&& it2 : it1->Controls)
+        {
+            if (it2.control.codekeyboard == a_dxcode)
+            {
+                //DEBUG("Calling callback")
+                auto L = _scripts[it1->Setting->config.script];
+                lua_getglobal(L,it2.callback.c_str());
+                PushMinigameData(L,*it1);
+                lua_pcall(L,1,0,0);
+            }
+            /* TODO: Gamepad support*/
+        }
+    }
+
+
+}
+
+void UD::MinigameManager::SendPapCallback(int a_id, std::string a_callback, VariableValue& a_var)
+{
+    auto loc_data = GetMinigameDataById(a_id);
+    auto L = GetMinigameScriptById(a_id);
+    lua_getglobal(L,a_callback.c_str());
+    PushMinigameData(L,*loc_data);
+    /* TODO: Add res as argument to callback */
+    lua_pcall(L,1,0,0);
+}
+
+lua_State* UD::MinigameManager::GetMinigameScriptById(int a_id)
+{
+    auto loc_data = GetMinigameDataById(a_id);
+    auto L = _scripts[loc_data->Setting->config.script];
+    return L;
 }
 
 UD::MinigameCallback UD::MinigameManager::ParseCallback(std::string a_callback)
@@ -182,7 +308,7 @@ UD::MinigameCallback UD::MinigameManager::ParseCallback(std::string a_callback)
     return loc_res;
 }
 
-void UD::MinigameManager::InitConfig(std::shared_ptr<MinigameConfigJson> a_config)
+void UD::MinigameManager::InitConfig(MinigameSetting a_config)
 {
     if (a_config && a_config->json)
     {
@@ -213,7 +339,35 @@ void UD::MinigameManager::InitConfig(std::shared_ptr<MinigameConfigJson> a_confi
     }
 }
 
-void UD::MinigameManager::CreateContext(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id)
+lua_State* UD::MinigameManager::GetMinigameScript(MinigameSetting a_config)
 {
-    
+    for(auto&& it : _scripts)
+    {
+        if (it.first == a_config->config.script) return it.second;
+    }
+    return nullptr;
+}
+
+void UD::MinigameManager::UpdateMinigame(MinigameData& a_data, float a_delta)
+{
+    auto L = GetMinigameScript(a_data.Setting);
+    if (!L) return;
+    lua_getglobal(L,"OnUpdate");
+    PushMinigameData(L,a_data);
+    lua_pushnumber(L,a_delta);
+    lua_pcall(L,2,0,0);
+}
+
+void UD::MinigameManager::PushMinigameData(lua_State* L, MinigameData& a_data)
+{
+    Lua::PushTable(L,
+    {
+        {"Wearer",a_data.Wearer},
+        {"Helper",a_data.Helper},
+        {"ID",a_data.Device.id},
+        {"RD",a_data.Device.rd},
+        {"DeviceObj",a_data.Device.obj.get()},
+        {"Json",a_data.Setting->json.get()},
+        {"MinigameId",(lua_Integer)a_data.id}
+    });
 }

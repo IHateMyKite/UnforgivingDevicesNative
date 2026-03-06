@@ -2,10 +2,21 @@
 
 namespace UD
 {
+    enum class VariableMod
+    {
+        eAbsolute,
+        eRelative,
+        eUpdate,
+        eBase,
+        eDamage
+    };
+
     struct VariableDetails
     {
         std::string Owner;
         std::string Name;
+        VariableMod Mod = VariableMod::eAbsolute;
+
     };
 
     struct VariableValue
@@ -15,7 +26,9 @@ namespace UD
     };
 
     VariableDetails ParseVariable(std::string a_var);
+    VariableMod     ParseVariableMod(char a_mod);
     VariableValue   GetVariableRaw(void* a_source,VariableDetails a_var);
+    VariableValue   SetVariableRaw(void* a_source,VariableDetails a_var,VariableValue& a_val);
     VariableValue   GetVariableRaw(void* a_source,std::string a_var);
     template<class T> T GetValue(VariableValue a_var)
     {
@@ -56,4 +69,6 @@ namespace UD
         VariableValue loc_var = GetVariableRaw(a_source,a_var);
         return GetVariable<T>(a_source,loc_var);
     }
+
+    VariableValue ParsePapVar(Variable* a_var);
 }

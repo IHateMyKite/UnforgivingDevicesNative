@@ -20,6 +20,13 @@ using namespace std::literals;
 using InternalVM = RE::BSScript::Internal::VirtualMachine;
 using Script = RE::BSTTuple<const RE::VMHandle, RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>>;
 using Object = RE::BSTSmartPointer<RE::BSScript::Object>;
+using DeviceObj = std::pair<RE::TESObjectARMO*,Object>;
+struct DeviceObj2
+{
+    Object obj;
+    RE::TESObjectARMO* id;
+    RE::TESObjectARMO* rd;
+};
 using ObjectPtr = RE::BSScript::Object;
 using Variable = RE::BSScript::Variable;
 using VariableType = RE::BSScript::TypeInfo::RawType;

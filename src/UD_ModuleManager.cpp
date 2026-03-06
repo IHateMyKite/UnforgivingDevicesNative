@@ -236,7 +236,7 @@ std::vector<RE::BGSBaseAlias*> UD::ModuleManager::GetModulesAliasesByScript(std:
 
 void UD::ModuleManager::AddModule(RE::VMHandle a_handle, Module a_module)
 {
-    DEBUG("AddModule called")
+    //DEBUG("AddModule called")
     _modules[a_handle] = std::unique_ptr<Module>(new Module(a_module));
 }
 

@@ -277,7 +277,7 @@ namespace UD
     {
         RE::Actor* Wearer;
         RE::Actor* Helper;
-        std::vector<RE::BSTSmartPointer<RE::BSScript::Object>> List;
+        std::vector<DeviceObj2> List;
         std::vector<ButtonCallback> Callbacks;
     };
 
@@ -291,6 +291,7 @@ namespace UD
         bool IsMenuOpen();
         void HideMenu(UIMenu a_type);
         void SendCallback(int a_indxDev, int a_indxCall);
+        void StartMinigame(int a_indxDev, int a_minId);
     private:
         std::vector<ButtonCallback> ParseCallbacks(std::vector<std::string> a_callbacks);
 

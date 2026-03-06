@@ -2,6 +2,7 @@
 #include <PrismaUI_API.h>
 #include <lua.hpp>
 #include <UD_Lua.h>
+#include <UD_ControlManager.h>
 
 #define LUA_CHECK(x,y) \
 {                      \
@@ -31,14 +32,6 @@ namespace UD
         eEnding
     };
 
-    struct MinigameData
-    {
-        RE::Actor* Wearer   = nullptr;
-        RE::Actor* Helper   = nullptr;
-        Object DeviceObj    = nullptr;
-        MinigameState State = MinigameState::eNotStarted;
-    };
-
     struct MinigameCallback
     {
         std::string Module;
@@ -65,38 +58,79 @@ namespace UD
 
     struct MinigameConfigJson
     {
+        uint32_t id;
         std::shared_ptr<boost::property_tree::ptree> json;
         MinigameConfigStatus status;
         std::string error;
         MinigameConfig config;
     };
 
+    typedef std::shared_ptr<MinigameConfigJson> MinigameSetting;
+
+    struct MinigameActionCallback
+    {
+        Control control;
+        std::string callback;
+    };
+
+    struct MinigameData
+    {
+        int id = 0;
+        RE::Actor* Wearer   = nullptr;
+        RE::Actor* Helper   = nullptr;
+        DeviceObj2  Device;
+        MinigameSetting Setting;
+        MinigameState State = MinigameState::eNotStarted;
+        std::vector<MinigameActionCallback> Controls;
+    };
+
+    typedef std::shared_ptr<MinigameData> MinigameDataPtr;
+
     class MinigameManager
     {
         SINGLETONHEADER(MinigameManager)
         public:
             void Reload();
-            std::vector<std::string> GetListOfMinigames(RE::Actor* a_actor, RE::TESObjectARMO* a_id);
-            bool StartMinigame(RE::BGSBaseAlias* a_minigame,RE::Actor* a_actor, RE::TESObjectARMO* a_id);
+            std::vector<std::string> GetListOfMinigamesStr(RE::Actor* a_actor, RE::TESObjectARMO* a_id);
+            std::vector<MinigameSetting> GetListOfMinigames(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_id);
+
+            bool GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_id, MinigameSetting a_setting);
+
+            bool StartMinigame(MinigameSetting a_minigame,RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id);
+            bool GetMinigameById(uint32_t a_id,MinigameSetting& a_output);
+            MinigameDataPtr GetMinigameDataById(uint32_t a_id);
+
+            void Update(float a_delta);
+
             //void SendCallback(MinigameCallback a_callback);
             void SetMinigameState(MinigameState a_state);
+            void StopMinigame(int a_id);
+            void OpenMinigameUI(int a_id);
+            void CloseMinigameUI(int a_id);
+            void SetViewReady() {_viewReady = true;}
+            void InvokeUI(std::string a_command);
+            void CheckActionCallback(uint32_t a_dxcode);
+            void SendPapCallback(int a_id,std::string a_callback,VariableValue& a_var);
+            lua_State* GetMinigameScriptById(int a_id);
         private:
             MinigameCallback ParseCallback(std::string a_callback);
-            void InitConfig(std::shared_ptr<MinigameConfigJson> a_config);
-            void CreateContext(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id);
-
+            void InitConfig(MinigameSetting a_config);
+            lua_State* GetMinigameScript(MinigameSetting a_config);
+            void UpdateMinigame(MinigameData& a_data,float a_delta);
+            void PushMinigameData(lua_State* L,MinigameData& a_data);
         private:
             static PRISMA_UI_API::IVPrismaUI1* PrismaUI;
             PrismaView _view = 0x0UL;
-            MinigameData _data;
+            bool _viewReady = false;
+            //MinigameData _data;
             bool _init = false;
-            std::unordered_map<std::string,std::shared_ptr<MinigameConfigJson>> _jsoncache;
+            std::unordered_map<std::string,MinigameSetting> _jsoncache;
             std::unordered_map<std::string,lua_State*> _scripts;
-            std::vector<MinigameData> _minigames;
+            std::vector<MinigameDataPtr> _minigames;
     };
 
     inline std::vector<std::string> GetListOfMinigames(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, RE::TESObjectARMO* a_id)
     {
-        return MinigameManager::GetSingleton()->GetListOfMinigames(a_actor,a_id);
+        return MinigameManager::GetSingleton()->GetListOfMinigamesStr(a_actor,a_id);
     }
 }
