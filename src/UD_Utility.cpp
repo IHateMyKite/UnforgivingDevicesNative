@@ -248,14 +248,14 @@ namespace UD
         return loc_result;
     }
 
-    bool Utility::WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw) const
+    bool Utility::WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw)
     {
         if ((a_actor == nullptr) || (a_kw == nullptr)) return false;
 
         //LOG("LibFunctions::WornHasKeyword({},{}) called",a_actor->GetName(),a_kw->GetFormEditorID())
 
         bool loc_res = false;
-        auto loc_visitor = WornVisitor([this,&loc_res,a_kw](RE::InventoryEntryData* a_entry)
+        auto loc_visitor = WornVisitor([&loc_res,a_kw](RE::InventoryEntryData* a_entry)
         {
             #undef GetObject
             auto loc_object = a_entry->GetObject();
@@ -273,14 +273,14 @@ namespace UD
         return loc_res;
     }
 
-    bool Utility::WornHasKeyword(RE::Actor* a_actor, std::string a_kw) const
+    bool Utility::WornHasKeyword(RE::Actor* a_actor, std::string a_kw)
     {
         if ((a_actor == nullptr) || (a_kw == "")) return false;
 
         //LOG("LibFunctions::WornHasKeyword({},{}) called",a_actor->GetName(),a_kw->GetFormEditorID())
 
         bool loc_res = false;
-        auto loc_visitor = WornVisitor([this,&loc_res,a_kw](RE::InventoryEntryData* a_entry)
+        auto loc_visitor = WornVisitor([&loc_res,a_kw](RE::InventoryEntryData* a_entry)
         {
             #undef GetObject
             auto loc_object = a_entry->GetObject();
@@ -298,14 +298,14 @@ namespace UD
         return loc_res;
     }
 
-    RE::TESObjectARMO* Utility::GetWornArmor(RE::Actor* a_actor, int a_mask) const
+    RE::TESObjectARMO* Utility::GetWornArmor(RE::Actor* a_actor, int a_mask)
     {
         if (a_actor == nullptr) return nullptr;
 
         //LOG("LibFunctions::GetWornArmor({},{:08X}) called",a_actor->GetName(),a_mask)
 
         RE::TESObjectARMO* loc_res = nullptr;
-        auto loc_visitor = WornVisitor([this,&loc_res,a_mask](RE::InventoryEntryData* a_entry)
+        auto loc_visitor = WornVisitor([&loc_res,a_mask](RE::InventoryEntryData* a_entry)
         {
             #undef GetObject
             auto loc_object = a_entry->GetObject();
@@ -323,7 +323,7 @@ namespace UD
         return loc_res;
     }
 
-    RE::TESObjectARMO* Utility::CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_armor) const
+    RE::TESObjectARMO* Utility::CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_armor)
     {
         if (a_actor == nullptr || a_armor == nullptr) return nullptr;
         
@@ -408,6 +408,17 @@ namespace UD
     void* Utility::GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::FormType a_type)
     {
         return GetPropertyObject(a_object, a_name, a_var, (RE::VMTypeID)a_type);
+    }
+
+    bool Utility::ActorFreeHands(RE::Actor* a_actor, bool a_checkGrasp, bool a_IgnoreHeavyBondage)
+    {
+        if (!a_actor) return false;
+        bool loc_res = a_IgnoreHeavyBondage || !Utility::WornHasKeyword(a_actor,STRKW_HEAVYBONDAGE);
+        if (a_checkGrasp)
+        {
+            loc_res &= !Utility::WornHasKeyword(a_actor,STRKW_MITTEN);
+        }
+        return loc_res;
     }
 
     std::vector<void*> Utility::GetPropertyObjectArray(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID a_type)

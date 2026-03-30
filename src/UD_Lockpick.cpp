@@ -174,8 +174,8 @@ RE::BSEventNotifyControl UD::MenuEventSink::ProcessEvent(const RE::MenuOpenClose
             // or heavy bondage which hides hands (everything except for yoke)
             // also is only relevant if player is not in lockpick minigame (for obvious reasons)
             if (!(loc_minigame) && 
-                loc_player && a_event->opening && (loc_utility->WornHasKeyword(loc_player,"zad_DeviousBondageMittens") ||
-                (loc_utility->WornHasKeyword(loc_player,"zad_DeviousHeavyBondage") && !loc_utility->WornHasKeyword(loc_player,"zad_DeviousYoke"))
+                loc_player && a_event->opening && (loc_utility->WornHasKeyword(loc_player,STRKW_MITTEN) ||
+                (loc_utility->WornHasKeyword(loc_player,STRKW_HEAVYBONDAGE) && !loc_utility->WornHasKeyword(loc_player,STRKW_YOKE))
                 )
             )
             {

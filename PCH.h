@@ -31,6 +31,8 @@ using ObjectPtr = RE::BSScript::Object;
 using Variable = RE::BSScript::Variable;
 using VariableType = RE::BSScript::TypeInfo::RawType;
 
+using string = std::string;
+
 inline std::string RelToAbsPath(std::string a_relPath)
 {
     return std::filesystem::current_path().string() + "\\Data\\" + a_relPath;
@@ -40,6 +42,10 @@ inline std::string RelToSkyrimPath(std::string a_relPath)
 {
     return "\\Data\\" + a_relPath;
 }
+
+#define STRKW_HEAVYBONDAGE  "zad_DeviousHeavyBondage"
+#define STRKW_YOKE          "zad_DeviousYoke"
+#define STRKW_MITTEN        "zad_DeviousBondageMittens"
 
 namespace UD
 {

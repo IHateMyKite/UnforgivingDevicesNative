@@ -65,7 +65,7 @@ void UD::MinigameManager::Reload()
 
 std::vector<std::string> UD::MinigameManager::GetListOfMinigamesStr(RE::Actor* a_actor, RE::TESObjectARMO* a_id)
 {
-    DEBUG("GetListOfMinigamesStr called")
+    //DEBUG("GetListOfMinigamesStr called")
     std::vector<std::string> loc_res;
     auto loc_minigames = GetListOfMinigames(a_actor,nullptr,a_id);
     for(auto&& it : loc_minigames) loc_res.push_back(it->config.name);
@@ -74,34 +74,42 @@ std::vector<std::string> UD::MinigameManager::GetListOfMinigamesStr(RE::Actor* a
 
 std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id)
 {
-    DEBUG("GetListOfMinigames called")
+    //DEBUG("GetListOfMinigames called")
     std::vector<std::shared_ptr<UD::MinigameConfigJson>> loc_res;
 
     DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
-
+    
     if (a_actor && loc_device.second)
     {
         for (auto&& [path,config] : _jsoncache)
         {
             auto L = _scripts[config->config.script];
             if (!L) continue;
-
-            lua_getglobal(L,"Precondition");
-            DEBUG("loc_device = 0x{:016X}",(uintptr_t)&loc_device)
-            Lua::PushTable(L,
+    
+            bool loc_precond = false;
+            if (lua_getglobal(L,"Precondition") != LUA_TNIL)
             {
-                {"Wearer",a_actor},
-                {"Helper",a_helper},
-                {"ID",a_id},
-                {"RD",loc_device.first},
-                {"DeviceObj",loc_device.second.get()},
-                {"Json",config->json.get()}
-            });
-
-            lua_pcall(L,1,1,0);
-            const auto loc_precond = lua_toboolean(L,-1);
-            lua_pop(L,1);
-
+                //DEBUG("Precond {} - loc_device = 0x{:016X}",config->config.name,(uintptr_t)&loc_device)
+                Lua::PushTable(L,
+                {
+                    {"Wearer",a_actor},
+                    {"Helper",a_helper},
+                    {"ID",a_id},
+                    {"RD",loc_device.first},
+                    {"DeviceObj",loc_device.second.get()},
+                    {"Json",config->json.get()}
+                });
+            
+                lua_pcall(L,1,1,0);
+                loc_precond = lua_toboolean(L,-1);
+                lua_pop(L,1);
+            }
+            else
+            {
+                ERROR("Error getting Precondition")
+                loc_precond = true;
+            }
+            
             if (loc_precond)
             {
                 loc_res.push_back(config);
@@ -114,25 +122,31 @@ std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Act
 
 bool UD::MinigameManager::GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id, MinigameSetting a_setting)
 {
-    DEBUG("GetMinigameCondition called")
+    //DEBUG("GetMinigameCondition called")
     auto L = GetMinigameScript(a_setting);
     if (!L) return false;
-
-    DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
     
-    lua_getglobal(L,"Condition");
-    Lua::PushTable(L,
+    DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
+    bool loc_cond = false;
+    if (lua_getglobal(L,"Condition") != LUA_TNIL)
     {
-        {"Wearer",a_actor},
-        {"Helper",a_helper},
-        {"ID",a_id},
-        {"RD",loc_device.first},
-        {"DeviceObj",loc_device.second.get()},
-        {"Json",a_setting->json.get()}
-    });
-    lua_pcall(L,1,1,0);
-    const auto loc_cond = lua_toboolean(L,-1);
-    lua_pop(L,1);
+        Lua::PushTable(L,
+        {
+            {"Wearer",a_actor},
+            {"Helper",a_helper},
+            {"ID",a_id},
+            {"RD",loc_device.first},
+            {"DeviceObj",loc_device.second.get()},
+            {"Json",a_setting->json.get()}
+        });
+        lua_pcall(L,1,1,0);
+        loc_cond = lua_toboolean(L,-1);
+        lua_pop(L,1);
+    }
+    else 
+    {
+        loc_cond = true;
+    }
     return loc_cond;
 }
 
@@ -167,9 +181,11 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
     auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
     PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
         
-    lua_getglobal(L,"OnStart");
-    PushMinigameData(L,loc_data);
-    lua_pcall(L,1,0,0);
+    if (lua_getglobal(L,"OnStart") != LUA_TNIL)
+    {
+        PushMinigameData(L,loc_data);
+        lua_pcall(L,1,0,0);
+    }
 
     return true;
 }
@@ -199,6 +215,22 @@ UD::MinigameDataPtr UD::MinigameManager::GetMinigameDataById(uint32_t a_id)
     return nullptr;
 }
 
+bool UD::MinigameManager::StopMinigame(RE::Actor* a_actor)
+{
+    DEBUG("StopMinigame called")
+    if (!a_actor) return false;
+
+    for(auto&& it : _minigames)
+    {
+        if (it->Wearer == a_actor || it->Helper == a_actor)
+        {
+            StopMinigame(it->id);
+            return true;
+        }
+    }
+    return false;
+}
+
 void UD::MinigameManager::Update(float a_delta)
 {
     for (auto&& it : _minigames)
@@ -214,15 +246,29 @@ void UD::MinigameManager::SetMinigameState(MinigameState a_state)
 
 void UD::MinigameManager::StopMinigame(int a_id)
 {
-    _minigames.erase(std::find_if(_minigames.begin(),_minigames.end(),[a_id](MinigameDataPtr& data)
+    DEBUG("StopMinigame called")
+    _minigames.erase(std::find_if(_minigames.begin(),_minigames.end(),[this,a_id](MinigameDataPtr& data)
     {
-        if (data->id == a_id) return true;
+        if (data->id == a_id) 
+        {
+            auto L = GetMinigameScript(data->Setting);
+            if (L)
+            {
+                if (lua_getglobal(L,"OnStop") != LUA_TNIL)
+                {
+                    PushMinigameData(L,*data);
+                    lua_pcall(L,1,0,0);
+                }
+            }
+            return true;
+        }
         return false;
     }));
 }
 
 void UD::MinigameManager::OpenMinigameUI(int a_id,std::string a_callback)
 {
+    DEBUG("OpenMinigameUI called");
     auto loc_data = GetMinigameDataById(a_id);
     if (loc_data)
     {
@@ -246,6 +292,7 @@ void UD::MinigameManager::OpenMinigameUI(int a_id,std::string a_callback)
 
 void UD::MinigameManager::CloseMinigameUI(int a_id)
 {
+    DEBUG("CloseMinigameUI called");
     //auto loc_data = GetMinigameDataById(a_id);
     //if (loc_data)
     {
@@ -372,12 +419,15 @@ lua_State* UD::MinigameManager::GetMinigameScript(MinigameSetting a_config)
 
 void UD::MinigameManager::UpdateMinigame(MinigameData& a_data, float a_delta)
 {
+    //DEBUG("UpdateMinigame called")
     auto L = GetMinigameScript(a_data.Setting);
     if (!L) return;
-    lua_getglobal(L,"OnUpdate");
-    PushMinigameData(L,a_data);
-    lua_pushnumber(L,a_delta);
-    lua_pcall(L,2,0,0);
+    if (lua_getglobal(L,"OnUpdate") != LUA_TNIL)
+    {
+        PushMinigameData(L,a_data);
+        lua_pushnumber(L,a_delta);
+        lua_pcall(L,2,0,0);
+    }
 }
 
 void UD::MinigameManager::PushMinigameData(lua_State* L, MinigameData& a_data)

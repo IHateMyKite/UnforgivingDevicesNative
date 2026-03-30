@@ -1,5 +1,6 @@
 #include <UD_Lua.h>
 #include <UD_PapyrusDelegate.h>
+#include <UD_DeviceManager.h>
 
 lua_State* Lua::OpenScript(std::string a_path)
 {
@@ -42,6 +43,7 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_InvokeUI",HostFunctions::lua_InvokeUI);
     lua_register(L,"Host_IsNull",HostFunctions::lua_IsNull);
     lua_register(L,"Host_RegisterActionCallback",HostFunctions::lua_RegisterActionCallback);
+    lua_register(L,"Host_GetDeviceAccesibility",HostFunctions::lua_GetDeviceAccesibility);
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -262,7 +264,7 @@ int Lua::HostFunctions::lua_GetVariableValue(lua_State* L)
     GetTable(L,1,loc_deviceVar);
     RE::Actor*  loc_wearer      = *(RE::Actor**)&loc_wearerVar.Value;
     RE::Actor*  loc_helper      = *(RE::Actor**)&loc_helperVar.Value;
-    ObjectPtr*   loc_device     = *(ObjectPtr**)&loc_deviceVar.Value;
+    ObjectPtr*  loc_device     = *(ObjectPtr**)&loc_deviceVar.Value;
 
     void* loc_owner = nullptr;
     if (loc_det.Owner == "thisdevice" && loc_device)
@@ -607,4 +609,35 @@ int Lua::HostFunctions::lua_RegisterActionCallback(lua_State* L)
     }
 
     return 0;
+}
+
+int Lua::HostFunctions::lua_GetDeviceAccesibility(lua_State* L)
+{
+    if (!lua_istable(L,1))
+    {
+        ERROR("lua_GetDeviceAccesibility - Incorrect variables passed!")
+        lua_pushnil(L);
+        return 1;
+    }
+
+    LuaVariable loc_wearerVar("Wearer",(void*)nullptr);
+    GetTable(L,1,loc_wearerVar);
+    LuaVariable loc_helperVar("Helper",(void*)nullptr);
+    GetTable(L,1,loc_helperVar);
+    LuaVariable loc_deviceVar("DeviceObj",(void*)nullptr);
+    GetTable(L,1,loc_deviceVar);
+    LuaVariable loc_rdVar("RD",(void*)nullptr);
+    GetTable(L,1,loc_rdVar);
+    LuaVariable loc_idVar("ID",(void*)nullptr);
+    GetTable(L,1,loc_idVar);
+
+    RE::Actor*  loc_wearer      = *(RE::Actor**)&loc_wearerVar.Value;
+    RE::Actor*  loc_helper      = *(RE::Actor**)&loc_helperVar.Value;
+    ObjectPtr*   loc_device     = *(ObjectPtr**)&loc_deviceVar.Value;
+    RE::TESObjectARMO*  loc_rd  = *(RE::TESObjectARMO**)&loc_rdVar.Value;
+
+    const float loc_Res = UD::DeviceManager::GetSingleton()->GetDeviceAccessibility(loc_rd,loc_device,loc_wearer,loc_helper);
+    lua_pushnumber(L,loc_Res);
+
+    return 1;
 }

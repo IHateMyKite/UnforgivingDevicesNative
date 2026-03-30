@@ -2,7 +2,7 @@
 
 namespace UD
 {
-    using Object = RE::BSTSmartPointer<RE::BSScript::Object>;
+    //using Object = RE::BSTSmartPointer<RE::BSScript::Object>;
     enum class DeviceConfigStatus : uint8_t
     {
         sOK             = 0U,
@@ -27,20 +27,22 @@ namespace UD
         eMax
     };
 
+
     struct DeviceVariable
     {
         std::string name;
-        std::string nameDocu;
+        std::string atributesRaw;
+        std::unordered_map<std::string,std::optional<std::string>> atributes;
         DeviceVariableType type = DeviceVariableType::eNone;
         bool property = true;
-        std::string GetValue(Object a_device) const;
     };
 
     struct DeviceConfig
     {
+        std::unordered_map<std::string,std::string> docustr;
         std::string name;
-        std::string description;
         std::string script;
+        std::string description;
         std::vector<DeviceVariable> variables;
         /* TODO: Minigames */
     };
@@ -51,7 +53,6 @@ namespace UD
         DeviceConfigStatus status;
         std::string error;
         DeviceConfig config;
-        void InitConfig();
     };
 
     class DeviceManager
@@ -60,9 +61,13 @@ namespace UD
     public:
         void Reload();
 
+        std::vector<DeviceConfig> GetDeviceConfigs(Object a_device);
+
+        float GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectPtr* a_device, RE::Actor* a_actor, RE::Actor* a_helper);
     private:
         bool _init = false;
-        std::unordered_map<std::string,std::shared_ptr<DeviceConfigJson>> _jsoncache;
+        //std::unordered_map<std::string,std::shared_ptr<DeviceConfigJson>> _jsoncache;
+        std::unordered_map<std::string,DeviceConfig> _DeviceTypes;
     };
 
 }

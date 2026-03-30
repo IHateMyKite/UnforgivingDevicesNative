@@ -44,7 +44,7 @@ UD::FunctionDetails UD::ParseFunction(std::string a_var)
 
 void UD::LuaPapyrusCallback::operator()(Variable a_result)
 {
-    DEBUG("operator() called")
+    //DEBUG("operator() called")
     if (_callback != "" && !_callbackcalled)
     {
         _var = ParsePapVar(&a_result);

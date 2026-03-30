@@ -190,6 +190,7 @@ namespace UD
 
         //MinigameManager
         REGISTERPAPYRUSFUNC(GetListOfMinigames ,true)
+        REGISTERPAPYRUSFUNC(StopMinigame ,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

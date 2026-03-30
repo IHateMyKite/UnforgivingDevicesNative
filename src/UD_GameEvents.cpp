@@ -30,6 +30,7 @@ namespace UD
 {
     inline void _OnGameLoad(bool a_newGame)
     {
+        DEBUG("Game loaded -> Calling reloads")
         UD::ReloadLib();
         ModuleManager::GetSingleton()->Reload(a_newGame); // If new game, add delay, so update does not happen during char creation
         PapyrusDelegate::GetSingleton()->Setup();

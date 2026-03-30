@@ -1,8 +1,7 @@
 #include <UD_DeviceManager.h>
 #include <UD_Config.h>
-//#include <boost/json/src.hpp>
-//#include <boost/algorithm/string.hpp>
 #include <UD_Utility.h>
+#include <UD_PapyrusDelegate.h>
 
 SINGLETONBODY(UD::DeviceManager)
 
@@ -11,133 +10,167 @@ void UD::DeviceManager::Reload()
     if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
     {
         _init = true;
-        _jsoncache.clear();
+        //_jsoncache.clear();
+        _DeviceTypes.clear();
         std::string loc_devconfpath = std::filesystem::current_path().string() + "\\Data\\UD\\DeviceConfig";
         std::regex loc_regex(R"regex(.*\\(.*\.[jJ][sS][oO][nN]))regex");
     
-        for (const auto & entry : std::filesystem::directory_iterator(loc_devconfpath))
+        const auto loc_vm = InternalVM::GetSingleton();
+        DEBUG("Size: {}",loc_vm->objectTypeMap.size())
+
+        std::string loc_sourcepath1 = std::filesystem::current_path().string() + "\\Data\\Scripts\\Source\\";
+        std::string loc_sourcepath2 = std::filesystem::current_path().string() + "\\Data\\Source\\Scripts\\"; // SE bullshit path
+        static const std::regex loc_regexDocuStr(R"regex(.*<DOCUSTR\(([\w_]+),(.*)\)>.*)regex");
+        static const std::regex loc_regexExport(R"regex(.*<EXPORT\((.*)\)>.*)regex");
+        static const std::regex loc_regexAtribute(R"regex(([\w_]+):[ ]*(.+))regex");
+        for (auto it : loc_vm->objectTypeMap) 
         {
-            std::string loc_path = entry.path().string();
-    
-            if (entry.is_regular_file() && std::regex_match(loc_path,loc_regex)) 
+            if (PapyrusDelegate::GetSingleton()->HaveScriptBase(it.second.get(),"ud_customdevice_renderscript"))
             {
-                const std::string loc_jsonname = std::regex_replace(loc_path,loc_regex,"$1");
-                std::fstream loc_ifile(loc_path,std::ios::in);
-                std::shared_ptr<boost::property_tree::ptree> loc_json = std::shared_ptr<boost::property_tree::ptree>(new boost::property_tree::ptree);
-                //boost::json::value loc_json;
-                if (loc_ifile.is_open())
+                DEBUG("Script {} is extending UD. Checking for docu",it.first)
+
+                const std::string loc_sourcename = std::string(it.first) + ".psc";
+                // Script extends main script. Try to import script file and search it for documentation
+                std::fstream loc_sourcefile;
+                loc_sourcefile.open(loc_sourcepath1 + loc_sourcename,std::ios::in);
+                if (!loc_sourcefile.is_open())
                 {
-                    try
-                    {
-                        //loc_json = boost::json::parse(loc_ifile);
-                        boost::property_tree::read_json(loc_path, *loc_json.get());
-                    }
-                    catch(const std::exception& e)
-                    {
-                        ERROR("Error parsing json {} - {}",loc_jsonname,e.what())
-                    }
+                    // Try other path
+                    loc_sourcefile.open(loc_sourcepath2 + loc_sourcename,std::ios::in);
                 }
-                else
+
+                if (loc_sourcefile.is_open())
                 {
-                    ERROR("Could not open file {}",loc_jsonname)
+                    DeviceConfig loc_config;
+
+                    loc_config.script = std::string(it.first);
+
+                    decltype(loc_config.variables) loc_vars;
+
+                    std::string str; 
+                    while (std::getline(loc_sourcefile, str))
+                    {
+                        boost::trim(str);
+                        if (str.contains("<DOCUSTR"))
+                        {
+                            const std::string loc_key   = std::regex_replace(str,loc_regexDocuStr,"$1");
+                            const std::string loc_value = std::regex_replace(str,loc_regexDocuStr,"$2");
+                            loc_config.docustr[loc_key] = loc_value;
+                            DEBUG("Docustr found {}={} found",loc_key,loc_value)
+                            continue;
+                        }
+                        if (str.contains("<EXPORT("))
+                        {
+                            DeviceVariable loc_var;
+                            
+                            std::vector<std::string> loc_parts;
+                            boost::split(loc_parts,str,boost::is_any_of(" "),boost::algorithm::token_compress_on);
+                             
+                            if (loc_parts.size() >= 2)
+                            {
+                                std::transform(loc_parts[1].begin(),loc_parts[1].end(),loc_parts[1].begin(),::tolower);
+                                if (loc_parts[1].contains("property"))
+                                {
+                                    loc_var.name = loc_parts[2];
+                                    DEBUG("Property {} found",loc_var.name)
+                                }
+                                else
+                                {
+                                    loc_var.name = loc_parts[1];
+                                    DEBUG("Variable {} found",loc_var.name)
+                                }
+                            }
+
+                            loc_var.atributesRaw = std::regex_replace(str,loc_regexExport,"$1");
+                            std::vector<std::string> loc_atributes;
+                            boost::split(loc_atributes,loc_var.atributesRaw,boost::is_any_of(","),boost::algorithm::token_compress_on);
+                            for (auto atr : loc_atributes)
+                            {
+                                std::string loc_atrname   = std::regex_replace(atr,loc_regexAtribute,"$1");
+                                boost::trim(loc_atrname);
+                                std::string loc_atrvalue  = std::regex_replace(atr,loc_regexAtribute,"$2");
+                                boost::trim(loc_atrvalue);
+                                loc_var.atributes[loc_atrname]  = loc_atrvalue;
+                                DEBUG("{} atribute found - {}={}",loc_var.name,loc_atrname,loc_atrvalue)
+                            }
+                            loc_vars.push_back(loc_var);
+                        }
+                    }
+                    
+
+                    // Order variables by priority
+                    std::sort(loc_vars.begin(),loc_vars.end(),[&](DeviceVariable& v1,DeviceVariable& v2) -> bool
+                    {
+                        auto loc_prio1 = boost::lexical_cast<int>(v1.atributes["prio"].value_or("0"));
+                        auto loc_prio2 = boost::lexical_cast<int>(v2.atributes["prio"].value_or("0"));
+                        return loc_prio1 > loc_prio2;
+                    });
+
+
+                    loc_config.variables = loc_vars;
+
+                    _DeviceTypes[std::string(it.first)] = loc_config;
+                    loc_sourcefile.close();
                 }
-    
-    
-                std::regex loc_regexname(R"regex((.*\\)(.*)(\.[jJ][sS][oO][nN]))regex");
-                const std::string loc_name = std::regex_replace(loc_path,loc_regexname,"$2");
-    
-                //auto loc_config = std::shared_ptr<DeviceConfigJson>(new DeviceConfigJson{std::shared_ptr<boost::json::value>(new boost::json::value(loc_json)),DeviceConfigStatus::sOK,"OK"});
-                auto loc_config = std::shared_ptr<DeviceConfigJson>(new DeviceConfigJson{loc_json,DeviceConfigStatus::sOK,"OK"});
-                
-                loc_config->InitConfig();
-                
-                _jsoncache[loc_name] = loc_config;
+                else 
+                {
+                    ERROR("Could not find source file for script {}",loc_sourcename)
+                    continue;
+                }
             }
-        }
-    
-        DEBUG("=== Loaded device config files ===")
-        for (auto&& [name,file] : _jsoncache)
-        {
-            DEBUG("\t{} - {} / {}",name, file->status, file->error)
         }
     }
 }
 
-std::string UD::DeviceVariable::GetValue(Object a_device) const
+std::vector<UD::DeviceConfig> UD::DeviceManager::GetDeviceConfigs(Object a_device)
 {
-    std::string loc_res;
-    if (a_device)
+    std::vector<std::string> loc_script;
+
+    auto loc_info = a_device->GetTypeInfo();
+
+    while (loc_info)
     {
-        RE::BSScript::Variable* loc_var = nullptr;
-        if (property)
-        {
-            loc_var = a_device->GetProperty(name);
-        }
-        else
-        {
-            loc_var = a_device->GetVariable(name);
-        }
+        loc_script.push_back(loc_info->GetName());
+        loc_info = loc_info->GetParent();
+    }
 
-        if (!loc_var)
-        {
-            ERROR("Can't find variable {} !",name)
-            return "";
-        }
-
-        switch (type)
-        {
-            case DeviceVariableType::eInt:
-                loc_res = std::to_string(loc_var->GetSInt());
-            break;
-            case DeviceVariableType::eFloat:
-                loc_res = std::to_string(loc_var->GetFloat());
-            break;
-            case DeviceVariableType::eBool:
-                loc_res = std::to_string((int)loc_var->GetBool());
-            break;
-            case DeviceVariableType::eString:
-                loc_res = loc_var->GetBool();
-            break;
-            default:
-                WARN("Unsupported format {} !",type)
-            break;
-        }
+    std::vector<DeviceConfig> loc_res(loc_script.size());
+    for (auto it = loc_script.rbegin(); it != loc_script.rend(); ++it)
+    {
+        loc_res.push_back(_DeviceTypes[*it]);
     }
     return loc_res;
 }
 
-void UD::DeviceConfigJson::InitConfig()
+float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectPtr* a_device, RE::Actor* a_actor, RE::Actor* a_helper)
 {
-    if (json)
+    if (!a_rd || !a_device) return 0.0;
+
+    DEBUG("GetDeviceAccessibility called")
+
+    float loc_res = 1.0f;
+
+    if (!a_rd->HasKeywordString(STRKW_HEAVYBONDAGE))
     {
-        try
+        if (!Utility::ActorFreeHands(a_actor) && !Utility::ActorFreeHands(a_helper))
         {
-            config.name = json->get_optional<std::string>("name").get_value_or("MISSINGNAME");
-            config.description = json->get_optional<std::string>("description").get_value_or("MISSINGDESC");
-            config.script = json->get_optional<std::string>("script").get_value_or("");
-
-            auto loc_variables = json->get_child("variables");
-
-            for(auto&& [path,val] : loc_variables)
+            loc_res = 0.0f;
+        }
+        else if (!a_rd->HasKeywordString(STRKW_MITTEN))
+        {
+            if (Utility::ActorFreeHands(a_actor,true,true))
             {
-                DeviceVariable loc_var;
-                loc_var.name        = val.get_optional<std::string>("name").get_value_or("");
-                loc_var.nameDocu    = val.get_optional<std::string>("namedoc").get_value_or("MISSINGNAME");
-                loc_var.type        = (DeviceVariableType)val.get_optional<int>("type").get_value_or(0);
-                loc_var.property    = val.get_optional<bool>("property").get_value_or(true);
-
-                DEBUG("Variable parsed - {} , {} , {} , {}",loc_var.name,loc_var.nameDocu,(int)loc_var.type,loc_var.property)
-
-                config.variables.push_back(loc_var);
+                loc_res *= 0.5;
+            }
+            if (Utility::ActorFreeHands(a_helper,true,true))
+            {
+                loc_res *= 0.5;
             }
         }
-        catch(const std::exception& e)
-        {
-            ERROR("Error initiating device config from json - {}!",e.what())
-            return;
-        };
-
-        DEBUG("Config initiated")
-
     }
+
+    DEBUG("GetDeviceAccessibility -> {}",loc_res)
+
+    // TODO: Add support for hard access
+    return std::clamp(loc_res,0.0f,1.0f);
 }

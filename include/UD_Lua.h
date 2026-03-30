@@ -94,6 +94,7 @@ namespace Lua
         int lua_InvokeUI(lua_State* L);
         int lua_IsNull(lua_State* L);
         int lua_RegisterActionCallback(lua_State* L);
+        int lua_GetDeviceAccesibility(lua_State* L);
     }
 
 }

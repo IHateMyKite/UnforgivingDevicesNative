@@ -59,10 +59,10 @@ namespace UD
         bool    iInRange(int a_value,int a_min,int a_max) const;
         bool    fInRange(float a_value,float a_min,float a_max) const;
 
-        bool WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw) const;
-        bool WornHasKeyword(RE::Actor* a_actor, std::string a_kw) const;
-        RE::TESObjectARMO* GetWornArmor(RE::Actor* a_actor,int a_mask) const;
-        RE::TESObjectARMO* CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_device) const;
+        static bool WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw);
+        static bool WornHasKeyword(RE::Actor* a_actor, std::string a_kw);
+        static RE::TESObjectARMO* GetWornArmor(RE::Actor* a_actor,int a_mask);
+        static RE::TESObjectARMO* CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_device);
 
         bool IsBlockingMenuOpen();
 
@@ -72,6 +72,9 @@ namespace UD
         static bool GetPropertyBool(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, bool a_defval);
         static void* GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID a_type);
         static void* GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::FormType a_type);
+
+
+        static bool ActorFreeHands(RE::Actor* a_actor,bool ab_checkGrasp = false,bool a_IgnoreHeavyBondage = false); // Return true if acvtor wears heavy bondage device
 
         static std::vector<void*> GetPropertyObjectArray(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID);
         static std::vector<RE::BSTSmartPointer<RE::BSScript::Object>> GetPropertyObjectArrayRaw(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var);

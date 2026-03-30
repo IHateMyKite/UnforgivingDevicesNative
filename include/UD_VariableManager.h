@@ -70,5 +70,15 @@ namespace UD
         return GetVariable<T>(a_source,loc_var);
     }
 
+    inline VariableValue GetVariableValue(void* a_source,std::string a_var)
+    {
+        VariableValue loc_var = GetVariableRaw(a_source,a_var);
+        return loc_var;
+    }
+
+    string ProcessDeviceVariable(const VariableValue& a_var, const string& a_format, const string& a_conv);
+
+    VariableValue ConvertDeviceVariable(const VariableValue& a_in,string a_conv);
+
     VariableValue ParsePapVar(Variable* a_var);
 }

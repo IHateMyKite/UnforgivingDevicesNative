@@ -39,6 +39,7 @@ namespace UD
 
     void UpdateManager::Update(float a_delta)
     {
+        //DEBUG("Update called")
         static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
 
         PlayerStatus::GetSingleton()->Update();

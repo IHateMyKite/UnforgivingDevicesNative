@@ -100,6 +100,8 @@ namespace UD
             bool GetMinigameById(uint32_t a_id,MinigameSetting& a_output);
             MinigameDataPtr GetMinigameDataById(uint32_t a_id);
 
+            bool StopMinigame(RE::Actor* a_actor);
+
             void Update(float a_delta);
 
             //void SendCallback(MinigameCallback a_callback);
@@ -136,4 +138,10 @@ namespace UD
     {
         return MinigameManager::GetSingleton()->GetListOfMinigamesStr(a_actor,a_id);
     }
+
+    inline bool StopMinigame(PAPYRUSFUNCHANDLE, RE::Actor* a_actor)
+    {
+        return MinigameManager::GetSingleton()->StopMinigame(a_actor);
+    }
+
 }

@@ -190,6 +190,87 @@ UD::VariableValue UD::GetVariableRaw(void* a_source, std::string a_var)
     return GetVariableRaw(a_source,ParseVariable(a_var));
 }
 
+string UD::ProcessDeviceVariable(const VariableValue& a_var, const string& a_format, const string& a_conv)
+{
+    std::string loc_valueFormated = a_var.Value;
+    try
+    {
+        auto loc_converted = ConvertDeviceVariable(a_var,a_conv);
+
+        switch (loc_converted.Type)
+        {
+            case VariableType::kBool:
+            {
+                const auto loc_formval = boost::lexical_cast<bool>(loc_converted.Value);
+                loc_valueFormated = std::vformat((a_format),std::make_format_args(loc_formval));
+            }
+            break;
+            case VariableType::kInt:
+            {
+                const auto loc_formval = boost::lexical_cast<int>(loc_converted.Value);
+                loc_valueFormated = std::vformat((a_format),std::make_format_args(loc_formval));
+            }
+            break;
+            case VariableType::kFloat:
+            {
+                const auto loc_formval = boost::lexical_cast<float>(loc_converted.Value);
+                loc_valueFormated = std::vformat((a_format),std::make_format_args(loc_formval));
+            }
+            break;
+            default:
+                loc_valueFormated = std::vformat((a_format),std::make_format_args(loc_converted.Value));
+            break;
+        }
+    }
+    catch(...)
+    {
+        ERROR("Error formating {} using {}",a_var.Value,a_format)
+    }
+    return loc_valueFormated;
+}
+
+UD::VariableValue UD::ConvertDeviceVariable(const VariableValue& a_in, string a_conv)
+{
+    VariableValue loc_res = a_in; // default result is input
+    try
+    {
+        // Check possible convertors
+        if (a_conv == "reltoperc") // Relative to percentage
+        {
+            loc_res.Value = std::to_string(boost::lexical_cast<float>(loc_res.Value)*100.0);
+            // Keep type
+        }
+        else if (a_conv.contains("enum")) // Enum
+        {
+            static const std::regex loc_enumRegexParams(R"regex(enum\{(.*)\})regex");
+            static const std::regex loc_enumValueRegexParams(R"regex((.*)=(.*))regex");
+            std::string loc_paramsStr = std::regex_replace(a_conv,loc_enumRegexParams,"$1");
+            if (loc_paramsStr != "")
+            {
+                std::vector<std::string> loc_params;
+                boost::split(loc_params,loc_paramsStr,boost::is_any_of(";"),boost::algorithm::token_compress_on);
+
+                for (auto&& it : loc_params)
+                {
+                    std::string loc_enumvalue = std::regex_replace(it,loc_enumValueRegexParams,"$1");
+                    if (loc_res.Value == loc_enumvalue)
+                    {
+                        std::string loc_enumres = std::regex_replace(it,loc_enumValueRegexParams,"$2");
+                        loc_res.Value = loc_enumres;
+                        loc_res.Type  = VariableType::kString;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    catch(...)
+    {
+        ERROR("Error converting value {} using {}",a_in.Value,a_conv)
+    }
+    return loc_res;
+}
+
 UD::VariableValue UD::ParsePapVar(Variable* a_var)
 {
     VariableValue loc_res;
