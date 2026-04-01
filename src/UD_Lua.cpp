@@ -1,6 +1,7 @@
 #include <UD_Lua.h>
 #include <UD_PapyrusDelegate.h>
 #include <UD_DeviceManager.h>
+#include <UD_Utility.h>
 
 lua_State* Lua::OpenScript(std::string a_path)
 {
@@ -8,15 +9,15 @@ lua_State* Lua::OpenScript(std::string a_path)
     luaL_openlibs(loc_res);
     if (luaL_dofile(loc_res, RelToAbsPath(a_path).c_str()) == LUA_OK)
     {
-        if (luaL_dofile(loc_res, RelToAbsPath("UD\\MinigameConfig\\Global.lua").c_str()) != LUA_OK)
+        if (IncludeScripts(loc_res))
         {
-            ERROR("Error opening global script",a_path)
-            lua_close(loc_res);
-            loc_res = nullptr;
+            RegisterHostFunctions(loc_res);
         }
         else
         {
-            RegisterHostFunctions(loc_res);
+            ERROR("Error opening including scripts")
+            lua_close(loc_res);
+            loc_res = nullptr;
         }
     }
     else
@@ -25,6 +26,45 @@ lua_State* Lua::OpenScript(std::string a_path)
         lua_close(loc_res);
         loc_res = nullptr;
     }
+    return loc_res;
+}
+
+lua_State* Lua::OpenScriptCode(std::string a_code)
+{
+    lua_State* loc_res = luaL_newstate();
+    luaL_openlibs(loc_res);
+    if (luaL_dostring(loc_res, a_code.c_str()) == LUA_OK)
+    {
+        if (IncludeScripts(loc_res))
+        {
+            RegisterHostFunctions(loc_res);
+        }
+        else
+        {
+            ERROR("Error opening including scripts")
+            lua_close(loc_res);
+            loc_res = nullptr;
+        }
+    }
+    else
+    {
+        ERROR("Error opening lua code \n{}",a_code)
+        lua_close(loc_res);
+        loc_res = nullptr;
+    }
+    return loc_res;
+}
+
+bool Lua::IncludeScripts(lua_State* a_script)
+{
+    bool loc_res = true;
+
+    if (loc_res && (luaL_dofile(a_script, RelToAbsPath("UD\\Global.lua").c_str()) != LUA_OK))
+    {
+        loc_res = false;
+        ERROR("Error including script {}","UD\\Global.lua")
+    }
+
     return loc_res;
 }
 
@@ -44,6 +84,8 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_IsNull",HostFunctions::lua_IsNull);
     lua_register(L,"Host_RegisterActionCallback",HostFunctions::lua_RegisterActionCallback);
     lua_register(L,"Host_GetDeviceAccesibility",HostFunctions::lua_GetDeviceAccesibility);
+    lua_register(L,"Host_ActorFreeHands",HostFunctions::lua_ActorFreeHands);
+    lua_register(L,"Host_WornHasKeyword",HostFunctions::lua_WornHasKeyword);
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -638,6 +680,43 @@ int Lua::HostFunctions::lua_GetDeviceAccesibility(lua_State* L)
 
     const float loc_Res = UD::DeviceManager::GetSingleton()->GetDeviceAccessibility(loc_rd,loc_device,loc_wearer,loc_helper);
     lua_pushnumber(L,loc_Res);
+
+    return 1;
+}
+
+int Lua::HostFunctions::lua_ActorFreeHands(lua_State* L)
+{
+    if (!lua_isuserdata(L,1) || !lua_isboolean(L,2) || !lua_isboolean(L,3))
+    {
+        ERROR("lua_ActorFreeHands - Incorrect variables passed!")
+        lua_pushnil(L);
+        return 1;
+    }
+
+    RE::Actor* loc_actor        = (RE::Actor*)lua_touserdata(L,1);
+    const bool loc_checkgrasp   = lua_toboolean(L,2);
+    const bool loc_ignorehb     = lua_toboolean(L,3);
+
+    const bool loc_res = UD::Utility::ActorFreeHands(loc_actor,loc_checkgrasp,loc_ignorehb);
+
+    lua_pushboolean(L,loc_res);
+    return 1;
+}
+
+int Lua::HostFunctions::lua_WornHasKeyword(lua_State* L)
+{
+    if (!lua_isuserdata(L,1) || !lua_isstring(L,2))
+    {
+        ERROR("lua_WornHasKeyword - Incorrect variables passed!")
+        lua_pushboolean(L,false);
+        return 1;
+    }
+
+    RE::Actor*  loc_actor   = (RE::Actor*)lua_touserdata(L,1);
+    std::string loc_kw      = lua_tostring(L,2);
+    const bool  loc_res     = UD::Utility::WornHasKeyword(loc_actor,loc_kw);
+
+    lua_pushboolean(L,loc_res);
 
     return 1;
 }

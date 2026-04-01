@@ -2,6 +2,7 @@
 #include <UD_Config.h>
 #include <UD_Utility.h>
 #include <UD_PapyrusDelegate.h>
+#include <UD_DDAPI.h>
 
 SINGLETONBODY(UD::DeviceManager)
 
@@ -48,9 +49,30 @@ void UD::DeviceManager::Reload()
                     decltype(loc_config.variables) loc_vars;
 
                     std::string str; 
+                    bool loc_luaReading = false;
+                    std::string loc_luaCode = "";
                     while (std::getline(loc_sourcefile, str))
                     {
                         boost::trim(str);
+
+                        if (str.contains("<LUA>"))
+                        {
+                            loc_luaReading = true;
+                            continue;
+                        }
+                        if (str.contains("<\\LUA>"))
+                        {
+                            loc_luaReading = false;
+                            continue;
+                        }
+
+                        if (loc_luaReading)
+                        {
+                            boost::replace_all(str,";","");
+                            loc_luaCode += str + "\n";
+                            continue;
+                        }
+
                         if (str.contains("<DOCUSTR"))
                         {
                             const std::string loc_key   = std::regex_replace(str,loc_regexDocuStr,"$1");
@@ -106,8 +128,18 @@ void UD::DeviceManager::Reload()
                         return loc_prio1 > loc_prio2;
                     });
 
-
                     loc_config.variables = loc_vars;
+
+                    if (loc_luaCode != "")
+                    {
+                        lua_State* loc_script = Lua::OpenScriptCode(loc_luaCode);
+                        if (loc_script)
+                        {
+                            loc_config.luaScript = loc_script;
+                            DEBUG("Lua script code for {} loaded",loc_sourcename)
+                        }
+                        else ERROR("Error reading accessibility script code")
+                    }
 
                     _DeviceTypes[std::string(it.first)] = loc_config;
                     loc_sourcefile.close();
@@ -123,6 +155,11 @@ void UD::DeviceManager::Reload()
 }
 
 std::vector<UD::DeviceConfig> UD::DeviceManager::GetDeviceConfigs(Object a_device)
+{
+    return GetDeviceConfigs(a_device.get());
+}
+
+std::vector<UD::DeviceConfig> UD::DeviceManager::GetDeviceConfigs(ObjectPtr* a_device)
 {
     std::vector<std::string> loc_script;
 
@@ -142,6 +179,12 @@ std::vector<UD::DeviceConfig> UD::DeviceManager::GetDeviceConfigs(Object a_devic
     return loc_res;
 }
 
+float UD::DeviceManager::GetDeviceAccessibility(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_rd)
+{
+    auto [loc_rd,loc_device] = PapyrusDelegate::GetSingleton()->FindDeviceScriptRD(a_actor,a_rd);
+    return GetDeviceAccessibility(a_rd,loc_device.get(),a_actor,a_helper);
+}
+
 float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectPtr* a_device, RE::Actor* a_actor, RE::Actor* a_helper)
 {
     if (!a_rd || !a_device) return 0.0;
@@ -150,21 +193,27 @@ float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectP
 
     float loc_res = 1.0f;
 
-    if (!a_rd->HasKeywordString(STRKW_HEAVYBONDAGE))
+    auto loc_configs = GetDeviceConfigs(a_device);
+
+    for(auto&& it : loc_configs)
     {
-        if (!Utility::ActorFreeHands(a_actor) && !Utility::ActorFreeHands(a_helper))
+        lua_State* L = it.luaScript;
+        if (L)
         {
-            loc_res = 0.0f;
-        }
-        else if (!a_rd->HasKeywordString(STRKW_MITTEN))
-        {
-            if (Utility::ActorFreeHands(a_actor,true,true))
+            if (lua_getglobal(L,"GetAccessibility") != LUA_TNIL)
             {
-                loc_res *= 0.5;
-            }
-            if (Utility::ActorFreeHands(a_helper,true,true))
-            {
-                loc_res *= 0.5;
+                DeviceData loc_data;
+                loc_data.config = it;
+                loc_data.rd = a_rd;
+                if (DeviousDevicesAPI::g_API) loc_data.id = DeviousDevicesAPI::g_API->GetDeviceInventory(a_rd);
+                loc_data.device = a_device;
+                loc_data.wearer = a_actor;
+                loc_data.helper = a_helper;
+
+                PushDeviceData(L,loc_data);
+                lua_pcall(L,1,1,0);
+                loc_res *= lua_tonumber(L,-1);
+                lua_pop(L,1);
             }
         }
     }
@@ -173,4 +222,16 @@ float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectP
 
     // TODO: Add support for hard access
     return std::clamp(loc_res,0.0f,1.0f);
+}
+
+void UD::DeviceManager::PushDeviceData(lua_State* L, DeviceData& a_data)
+{
+    Lua::PushTable(L,
+    {
+        {"Wearer",a_data.wearer},
+        {"Helper",a_data.helper},
+        {"ID",a_data.id},
+        {"RD",a_data.rd},
+        {"DeviceObj",a_data.device}
+    });
 }

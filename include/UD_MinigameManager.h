@@ -117,7 +117,7 @@ namespace UD
             lua_State* GetMinigameScriptById(int a_id);
         private:
             MinigameCallback ParseCallback(std::string a_callback);
-            void InitConfig(MinigameSetting a_config);
+            bool InitConfig(MinigameSetting a_config);
             lua_State* GetMinigameScript(MinigameSetting a_config);
             void UpdateMinigame(MinigameData& a_data,float a_delta);
             void PushMinigameData(lua_State* L,MinigameData& a_data);

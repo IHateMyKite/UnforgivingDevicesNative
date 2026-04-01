@@ -1,4 +1,5 @@
 #pragma once
+#include <UD_Lua.h>
 
 namespace UD
 {
@@ -44,7 +45,18 @@ namespace UD
         std::string script;
         std::string description;
         std::vector<DeviceVariable> variables;
+        lua_State* luaScript = nullptr;
         /* TODO: Minigames */
+    };
+
+    struct DeviceData
+    {
+        RE::TESObjectARMO* id;
+        RE::TESObjectARMO* rd;
+        RE::Actor* wearer;
+        RE::Actor* helper;
+        ObjectPtr* device;
+        DeviceConfig config;
     };
 
     struct DeviceConfigJson
@@ -62,8 +74,13 @@ namespace UD
         void Reload();
 
         std::vector<DeviceConfig> GetDeviceConfigs(Object a_device);
+        std::vector<DeviceConfig> GetDeviceConfigs(ObjectPtr*a_device);
+
+        float GetDeviceAccessibility(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_rd);
 
         float GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectPtr* a_device, RE::Actor* a_actor, RE::Actor* a_helper);
+    private:
+        void PushDeviceData(lua_State* L, DeviceData& a_data);
     private:
         bool _init = false;
         //std::unordered_map<std::string,std::shared_ptr<DeviceConfigJson>> _jsoncache;

@@ -312,76 +312,6 @@ namespace UD
                 }
             });
         }).detach();
-
-        //auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-        //PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
-        //
-        //if (PrismaUI)
-        //{
-        //    _view = PrismaUI->CreateView("UD/DeviceMenu.html",[](PrismaView view) -> void
-        //    {
-        //        DEBUG("View DOM is ready {}", view);
-        //        ViewReady = true;
-        //        PrismaUI->Hide(view);
-        //    });
-        //
-        //    // Listen for UI events
-        //    PrismaUI->RegisterJSListener(_view, "ExitMenu", [](const char* a_type)
-        //    {
-        //        UIManager::GetSingleton()->HideMenu((UIMenu)std::stoi(a_type));
-        //    });
-        //
-        //    PrismaUI->RegisterJSListener(_view, "SendCallback", [](const char* a_arg)
-        //    {
-        //        std::string loc_str = a_arg;
-        //        std::vector<std::string> loc_indx;
-        //
-        //        try
-        //        {
-        //            boost::split(loc_indx,loc_str,boost::is_any_of(","));
-        //        }
-        //        catch(...)
-        //        {
-        //            ERROR("Error spliting argument received by SendCallback - {}",a_arg)
-        //            return;
-        //        }
-        //        
-        //        if (loc_indx.size() == 2)
-        //        {
-        //            UIManager::GetSingleton()->SendCallback(std::stoi(loc_indx[0]),std::stoi(loc_indx[1]));
-        //        }
-        //        else
-        //        {
-        //            ERROR("Incorrect number of indexes received for SendCallback!")
-        //        }
-        //    });
-        //
-        //    PrismaUI->RegisterJSListener(_view, "StartMinigame", [](const char* a_arg)
-        //    {
-        //        DEBUG("StartMinigame({}) called",a_arg)
-        //        std::string loc_str = a_arg;
-        //        std::vector<std::string> loc_indx;
-        // 
-        //        try
-        //        {
-        //            boost::split(loc_indx,loc_str,boost::is_any_of(","));
-        //        }
-        //        catch(...)
-        //        {
-        //            ERROR("Error spliting argument received by SendCallback - {}",a_arg)
-        //            return;
-        //        }
-        //        
-        //        if (loc_indx.size() == 2)
-        //        {
-        //            UIManager::GetSingleton()->StartMinigame(std::stoi(loc_indx[0]),std::stoi(loc_indx[1]));
-        //        }
-        //        else
-        //        {
-        //            ERROR("Incorrect number of indexes received for SendCallback!")
-        //        }
-        //    });
-        //}
     }
 
     void UIManager::Update()
@@ -406,11 +336,11 @@ namespace UD
             DEBUG("ShowDeviceMenu() - Showing list of {} devices",loc_Devices.size())
 
             std::vector<std::string> loc_devicesList;
-            for (auto&& it : loc_Devices)
+            for (auto&& [loc_rd,loc_device] : loc_Devices)
             {
                 #undef GetObject
 
-                auto loc_obj = it.second;
+                auto loc_obj = loc_device;
 
                 RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(loc_obj,"DeviceInventory",false,(RE::VMTypeID)RE::TESObjectARMO::FORMTYPE);
                 if (loc_id)
@@ -421,6 +351,9 @@ namespace UD
 
                     loc_arg += "values: [";
                     
+                    const float loc_acc = DeviceManager::GetSingleton()->GetDeviceAccessibility(loc_rd,loc_obj.get(),a_actor,a_helper);
+                    CreateValueDetail(loc_arg, true,"Accessibility",std::format("{}%",Utility::Round(loc_acc*100.0f)),"");
+
                     const auto loc_configs = DeviceManager::GetSingleton()->GetDeviceConfigs(loc_obj);
 
                     for (auto conf : loc_configs)
@@ -482,7 +415,7 @@ namespace UD
 
                     loc_arg += "}";
 
-                    _devMenuData.List.push_back({it.second,loc_id,it.first});
+                    _devMenuData.List.push_back({loc_device,loc_id,loc_rd});
                     loc_devicesList.push_back(loc_arg);
                 }
 

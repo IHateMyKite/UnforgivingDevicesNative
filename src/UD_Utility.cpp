@@ -16,34 +16,34 @@
 
 namespace UD 
 {
-    int Utility::DecodeBit(int a_codedmap,int a_size,int a_index) const
+    int Utility::DecodeBit(int a_codedmap,int a_size,int a_index)
     {
         a_codedmap >>= a_index;
         a_codedmap &= ((0x00000001 << a_size) - 1);
         return a_codedmap;
     }
 
-    int Utility::Round(float a_value) const
+    int Utility::Round(float a_value)
     {
         return boost::math::lround(a_value);
     }
 
-    int Utility::iRange(int a_value,int a_min,int a_max) const
+    int Utility::iRange(int a_value,int a_min,int a_max)
     {
         return boost::algorithm::clamp(a_value,a_min,a_max);
     }
 
-    float Utility::fRange(float a_value,float a_min,float a_max) const
+    float Utility::fRange(float a_value,float a_min,float a_max)
     {
         return boost::algorithm::clamp(a_value,a_min,a_max);
     }
 
-    bool Utility::iInRange(int a_value, int a_min, int a_max) const
+    bool Utility::iInRange(int a_value, int a_min, int a_max)
     {
         return (a_value >= a_min && a_value <= a_max);
     }
 
-    bool Utility::fInRange(float a_value, float a_min, float a_max) const
+    bool Utility::fInRange(float a_value, float a_min, float a_max)
     {
         return (a_value >= a_min && a_value <= a_max);
     }
@@ -237,7 +237,7 @@ namespace UD
 
     SINGLETONBODY(Utility)
 
-    int Utility::CodeBit(int a_codedmap, int a_value, int a_size, int a_index) const
+    int Utility::CodeBit(int a_codedmap, int a_value, int a_size, int a_index)
     {
         if (a_index + a_size > 32) return UDBITERRORVALUE;
         int loc_clearmap = (((0x1 << a_size) - 1) << a_index);

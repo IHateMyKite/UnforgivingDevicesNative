@@ -51,13 +51,13 @@ namespace UD
     SINGLETONHEADER(Utility)
     public:
         std::vector<RE::TESForm*> RemoveDuplicateForms(PAPYRUSFUNCHANDLE, std::vector<RE::TESForm*> modifier_forms);
-        int     CodeBit(int a_codedmap,int a_value,int a_size,int a_index) const;
-        int     DecodeBit(int i_codedMap,int i_size,int i_index) const;
-        int     Round(float a_value) const;
-        int     iRange(int a_value,int a_min,int a_max) const;
-        float   fRange(float a_value,float a_min,float a_max) const;
-        bool    iInRange(int a_value,int a_min,int a_max) const;
-        bool    fInRange(float a_value,float a_min,float a_max) const;
+        static int      CodeBit(int a_codedmap,int a_value,int a_size,int a_index);
+        static int      DecodeBit(int i_codedMap,int i_size,int i_index);
+        static int      Round(float a_value);
+        static int      iRange(int a_value,int a_min,int a_max);
+        static float    fRange(float a_value,float a_min,float a_max);
+        static bool     iInRange(int a_value,int a_min,int a_max);
+        static bool     fInRange(float a_value,float a_min,float a_max);
 
         static bool WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw);
         static bool WornHasKeyword(RE::Actor* a_actor, std::string a_kw);
@@ -103,33 +103,33 @@ namespace UD
 
     inline int CodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_value,int a_size,int a_index)
     {
-        return Utility::GetSingleton()->CodeBit(a_codedmap,a_value,a_size,a_index);
+        return Utility::CodeBit(a_codedmap,a_value,a_size,a_index);
     }
 
     inline int DecodeBit(PAPYRUSFUNCHANDLE,int a_codedMap,int a_size,int a_index)
     {
-        return Utility::GetSingleton()->DecodeBit(a_codedMap,a_size,a_index);
+        return Utility::DecodeBit(a_codedMap,a_size,a_index);
     }
 
     inline int Round(PAPYRUSFUNCHANDLE,float a_value)
     {
-        return Utility::GetSingleton()->Round(a_value);
+        return Utility::Round(a_value);
     }
     inline int iRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max)
     {
-        return Utility::GetSingleton()->iRange(a_value,a_min,a_max);
+        return Utility::iRange(a_value,a_min,a_max);
     }
     inline float fRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max)
     {
-        return Utility::GetSingleton()->fRange(a_value,a_min,a_max);
+        return Utility::fRange(a_value,a_min,a_max);
     }
     inline bool iInRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max)
     {
-        return Utility::GetSingleton()->iInRange(a_value,a_min,a_max);
+        return Utility::iInRange(a_value,a_min,a_max);
     }
     inline bool fInRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max)
     {
-        return Utility::GetSingleton()->fInRange(a_value,a_min,a_max);
+        return Utility::fInRange(a_value,a_min,a_max);
     }
 
     inline RE::TESObjectARMO* CheckArmorEquipped(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, RE::TESObjectARMO* a_armor)

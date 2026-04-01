@@ -12,6 +12,8 @@
 #include <UD_ModuleManager.h>
 #include <UD_ActorSlotManager.h>
 
+#include <UD_DDAPI.h>
+
 #undef GetObject
 
 SINGLETONBODY(UD::PapyrusDelegate)
@@ -918,6 +920,27 @@ DeviceObj UD::PapyrusDelegate::FindDeviceScriptID(RE::Actor* a_actor, RE::TESObj
         {
             RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(it.second,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE);
             if (loc_id == a_id) return it;
+        }
+    }
+    return DeviceObj();
+}
+
+DeviceObj UD::PapyrusDelegate::FindDeviceScriptRD(RE::Actor* a_actor, RE::TESObjectARMO* a_rd)
+{
+    if (DeviousDevicesAPI::g_API == nullptr) 
+    {
+        ERROR("DDAPI not ready or missing!!!")
+        return DeviceObj();
+    }
+
+    auto loc_devices = FindAllDeviceScripts(a_actor);
+    for (auto&& it : loc_devices)
+    {
+        auto loc_id = DeviousDevicesAPI::g_API->GetDeviceInventory(a_rd);
+        if (loc_id)
+        {
+            RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(it.second,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE);
+            if (loc_id == loc_id) return it;
         }
     }
     return DeviceObj();

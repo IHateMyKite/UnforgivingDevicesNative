@@ -24,35 +24,43 @@ void UD::MinigameManager::Reload()
         for(auto&& [name,script] : _scripts) lua_close(script);
         _scripts.clear();
 
-        std::string loc_devconfpath = RelToAbsPath("UD\\MinigameConfig");
+        std::string loc_devconfpath = RelToAbsPath("UD\\Minigames");
         std::regex loc_regex(R"regex(.*\\(.*\.[jJ][sS][oO][nN]))regex");
         uint32_t loc_id = 0;
-        for (const auto & entry : std::filesystem::directory_iterator(loc_devconfpath))
+        try
         {
-            std::string loc_path = entry.path().string();
-    
-            if (entry.is_regular_file() && std::regex_match(loc_path,loc_regex)) 
+            for (const auto & entry : std::filesystem::directory_iterator(loc_devconfpath))
             {
-                const std::string loc_jsonname = std::regex_replace(loc_path,loc_regex,"$1");
-                std::shared_ptr<boost::property_tree::ptree> loc_json = std::shared_ptr<boost::property_tree::ptree>(new boost::property_tree::ptree);
-                try
-                {
-                    boost::property_tree::read_json(loc_path, *loc_json.get());
-                }
-                catch(const std::exception& e)
-                {
-                    ERROR("Error parsing json {} - {}",loc_jsonname,e.what())
-                    continue;
-                }
+                std::string loc_path = entry.path().string();
     
-                std::regex loc_regexname(R"regex((.*\\)(.*)(\.[jJ][sS][oO][nN]))regex");
-                const std::string loc_name = std::regex_replace(loc_path,loc_regexname,"$2");
+                if (entry.is_regular_file() && std::regex_match(loc_path,loc_regex)) 
+                {
+                    const std::string loc_jsonname = std::regex_replace(loc_path,loc_regex,"$1");
+                    std::shared_ptr<boost::property_tree::ptree> loc_json = std::shared_ptr<boost::property_tree::ptree>(new boost::property_tree::ptree);
+                    try
+                    {
+                        boost::property_tree::read_json(loc_path, *loc_json.get());
+                    }
+                    catch(const std::exception& e)
+                    {
+                        ERROR("Error parsing json {} - {}",loc_jsonname,e.what())
+                        continue;
+                    }
     
-                auto loc_config = std::shared_ptr<MinigameConfigJson>(new MinigameConfigJson{loc_id++,loc_json,MinigameConfigStatus::sOK,"OK"});
-                InitConfig(loc_config);
-                
-                _jsoncache[loc_name] = loc_config;
+                    std::regex loc_regexname(R"regex((.*\\)(.*)(\.[jJ][sS][oO][nN]))regex");
+                    const std::string loc_name = std::regex_replace(loc_path,loc_regexname,"$2");
+    
+                    auto loc_config = std::shared_ptr<MinigameConfigJson>(new MinigameConfigJson{loc_id++,loc_json,MinigameConfigStatus::sOK,"OK"});
+                    if (InitConfig(loc_config))
+                    {
+                        _jsoncache[loc_name] = loc_config;
+                    }
+                }
             }
+        }
+        catch(...)
+        {
+            ERROR("Error reading minigame folder")
         }
     
         DEBUG("=== Loaded device config files ===")
@@ -377,7 +385,7 @@ UD::MinigameCallback UD::MinigameManager::ParseCallback(std::string a_callback)
     return loc_res;
 }
 
-void UD::MinigameManager::InitConfig(MinigameSetting a_config)
+bool UD::MinigameManager::InitConfig(MinigameSetting a_config)
 {
     if (a_config && a_config->json)
     {
@@ -391,7 +399,7 @@ void UD::MinigameManager::InitConfig(MinigameSetting a_config)
         catch(const std::exception& e)
         {
             ERROR("Error initiating minigame config from json - {}!",e.what())
-            return;
+            return false;
         };
 
         const std::string loc_script = a_config->config.script;
@@ -403,9 +411,16 @@ void UD::MinigameManager::InitConfig(MinigameSetting a_config)
                 DEBUG("Script {} initiated",loc_script)
                 _scripts[loc_script] = L;
             }
+            else
+            {
+                ERROR("Error initiating minigame script for {}",a_config->config.name)
+                return false;
+            }
         }
         DEBUG("Minigame config [{}] initiated, Script = {}, Ui = {}",a_config->config.name,a_config->config.script,a_config->config.uiobject)
+        return true;
     }
+    return false;
 }
 
 lua_State* UD::MinigameManager::GetMinigameScript(MinigameSetting a_config)

@@ -84,6 +84,7 @@ namespace UD
         Device GetCachedDevice(RE::VMHandle,RE::Actor* a_actor, RE::TESObjectARMO* a_device);
         std::vector<DeviceObj> FindAllDeviceScripts(RE::Actor* a_actor);
         DeviceObj FindDeviceScriptID(RE::Actor* a_actor, RE::TESObjectARMO* a_id);
+        DeviceObj FindDeviceScriptRD(RE::Actor* a_actor, RE::TESObjectARMO* a_rd);
 
         const std::map<RE::VMHandle,Modifier>& GetModifiers() const;
         std::vector<Modifier> GetModifiers(RE::VMHandle a_handle, RE::TESObjectARMO* a_device);
