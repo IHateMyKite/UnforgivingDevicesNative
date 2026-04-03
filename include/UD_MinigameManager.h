@@ -82,6 +82,7 @@ namespace UD
         MinigameSetting Setting;
         MinigameState State = MinigameState::eNotStarted;
         std::vector<MinigameActionCallback> Controls;
+        string Context;
     };
 
     typedef std::shared_ptr<MinigameData> MinigameDataPtr;
@@ -95,8 +96,9 @@ namespace UD
             std::vector<MinigameSetting> GetListOfMinigames(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_id);
 
             bool GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_id, MinigameSetting a_setting);
+            string GetMinigameContexts(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id, MinigameSetting a_setting);
 
-            bool StartMinigame(MinigameSetting a_minigame,RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id);
+            bool StartMinigame(MinigameSetting a_minigame,RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id, string a_cntx);
             bool GetMinigameById(uint32_t a_id,MinigameSetting& a_output);
             MinigameDataPtr GetMinigameDataById(uint32_t a_id);
 

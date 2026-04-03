@@ -300,13 +300,13 @@ namespace UD
                             return;
                         }
                 
-                        if (loc_indx.size() == 2)
+                        if (loc_indx.size() == 3)
                         {
-                            UIManager::GetSingleton()->StartMinigame(std::stoi(loc_indx[0]),std::stoi(loc_indx[1]));
+                            UIManager::GetSingleton()->StartMinigame(std::stoi(loc_indx[0]),std::stoi(loc_indx[1]),loc_indx[2]);
                         }
                         else
                         {
-                            ERROR("Incorrect number of indexes received for SendCallback!")
+                            ERROR("Incorrect number of indexes received for StartMinigame!")
                         }
                     });
                 }
@@ -406,8 +406,17 @@ namespace UD
                         if (loc_minname != "")
                         {
                             uint32_t    loc_state   = MinigameManager::GetSingleton()->GetMinigameCondition(a_actor,a_helper,loc_id,min);
-                            std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {}}}",loc_minname,loc_mindesc,loc_state,min->id);
-                            loc_minigamelist.push_back(loc_minclass);
+                            string      loc_context = MinigameManager::GetSingleton()->GetMinigameContexts(a_actor,a_helper,loc_id,min);
+                            if (loc_context != "")
+                            {
+                                std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {},context: {}}}",loc_minname,loc_mindesc,loc_state,min->id,loc_context);
+                                loc_minigamelist.push_back(loc_minclass);
+                            }
+                            else
+                            {
+                                std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {}}}",loc_minname,loc_mindesc,loc_state,min->id);
+                                loc_minigamelist.push_back(loc_minclass);
+                            }
                         }
                     }
                     std::string loc_minstr = "[" + boost::join(loc_minigamelist,",") + "]";
@@ -507,13 +516,13 @@ namespace UD
         HideMenu(UIMenu::eDeviceMenu);
     }
 
-    void UIManager::StartMinigame(int a_indxDev, int a_minId)
+    void UIManager::StartMinigame(int a_indxDev, int a_minId, string a_cntx)
     {
         auto loc_dev = _devMenuData.List[a_indxDev];
         MinigameSetting loc_min;
         if (MinigameManager::GetSingleton()->GetMinigameById(a_minId,loc_min))
         {
-            MinigameManager::GetSingleton()->StartMinigame(loc_min,_devMenuData.Wearer,_devMenuData.Helper,loc_dev.id);
+            MinigameManager::GetSingleton()->StartMinigame(loc_min,_devMenuData.Wearer,_devMenuData.Helper,loc_dev.id,a_cntx);
         }
         HideMenu(UIMenu::eDeviceMenu);
     }

@@ -100,6 +100,7 @@ namespace Lua
         int lua_GetDeviceAccesibility(lua_State* L);
         int lua_ActorFreeHands(lua_State* L);
         int lua_WornHasKeyword(lua_State* L);
+        int lua_HideUI(lua_State* L);
     }
 
 }

@@ -189,7 +189,7 @@ float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectP
 {
     if (!a_rd || !a_device) return 0.0;
 
-    DEBUG("GetDeviceAccessibility called")
+    //DEBUG("GetDeviceAccessibility called")
 
     float loc_res = 1.0f;
 
@@ -218,7 +218,7 @@ float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectP
         }
     }
 
-    DEBUG("GetDeviceAccessibility -> {}",loc_res)
+    //DEBUG("GetDeviceAccessibility -> {}",loc_res)
 
     // TODO: Add support for hard access
     return std::clamp(loc_res,0.0f,1.0f);

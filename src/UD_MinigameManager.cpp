@@ -107,8 +107,11 @@ std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Act
                     {"DeviceObj",loc_device.second.get()},
                     {"Json",config->json.get()}
                 });
-            
-                lua_pcall(L,1,1,0);
+                auto loc_luares = lua_pcall(L,1,1,0);
+                if (loc_luares != LUA_OK)
+                {
+                    ERROR("Error running function Precondition - {}",loc_luares)
+                }
                 loc_precond = lua_toboolean(L,-1);
                 lua_pop(L,1);
             }
@@ -147,7 +150,11 @@ bool UD::MinigameManager::GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_
             {"DeviceObj",loc_device.second.get()},
             {"Json",a_setting->json.get()}
         });
-        lua_pcall(L,1,1,0);
+        auto loc_luares = lua_pcall(L,1,1,0);
+        if (loc_luares != LUA_OK)
+        {
+            ERROR("Error running function Condition - {}",loc_luares)
+        }
         loc_cond = lua_toboolean(L,-1);
         lua_pop(L,1);
     }
@@ -158,7 +165,42 @@ bool UD::MinigameManager::GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_
     return loc_cond;
 }
 
-bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id)
+string UD::MinigameManager::GetMinigameContexts(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id, MinigameSetting a_setting)
+{
+    string loc_res = "";
+    //DEBUG("GetMinigameCondition called")
+    auto L = GetMinigameScript(a_setting);
+    if (!L) return loc_res;
+    
+    DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
+    if (lua_getglobal(L,"GetContext") != LUA_TNIL)
+    {
+        Lua::PushTable(L,
+        {
+            {"Wearer",a_actor},
+            {"Helper",a_helper},
+            {"ID",a_id},
+            {"RD",loc_device.first},
+            {"DeviceObj",loc_device.second.get()},
+            {"Json",a_setting->json.get()}
+        });
+        auto loc_luares = lua_pcall(L,1,1,0);
+        if (loc_luares != LUA_OK)
+        {
+            ERROR("Error running function Condition - {}",loc_luares)
+        }
+
+        if (lua_isstring(L,-1))
+        {
+            loc_res = lua_tostring(L,-1);
+        }
+        lua_pop(L,1);
+    }
+
+    return loc_res;
+}
+
+bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id, string a_cntx)
 {
     if (!a_id || !a_setting) return false;
 
@@ -182,6 +224,7 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
     loc_data.Device.rd = loc_device.first;
     loc_data.id = loc_cntr;
     loc_data.Setting = a_setting;
+    loc_data.Context = a_cntx;
     loc_cntr++;
 
     _minigames.push_back(MinigameDataPtr(new MinigameData(loc_data)));
@@ -192,7 +235,11 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
     if (lua_getglobal(L,"OnStart") != LUA_TNIL)
     {
         PushMinigameData(L,loc_data);
-        lua_pcall(L,1,0,0);
+        auto loc_luares = lua_pcall(L,1,0,0);
+        if (loc_luares != LUA_OK)
+        {
+            ERROR("Error running function OnStart - {}",loc_luares)
+        }
     }
 
     return true;
@@ -265,7 +312,11 @@ void UD::MinigameManager::StopMinigame(int a_id)
                 if (lua_getglobal(L,"OnStop") != LUA_TNIL)
                 {
                     PushMinigameData(L,*data);
-                    lua_pcall(L,1,0,0);
+                    auto loc_luares = lua_pcall(L,1,0,0);
+                    if (loc_luares != LUA_OK)
+                    {
+                        ERROR("Error running function OnStop - {}",loc_luares)
+                    }
                 }
             }
             return true;
@@ -441,7 +492,11 @@ void UD::MinigameManager::UpdateMinigame(MinigameData& a_data, float a_delta)
     {
         PushMinigameData(L,a_data);
         lua_pushnumber(L,a_delta);
-        lua_pcall(L,2,0,0);
+        auto loc_luares = lua_pcall(L,2,0,0);
+        if (loc_luares != LUA_OK)
+        {
+            ERROR("Error running function OnUpdate - {}",loc_luares)
+        }
     }
 }
 
@@ -455,6 +510,7 @@ void UD::MinigameManager::PushMinigameData(lua_State* L, MinigameData& a_data)
         {"RD",a_data.Device.rd},
         {"DeviceObj",a_data.Device.obj.get()},
         {"Json",a_data.Setting->json.get()},
+        {"Context",a_data.Context},
         {"MinigameId",(lua_Integer)a_data.id}
     });
 }

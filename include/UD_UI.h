@@ -292,7 +292,7 @@ namespace UD
         bool IsMenuOpen();
         void HideMenu(UIMenu a_type);
         void SendCallback(int a_indxDev, int a_indxCall);
-        void StartMinigame(int a_indxDev, int a_minId);
+        void StartMinigame(int a_indxDev, int a_minId, string a_cntx);
     private:
         std::vector<ButtonCallback> ParseCallbacks(std::vector<std::string> a_callbacks);
 

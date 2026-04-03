@@ -87,4 +87,9 @@ namespace UD
         std::unordered_map<std::string,DeviceConfig> _DeviceTypes;
     };
 
+    inline float GetDeviceAccessibility(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_rd)
+    {
+        return DeviceManager::GetSingleton()->GetDeviceAccessibility(a_actor,a_helper,a_rd);
+    }
+
 }

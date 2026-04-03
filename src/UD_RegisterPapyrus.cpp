@@ -17,6 +17,7 @@
 #include <UD_SLPP.h>
 #include <UD_ModuleManager.h>
 #include <UD_MinigameManager.h>
+#include <UD_DeviceManager.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
@@ -191,6 +192,9 @@ namespace UD
         //MinigameManager
         REGISTERPAPYRUSFUNC(GetListOfMinigames ,true)
         REGISTERPAPYRUSFUNC(StopMinigame ,true)
+
+        //Device manager
+        REGISTERPAPYRUSFUNC(GetDeviceAccessibility ,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

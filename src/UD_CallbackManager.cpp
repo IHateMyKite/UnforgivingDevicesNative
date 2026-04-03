@@ -9,10 +9,17 @@ void UD::CallPapyrusFunc(PapFunc& a_func)
 
     RE::BSTSmartPointer<LuaPapyrusCallback> loc_callback(new LuaPapyrusCallback(a_func.Id,a_func.Callback2));
     RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> loc_callback2 = loc_callback;
-    auto loc_args = new FunctionArguments2();
-    loc_args->SetArgs(a_func.Args);
-    loc_vm->DispatchMethodCall(a_func.Source,a_func.Callback,loc_args,loc_callback2);
-
+    if (a_func.Args.size() > 0)
+    {
+        auto loc_args = new FunctionArguments2();
+        loc_args->SetArgs(a_func.Args);
+        loc_vm->DispatchMethodCall(a_func.Source,a_func.Callback,loc_args,loc_callback2);
+    }
+    else
+    {
+        RE::MakeFunctionArguments();
+        loc_vm->DispatchMethodCall(a_func.Source,a_func.Callback,RE::MakeFunctionArguments(),loc_callback2);
+    }
 }
 
 Object UD::GetSource(void* a_source, std::string a_type)
@@ -42,13 +49,20 @@ UD::FunctionDetails UD::ParseFunction(std::string a_var)
     return loc_res;
 }
 
+UD::LuaPapyrusCallback::~LuaPapyrusCallback()
+{
+}
+
 void UD::LuaPapyrusCallback::operator()(Variable a_result)
 {
-    //DEBUG("operator() called")
     if (_callback != "" && !_callbackcalled)
     {
         _var = ParsePapVar(&a_result);
         MinigameManager::GetSingleton()->SendPapCallback(_minigameId,_callback,_var);
     }
     _callbackcalled = true;
+}
+
+void UD::LuaPapyrusCallback::SetObject(const Object& a_object)
+{
 }

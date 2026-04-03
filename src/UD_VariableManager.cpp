@@ -293,6 +293,70 @@ UD::VariableValue UD::ParsePapVar(Variable* a_var)
             loc_res.Value = a_var->GetString();
             loc_res.Type  = loc_type;
         break;
+        case RE::BSScript::TypeInfo::RawType::kIntArray:
+            loc_res.Value = "";
+            if (a_var->GetArray())
+            {
+                auto loc_arr = a_var->GetArray();
+                for(size_t i = 0; i < loc_arr->size();i++)
+                {
+                    loc_res.Value += std::to_string((*loc_arr)[i].GetSInt());
+                    if (i != (loc_arr->size() - 1))
+                    {
+                        loc_res.Value += ",";
+                    }
+                }
+            }
+            loc_res.Type  = loc_type;
+        break;
+        case RE::BSScript::TypeInfo::RawType::kStringArray:
+            loc_res.Value = "";
+            if (a_var->GetArray())
+            {
+                auto loc_arr = a_var->GetArray();
+                for(size_t i = 0; i < loc_arr->size();i++)
+                {
+                    loc_res.Value += ((*loc_arr)[i].GetString());
+                    if (i != (loc_arr->size() - 1))
+                    {
+                        loc_res.Value += ",";
+                    }
+                }
+            }
+            loc_res.Type  = loc_type;
+        break;
+        case RE::BSScript::TypeInfo::RawType::kFloatArray:
+            loc_res.Value = "";
+            if (a_var->GetArray())
+            {
+                auto loc_arr = a_var->GetArray();
+                for(size_t i = 0; i < loc_arr->size();i++)
+                {
+                    loc_res.Value += std::to_string((*loc_arr)[i].GetFloat());
+                    if (i != (loc_arr->size() - 1))
+                    {
+                        loc_res.Value += ",";
+                    }
+                }
+            }
+            loc_res.Type  = loc_type;
+        break;
+        case RE::BSScript::TypeInfo::RawType::kBoolArray:
+            loc_res.Value = "";
+            if (a_var->GetArray())
+            {
+                auto loc_arr = a_var->GetArray();
+                for(size_t i = 0; i < loc_arr->size();i++)
+                {
+                    loc_res.Value += std::to_string((*loc_arr)[i].GetBool());
+                    if (i != (loc_arr->size() - 1))
+                    {
+                        loc_res.Value += ",";
+                    }
+                }
+            }
+            loc_res.Type  = loc_type;
+        break;
         default:
             ERROR("Type of {} currently not supported",(int)loc_type)
         break;

@@ -86,6 +86,7 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_GetDeviceAccesibility",HostFunctions::lua_GetDeviceAccesibility);
     lua_register(L,"Host_ActorFreeHands",HostFunctions::lua_ActorFreeHands);
     lua_register(L,"Host_WornHasKeyword",HostFunctions::lua_WornHasKeyword);
+    lua_register(L,"Host_HideUI",HostFunctions::lua_HideUI);
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -263,6 +264,64 @@ void Lua::PushVariableResult(lua_State* L, UD::VariableValue& a_val)
         case VariableType::kString:
         {
             lua_pushstring(L,a_val.Value.c_str());
+        }
+        break;
+        case VariableType::kIntArray:
+        {
+            std::vector<int> loc_values = UD::Utility::ConvertStringToArray<int>(a_val.Value);
+            lua_createtable(L,loc_values.size(),1);
+            lua_pushstring(L,"n");
+            lua_pushinteger(L,loc_values.size());
+            lua_settable(L,-3);
+            for(int i = 0; i < loc_values.size(); i++)
+            {
+                lua_pushinteger(L,loc_values[i]);
+                lua_seti(L,-2,i);
+            }
+        }
+        break;
+        case VariableType::kBoolArray:
+        {
+            std::vector<bool> loc_values = UD::Utility::ConvertStringToArray<bool>(a_val.Value);
+            lua_createtable(L,loc_values.size(),1);
+            lua_pushstring(L,"n");
+            lua_pushinteger(L,loc_values.size());
+            lua_settable(L,-3);
+            for(int i = 0; i < loc_values.size(); i++)
+            {
+                lua_pushboolean(L,loc_values[i]);
+                lua_seti(L,-2,i);
+            }
+        }
+        break;
+        case VariableType::kFloatArray:
+        {
+            std::vector<float> loc_values = UD::Utility::ConvertStringToArray<float>(a_val.Value);
+            lua_createtable(L,loc_values.size(),1);
+            lua_pushstring(L,"n");
+            lua_pushinteger(L,loc_values.size());
+            lua_settable(L,-3);
+            for(int i = 0; i < loc_values.size(); i++)
+            {
+                lua_pushnumber(L,loc_values[i]);
+                lua_seti(L,-2,i);
+            }
+        }
+        break;
+        case VariableType::kStringArray:
+        {
+            std::vector<string> loc_values = UD::Utility::ConvertStringToArray<string>(a_val.Value);
+            lua_createtable(L,loc_values.size(),1);
+            lua_pushstring(L,"n");
+            lua_pushinteger(L,loc_values.size());
+            lua_settable(L,-3);
+
+            // Set value
+            for(int i = 0; i < loc_values.size(); i++)
+            {
+                lua_pushstring(L,loc_values[i].c_str());
+                lua_seti(L,-2,i);
+            }
         }
         break;
         default:
@@ -719,4 +778,22 @@ int Lua::HostFunctions::lua_WornHasKeyword(lua_State* L)
     lua_pushboolean(L,loc_res);
 
     return 1;
+}
+
+int Lua::HostFunctions::lua_HideUI(lua_State* L)
+{
+    if (!lua_isinteger(L,1))
+    {
+        ERROR("lua_HideUI - Incorrect variables passed!")
+        return 0;
+    }
+
+    auto loc_data = UD::MinigameManager::GetSingleton()->GetMinigameDataById(lua_tointeger(L,1));
+    if (loc_data)
+    {
+        
+        
+    }
+
+    return 0;
 }

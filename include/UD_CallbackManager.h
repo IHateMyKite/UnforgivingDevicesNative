@@ -106,10 +106,12 @@ namespace UD
     class LuaPapyrusCallback : public RE::BSScript::IStackCallbackFunctor
     {
     public:
+        
         LuaPapyrusCallback() : IStackCallbackFunctor() {}
         LuaPapyrusCallback(int a_id,std::string callback) : IStackCallbackFunctor() , _minigameId(a_id),_callback(callback) {}
+        ~LuaPapyrusCallback();  // 00
         void operator()(Variable a_result);
-        void SetObject(const Object& a_object) {};
+        void SetObject(const Object& a_object);
     private:
         int             _minigameId = 0;
         std::string     _callback = "";

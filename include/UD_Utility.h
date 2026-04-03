@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_set>
+#include <typeinfo>
 
 namespace boost::json
 {
@@ -78,6 +79,27 @@ namespace UD
 
         static std::vector<void*> GetPropertyObjectArray(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID);
         static std::vector<RE::BSTSmartPointer<RE::BSScript::Object>> GetPropertyObjectArrayRaw(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var);
+
+        template<class T>
+        static std::vector<T> ConvertStringToArray(string argIn)
+        {
+            std::vector<T> loc_res;
+            try
+            {
+                std::vector<std::string> loc_out;
+                boost::split(loc_out,argIn,boost::is_any_of(","));
+                for(auto&& it : loc_out)
+                {
+                    loc_res.push_back(boost::lexical_cast<T>(it));
+                }
+            }
+            catch(...)
+            {
+                ERROR("Error converting string {} to array of type {}",argIn,typeid(T).name())
+            }
+
+            return loc_res;
+        }
 
     private:
 
