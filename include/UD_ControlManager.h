@@ -84,9 +84,13 @@ namespace UD
 
     struct Control
     {
-        std::string alias;
-        uint32_t codekeyboard;
-        uint32_t codegamepad;
+        std::string alias = "";
+        uint32_t codekeyboard = 0;
+        uint32_t codegamepad = 0;
+        bool operator==(const Control& other)
+        {
+            return codekeyboard == other.codekeyboard && codegamepad == other.codegamepad && alias == other.alias;
+        }
     };
 
     class ControlManager

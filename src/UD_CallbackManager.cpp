@@ -55,9 +55,11 @@ UD::LuaPapyrusCallback::~LuaPapyrusCallback()
 
 void UD::LuaPapyrusCallback::operator()(Variable a_result)
 {
+    DEBUG("Callback for {} called. {}",_callback,_callbackcalled)
     if (_callback != "" && !_callbackcalled)
     {
         _var = ParsePapVar(&a_result);
+        DEBUG("Callback result - {} = {}",_var.Type,_var.Value)
         MinigameManager::GetSingleton()->SendPapCallback(_minigameId,_callback,_var);
     }
     _callbackcalled = true;

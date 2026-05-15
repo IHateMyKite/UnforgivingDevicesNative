@@ -7,25 +7,64 @@ lua_State* Lua::OpenScript(std::string a_path)
 {
     lua_State* loc_res = luaL_newstate();
     luaL_openlibs(loc_res);
-    if (luaL_dofile(loc_res, RelToAbsPath(a_path).c_str()) == LUA_OK)
+
+    if (IncludeScripts(loc_res))
     {
-        if (IncludeScripts(loc_res))
+        RegisterHostFunctions(loc_res);
+    }
+    else
+    {
+        ERROR("Error opening including scripts")
+        lua_close(loc_res);
+        return nullptr;
+    }
+
+    if (luaL_dofile(loc_res, RelToAbsPath(a_path).c_str()) != LUA_OK)
+    {
+        ERROR("Error opening lua script {}",a_path)
+        lua_close(loc_res);
+        return nullptr;
+    }
+    return loc_res;
+}
+
+lua_State* Lua::OpenScript(std::string a_path, const std::vector<string>& a_includes)
+{
+    lua_State* loc_res = luaL_newstate();
+    luaL_openlibs(loc_res);
+
+    if (IncludeScripts(loc_res))
+    {
+        RegisterHostFunctions(loc_res);
+    }
+    else
+    {
+        ERROR("Error including global scripts")
+        lua_close(loc_res);
+        return nullptr;
+    }
+
+    for(auto&& it : a_includes)
+    {
+        if (!luaL_dofile(loc_res, RelToAbsPath(it).c_str()) == LUA_OK)
         {
-            RegisterHostFunctions(loc_res);
+            ERROR("Error include script {} to script {}",it,a_path)
+            lua_close(loc_res);
+            return nullptr;
         }
         else
         {
-            ERROR("Error opening including scripts")
-            lua_close(loc_res);
-            loc_res = nullptr;
+            DEBUG("Script {} included to script {}",it,a_path)
         }
     }
-    else
+
+    if (luaL_dofile(loc_res, RelToAbsPath(a_path).c_str()) != LUA_OK)
     {
         ERROR("Error opening lua script {}",a_path)
         lua_close(loc_res);
         loc_res = nullptr;
     }
+
     return loc_res;
 }
 
@@ -87,6 +126,8 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_ActorFreeHands",HostFunctions::lua_ActorFreeHands);
     lua_register(L,"Host_WornHasKeyword",HostFunctions::lua_WornHasKeyword);
     lua_register(L,"Host_HideUI",HostFunctions::lua_HideUI);
+    lua_register(L,"Host_GetGameForm",HostFunctions::lua_GetForm);
+    lua_register(L,"Host_GetItemCount",HostFunctions::lua_GetItemCount);
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -706,7 +747,17 @@ int Lua::HostFunctions::lua_RegisterActionCallback(lua_State* L)
         loc_callback.control    = loc_control;
         loc_callback.callback   = lua_tostring(L,3);
         DEBUG("Action callback registered - {} , {} , {}",loc_callback.callback,loc_callback.control.alias,loc_callback.control.codekeyboard)
-        loc_data->Controls.push_back(loc_callback);
+
+        auto loc_find = std::find_if(loc_data->Controls.begin(),loc_data->Controls.end(),[loc_control](UD::MinigameActionCallback& a_callback)
+        {
+            return a_callback.control == loc_control;
+        });
+
+        if (loc_find != loc_data->Controls.end())
+        {
+            *loc_find._Ptr = loc_callback;
+        }
+        else loc_data->Controls.push_back(loc_callback);
     }
 
     return 0;
@@ -796,4 +847,81 @@ int Lua::HostFunctions::lua_HideUI(lua_State* L)
     }
 
     return 0;
+}
+
+int Lua::HostFunctions::lua_GetForm(lua_State* L)
+{
+    if (!lua_isinteger(L,1) || !lua_isstring(L,2))
+    {
+        ERROR("lua_GetForm - Incorrect variables passed!")
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    const int loc_formid = lua_tointeger(L,1);
+    const string loc_mod = lua_tostring(L,2);
+
+    RE::TESForm* loc_res = RE::TESDataHandler::GetSingleton()->LookupForm(loc_formid,loc_mod);
+
+    if (loc_res)
+    {
+        lua_pushlightuserdata(L,loc_res);
+        return 1;
+    }
+    else
+    {
+        lua_pushnil(L);
+        return 1;
+    }
+}
+
+int Lua::HostFunctions::lua_GetItemCount(lua_State* L)
+{
+    if (!lua_islightuserdata(L,1) || (!lua_islightuserdata(L,2) && !lua_isstring(L,2)))
+    {
+        ERROR("lua_GetItemCount - Incorrect variables passed!")
+        lua_pushinteger(L,0);
+        return 1;
+    }
+
+    auto loc_container = (RE::Actor*)lua_touserdata(L,1);
+
+    RE::TESObjectREFR::InventoryCountMap loc_Counts;
+
+    if (lua_islightuserdata(L,2))
+    {
+        auto loc_item = (RE::TESForm*)lua_touserdata(L,2);
+
+        loc_Counts = loc_container->GetInventoryCounts([loc_item](RE::TESBoundObject& a_item)
+        {
+            if (loc_item && a_item.formID == loc_item->formID)
+            {
+                return true;
+            }
+            return false;
+        });
+    }
+    else if (lua_isstring(L,2))
+    {
+        string loc_itemStr = lua_tostring(L,2);
+
+        loc_Counts = loc_container->GetInventoryCounts([loc_itemStr](RE::TESBoundObject& a_item)
+        {
+            if (a_item.GetFormEditorID() == loc_itemStr)
+            {
+                return true;
+            }
+
+            return false;
+        });
+    }
+
+    int loc_res = 0;
+    for(auto it : loc_Counts)
+    {
+        loc_res += it.second;
+    }
+
+    lua_pushinteger(L,loc_res);
+    return 1;
 }

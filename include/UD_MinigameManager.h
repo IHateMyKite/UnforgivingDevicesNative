@@ -53,6 +53,8 @@ namespace UD
         std::string description;
         std::string uiobject;
         std::string script;
+        int         priority;
+        std::vector<std::string> includes;
         /* TODO: Minigames */
     };
 

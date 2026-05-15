@@ -70,6 +70,7 @@ namespace Lua
     typedef std::shared_ptr<LuaVariable> LuaVariablePtr;
 
     lua_State* OpenScript(std::string a_path);
+    lua_State* OpenScript(std::string a_path,const std::vector<string>& a_includes);
     lua_State* OpenScriptCode(std::string a_code);
 
     bool IncludeScripts(lua_State* a_script);
@@ -101,6 +102,8 @@ namespace Lua
         int lua_ActorFreeHands(lua_State* L);
         int lua_WornHasKeyword(lua_State* L);
         int lua_HideUI(lua_State* L);
+        int lua_GetForm(lua_State* L);
+        int lua_GetItemCount(lua_State* L);
     }
 
 }

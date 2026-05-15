@@ -128,6 +128,14 @@ std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Act
         }
     }
 
+    // Sort minigames based on priority
+    std::sort(loc_res.begin(),loc_res.end(),[&](MinigameSetting& v1,MinigameSetting& v2) -> bool
+    {
+        auto loc_prio1 = v1.get() ? v1->config.priority : 0;
+        auto loc_prio2 = v2.get() ? v2->config.priority : 0;
+        return loc_prio1 > loc_prio2;
+    });
+
     return loc_res;
 }
 
@@ -204,7 +212,7 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
 {
     if (!a_id || !a_setting) return false;
 
-    DEBUG("Starting minigame {} for {}",a_setting->config.name,a_id->GetName())
+    DEBUG("Starting minigame {} for {}. Context = {}",a_setting->config.name,a_id->GetName(),a_cntx)
     auto L = GetMinigameScript(a_setting);
     if (!L)
     {
@@ -402,6 +410,7 @@ void UD::MinigameManager::SendOpenMinigameUICallback()
     {
         auto loc_data = GetMinigameDataById(_focusedMinigameId);
         auto L = GetMinigameScriptById(_focusedMinigameId);
+        if (!L) return;
         lua_getglobal(L,_callback.c_str());
         PushMinigameData(L,*loc_data);
         lua_pcall(L,1,0,0);
@@ -412,16 +421,29 @@ void UD::MinigameManager::SendPapCallback(int a_id, std::string a_callback, Vari
 {
     auto loc_data = GetMinigameDataById(a_id);
     auto L = GetMinigameScriptById(a_id);
+    if (!L) return;
     lua_getglobal(L,a_callback.c_str());
     PushMinigameData(L,*loc_data);
-    /* TODO: Add res as argument to callback */
-    lua_pcall(L,1,0,0);
+    if (a_var.Type != VariableType::kNone && a_var.Type != VariableType::kNoneArray)
+    {
+        DEBUG("Added result to argument - {} = {}",a_var.Type,a_var.Value)
+        Lua::PushVariableResult(L,a_var);
+        lua_pcall(L,2,0,0);
+    }
+    else
+    {
+        lua_pcall(L,1,0,0);
+    }
 }
 
 lua_State* UD::MinigameManager::GetMinigameScriptById(int a_id)
 {
     auto loc_data = GetMinigameDataById(a_id);
-    auto L = _scripts[loc_data->Setting->config.script];
+    lua_State* L = NULL;
+    if (loc_data)
+    {
+        L = _scripts[loc_data->Setting->config.script];
+    }
     return L;
 }
 
@@ -445,7 +467,22 @@ bool UD::MinigameManager::InitConfig(MinigameSetting a_config)
             a_config->config.name         = a_config->json->get_optional<std::string>("name").get_value_or("MISSINGNAME");
             a_config->config.description  = a_config->json->get_optional<std::string>("description").get_value_or("MISSINGDESC");
             a_config->config.uiobject     = a_config->json->get_optional<std::string>("uiobject").get_value_or("");
-            a_config->config.script       = (a_config->json->get_optional<std::string>("script").get_value_or(""));
+            a_config->config.script       = a_config->json->get_optional<std::string>("script").get_value_or("");
+            a_config->config.priority     = a_config->json->get_optional<int>("priority").get_value_or(0);
+
+            auto loc_includes = a_config->json->get_child_optional("includes");
+            if (loc_includes)
+            {
+                a_config->config.includes.clear();
+                for(auto&& it : loc_includes.get())
+                {
+                    string loc_include = it.second.get_value_optional<std::string>().get_value_or("");
+                    if (loc_include != "")
+                    {
+                        a_config->config.includes.push_back(loc_include);
+                    }
+                }
+            }
         }
         catch(const std::exception& e)
         {
@@ -456,7 +493,7 @@ bool UD::MinigameManager::InitConfig(MinigameSetting a_config)
         const std::string loc_script = a_config->config.script;
         if ((loc_script != "") && (_scripts.find(loc_script) == _scripts.end()))
         {
-            lua_State* L = Lua::OpenScript(a_config->config.script.c_str());
+            lua_State* L = Lua::OpenScript(a_config->config.script.c_str(),a_config->config.includes);
             if (L)
             {
                 DEBUG("Script {} initiated",loc_script)

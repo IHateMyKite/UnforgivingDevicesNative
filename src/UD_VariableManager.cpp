@@ -358,7 +358,9 @@ UD::VariableValue UD::ParsePapVar(Variable* a_var)
             loc_res.Type  = loc_type;
         break;
         default:
-            ERROR("Type of {} currently not supported",(int)loc_type)
+            //ERROR("Type of {} currently not supported",(int)loc_type)
+            loc_res.Value = "";
+            loc_res.Type  = loc_type;
         break;
     }
     return loc_res;
