@@ -260,51 +260,6 @@ namespace UD
         static std::vector<std::unique_ptr<MeterEntrySkyUi>>  _metersSkyUi;
     };
 
-    enum UIMenu
-    {
-        eNone = 0,
-        eDeviceMenu = 1
-    };
-
-    struct ButtonCallback
-    {
-        std::string Name;
-        std::string Module;
-        std::string Callback;
-        std::string Argument;
-    };
-
-    struct DeviceMenuData
-    {
-        RE::Actor* Wearer;
-        RE::Actor* Helper;
-        std::vector<DeviceObj2> List;
-        std::vector<ButtonCallback> Callbacks;
-    };
-
-    class UIManager
-    {
-    SINGLETONHEADER(UIManager)
-    public:
-        void Reload();
-        void Update();
-        bool ShowDeviceMenu(RE::Actor* a_actor, RE::Actor* a_helper, std::vector<std::string> a_callbacks);
-        bool IsMenuOpen();
-        void HideMenu(UIMenu a_type);
-        void SendCallback(int a_indxDev, int a_indxCall);
-        void StartMinigame(int a_indxDev, int a_minId, string a_cntx);
-    private:
-        std::vector<ButtonCallback> ParseCallbacks(std::vector<std::string> a_callbacks);
-
-        void CreateValueDetail(std::string& a_input, bool a_sep, std::string a_name, std::string a_value, std::string a_id);
-
-        static PRISMA_UI_API::IVPrismaUI1* PrismaUI;
-        static bool ViewReady;
-        PrismaView      _view = 0x0UL;
-        UIMenu          _currentMenu = eNone;
-        DeviceMenuData  _devMenuData;
-    };
-
     //Papyrus functions
     inline void AddMeterEntryIWW(PAPYRUSFUNCHANDLE, std::string s_path, int i_id, std::string s_name, int a_formula, float f_base, float f_rate, bool b_show)
     {
@@ -380,16 +335,6 @@ namespace UD
     inline int RemoveAllMeterEntries(PAPYRUSFUNCHANDLE)
     {
         return MeterManager::RemoveAll();
-    }
-
-    inline bool ShowDeviceMenu(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, RE::Actor* a_helper, std::vector<std::string> a_callbacks)
-    {
-        return UIManager::GetSingleton()->ShowDeviceMenu(a_actor,a_helper,a_callbacks);
-    }
-
-    inline bool IsMenuOpen(PAPYRUSFUNCHANDLE)
-    {
-        return UIManager::GetSingleton()->IsMenuOpen();
     }
 
     #undef PROCESSMETER

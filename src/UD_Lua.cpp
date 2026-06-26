@@ -2,6 +2,7 @@
 #include <UD_PapyrusDelegate.h>
 #include <UD_DeviceManager.h>
 #include <UD_Utility.h>
+#include <UD_HUD.h>
 
 lua_State* Lua::OpenScript(std::string a_path)
 {
@@ -713,7 +714,16 @@ int Lua::HostFunctions::lua_InvokeUI(lua_State* L)
 
     //DEBUG("lua_InvokeUI({})",lua_tostring(L,2))
 
-    UD::MinigameManager::GetSingleton()->InvokeUI(lua_tostring(L,2));
+    int loc_id = lua_tointeger(L,1);
+    if (loc_id != -1)
+    {
+        UD::MinigameManager::GetSingleton()->InvokeUI(lua_tostring(L,2));
+    }
+    else
+    {
+        // HUD Invoke
+        UD::HudManager::GetSingleton()->InvokeHud(lua_tostring(L,2));
+    }
 
     return 0;
 }

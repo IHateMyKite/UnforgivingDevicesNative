@@ -51,11 +51,45 @@ void UD::MinigameManager::Reload()
                     const std::string loc_name = std::regex_replace(loc_path,loc_regexname,"$2");
     
                     auto loc_config = std::shared_ptr<MinigameConfigJson>(new MinigameConfigJson{loc_id++,loc_json,MinigameConfigStatus::sOK,"OK"});
-                    if (InitConfig(loc_config))
+                    if (InitMinigameConfig(loc_config))
                     {
+                        DEBUG("Minigame config {} initiated",loc_name)
+                        DEBUG("0x{:016X}",(uintptr_t)loc_config.get())
                         _jsoncache[loc_name] = loc_config;
+                        DEBUG("0x{:016X}",(uintptr_t)_jsoncache[loc_name].get())
                     }
                 }
+            }
+
+            // Set bases
+            for(auto [path,setting] : _jsoncache)
+            {
+                DEBUG("0x{:016X}",(uintptr_t)setting.get())
+                if (!setting.get())
+                {
+                    ERROR("Error reading setting for {}",path)
+                    continue;
+                }
+
+                auto loc_baseStr = setting->config.base;
+
+                DEBUG("Checking {} base {}",path,loc_baseStr)
+
+                if (loc_baseStr != "" && _jsoncache.find(loc_baseStr) != _jsoncache.end())
+                {
+                    auto loc_base = _jsoncache[loc_baseStr];
+                    if (loc_base) 
+                    {
+                        setting->base = loc_base;
+                        DEBUG("{} base set to {}",setting->config.name,setting->base->config.name)
+                    }
+                }
+            }
+
+            // Open scripts
+            for(auto&& [path,setting] : _jsoncache)
+            {
+                OpenMinigameScript(setting);
             }
         }
         catch(...)
@@ -118,7 +152,6 @@ std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Act
             else
             {
                 ERROR("Error getting Precondition")
-                loc_precond = true;
             }
             
             if (loc_precond)
@@ -166,10 +199,7 @@ bool UD::MinigameManager::GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_
         loc_cond = lua_toboolean(L,-1);
         lua_pop(L,1);
     }
-    else 
-    {
-        loc_cond = true;
-    }
+
     return loc_cond;
 }
 
@@ -458,7 +488,7 @@ UD::MinigameCallback UD::MinigameManager::ParseCallback(std::string a_callback)
     return loc_res;
 }
 
-bool UD::MinigameManager::InitConfig(MinigameSetting a_config)
+bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
 {
     if (a_config && a_config->json)
     {
@@ -468,6 +498,7 @@ bool UD::MinigameManager::InitConfig(MinigameSetting a_config)
             a_config->config.description  = a_config->json->get_optional<std::string>("description").get_value_or("MISSINGDESC");
             a_config->config.uiobject     = a_config->json->get_optional<std::string>("uiobject").get_value_or("");
             a_config->config.script       = a_config->json->get_optional<std::string>("script").get_value_or("");
+            a_config->config.base         = a_config->json->get_optional<std::string>("base").get_value_or("");
             a_config->config.priority     = a_config->json->get_optional<int>("priority").get_value_or(0);
 
             auto loc_includes = a_config->json->get_child_optional("includes");
@@ -490,25 +521,51 @@ bool UD::MinigameManager::InitConfig(MinigameSetting a_config)
             return false;
         };
 
-        const std::string loc_script = a_config->config.script;
-        if ((loc_script != "") && (_scripts.find(loc_script) == _scripts.end()))
-        {
-            lua_State* L = Lua::OpenScript(a_config->config.script.c_str(),a_config->config.includes);
-            if (L)
-            {
-                DEBUG("Script {} initiated",loc_script)
-                _scripts[loc_script] = L;
-            }
-            else
-            {
-                ERROR("Error initiating minigame script for {}",a_config->config.name)
-                return false;
-            }
-        }
         DEBUG("Minigame config [{}] initiated, Script = {}, Ui = {}",a_config->config.name,a_config->config.script,a_config->config.uiobject)
         return true;
     }
+    ERROR("Error reading minigame config")
     return false;
+}
+
+bool UD::MinigameManager::OpenMinigameScript(MinigameSetting a_config)
+{
+    const std::string loc_script = a_config->config.script;
+    if ((loc_script != "") && (_scripts.find(loc_script) == _scripts.end()))
+    {
+        // Calculate includes from bases
+
+        std::vector<string> loc_includes;
+
+        MinigameSetting loc_base = a_config;
+        while(loc_base)
+        {
+            std::vector<string> loc_baseincludes = loc_base->config.includes;
+            std::reverse(loc_baseincludes.begin(),loc_baseincludes.end());
+            loc_includes.append_range(loc_baseincludes);
+
+            loc_base = loc_base->base;
+            if (loc_base) loc_includes.push_back(loc_base->config.script);
+        }
+
+        std::reverse(loc_includes.begin(),loc_includes.end());
+
+        lua_State* L = Lua::OpenScript(a_config->config.script.c_str(),loc_includes);
+        if (L)
+        {
+            DEBUG("Script {} initiated",loc_script)
+            _scripts[loc_script] = L;
+        }
+        else
+        {
+            ERROR("Error initiating minigame script for {}",a_config->config.name)
+            return false;
+        }
+    }
+
+    DEBUG("Minigame script for [{}] opened, Script = {}, Ui = {}",a_config->config.name,a_config->config.script,a_config->config.uiobject)
+
+    return true;
 }
 
 lua_State* UD::MinigameManager::GetMinigameScript(MinigameSetting a_config)

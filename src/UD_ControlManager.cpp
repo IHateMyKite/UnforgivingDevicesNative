@@ -467,8 +467,7 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
 
         MinigameManager::GetSingleton()->CheckActionCallback(loc_dxScanCode);
 
-        static auto loc_utility = Utility::GetSingleton();
-        bool loc_ismenuopen = loc_utility->IsBlockingMenuOpen();
+        bool loc_ismenuopen = Utility::IsBlockingMenuOpen();
 
         if (loc_ismenuopen) return RE::BSEventNotifyControl::kContinue;
 

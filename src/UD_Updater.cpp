@@ -9,6 +9,7 @@
 #include <UD_ModuleManager.h>
 #include <OrgasmSystem/OrgasmManager.h>
 #include <UD_MinigameManager.h>
+#include <UD_HUD.h>
 
 SINGLETONBODY(UD::UpdateManager)
 
@@ -77,8 +78,7 @@ namespace UD
         MinigameEffectManager::GetSingleton()->UpdateMeters(a_delta);
 
         MinigameManager::GetSingleton()->Update(a_delta);
-
-        //ControlManager::GetSingleton()->UpdateControl();
+        HudManager::GetSingleton()->Update(a_delta);
     }
 
     void UpdateManager::PlayerUpdatePatched(RE::Actor* a_this, float a_delta)

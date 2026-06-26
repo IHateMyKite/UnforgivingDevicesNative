@@ -18,6 +18,7 @@
 #include <UD_ModuleManager.h>
 #include <UD_MinigameManager.h>
 #include <UD_DeviceManager.h>
+#include <UD_DeviceMenu.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
@@ -185,7 +186,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetModulesByScript  ,true)
         REGISTERPAPYRUSFUNC(GetModulesAliasesByScript ,true)
 
-        //UI
+        //DeviceMenu
         REGISTERPAPYRUSFUNC(ShowDeviceMenu ,true)
         REGISTERPAPYRUSFUNC(IsMenuOpen ,true)
 

@@ -65,7 +65,7 @@ namespace UD
         static RE::TESObjectARMO* GetWornArmor(RE::Actor* a_actor,int a_mask);
         static RE::TESObjectARMO* CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_device);
 
-        bool IsBlockingMenuOpen();
+        static bool IsBlockingMenuOpen();
 
         static int GetPropertyInt(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, int a_defval);
         static std::string GetPropertyString(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, std::string a_defval);

@@ -54,9 +54,13 @@ namespace UD
         std::string uiobject;
         std::string script;
         int         priority;
+        std::string base;
         std::vector<std::string> includes;
-        /* TODO: Minigames */
     };
+
+    struct MinigameConfigJson;
+
+    typedef std::shared_ptr<MinigameConfigJson> MinigameSetting;
 
     struct MinigameConfigJson
     {
@@ -65,9 +69,8 @@ namespace UD
         MinigameConfigStatus status;
         std::string error;
         MinigameConfig config;
+        MinigameSetting base;
     };
-
-    typedef std::shared_ptr<MinigameConfigJson> MinigameSetting;
 
     struct MinigameActionCallback
     {
@@ -121,7 +124,8 @@ namespace UD
             lua_State* GetMinigameScriptById(int a_id);
         private:
             MinigameCallback ParseCallback(std::string a_callback);
-            bool InitConfig(MinigameSetting a_config);
+            bool InitMinigameConfig(MinigameSetting a_config);
+            bool OpenMinigameScript(MinigameSetting a_config);
             lua_State* GetMinigameScript(MinigameSetting a_config);
             void UpdateMinigame(MinigameData& a_data,float a_delta);
             void PushMinigameData(lua_State* L,MinigameData& a_data);

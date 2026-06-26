@@ -24,6 +24,8 @@
 #include <UD_Macros.h>
 #include <UD_ModuleManager.h>
 #include <UD_DeviceManager.h>
+#include <UD_DeviceMenu.h>
+#include <UD_HUD.h>
 #include <UD_MinigameManager.h>
 
 namespace UD
@@ -50,9 +52,10 @@ namespace UD
         ModifierManager::GetSingleton()->Setup();
         MessageboxManager::GetSingleton()->Setup();
         SkillManager::GetSingleton()->Setup();
-        UIManager::GetSingleton()->Reload();
+        DeviceMenu::GetSingleton()->Reload();
         DeviceManager::GetSingleton()->Reload();
         MinigameManager::GetSingleton()->Reload();
+        HudManager::GetSingleton()->Reload();
 
         //remove effect in case that user reloaded the game without exit
         if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();

@@ -41,9 +41,11 @@ set(source_files ${source_files}
     src/UD_ModuleManager.cpp
     src/UD_SLPP.cpp
     src/UD_DeviceManager.cpp
+	src/UD_DeviceMenu.cpp
     src/UD_MinigameManager.cpp
     src/UD_VariableManager.cpp
     src/UD_CallbackManager.cpp
+	src/UD_HUD.cpp
     src/UD_Lua.cpp
     src/OrgasmSystem/OrgasmEvents.cpp
     src/OrgasmSystem/OrgasmManager.cpp
