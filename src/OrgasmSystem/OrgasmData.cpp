@@ -257,6 +257,8 @@ float ORS::OrgasmActorData::GetOrgasmVariable(OrgasmVariable a_variable)
         case vArousalRate:      return _RDATA.ArousalRatePersist;
         case vArousalRateMult:  return CalculateArousalRateMult();
         case vHornyLevel:       return _PDATA.HornyLevel;
+        case vOrgasmProgress:   return GetOrgasmProgress(0);
+        case vOrgasmProgress2:  return GetOrgasmProgress(1);
         default:                return 0.0f;
     };
 }

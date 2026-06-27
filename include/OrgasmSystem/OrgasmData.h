@@ -38,6 +38,9 @@ namespace ORS
 
         vHornyLevel                 = 14,
 
+        vOrgasmProgress             = 15,
+        vOrgasmProgress2            = 16,
+
         vLast
     };
 

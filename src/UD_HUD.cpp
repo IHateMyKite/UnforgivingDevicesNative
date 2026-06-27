@@ -118,6 +118,8 @@ void UD::HudManager::Reload()
 
 void UD::HudManager::Update(float a_delta)
 {
+    _checktimer += a_delta;
+
     if (!_viewReady || !ModuleManager::GetSingleton()->IsReady(true)) return;
 
     const bool loc_menuOpen = Utility::IsBlockingMenuOpen();
@@ -133,78 +135,16 @@ void UD::HudManager::Update(float a_delta)
         _HudState = HudState::eShown;
     }
 
-    // Check if meter should be shown
-    for(auto&& [name,setting] : _jsoncache)
+    if (_HudState == HudState::eShown)
     {
-        if (setting->config.abstract) continue;
-
-        if (std::find_if(_elements.begin(),_elements.end(),[setting](const HudElementDataPtr& data)
+        if (_checktimer >= 1.0f)
         {
-            return data->Setting->json == setting->json;
-        }) != _elements.end())
-        {
-            // Already open, continue
-            continue;
+            CheckShowElements(a_delta);
+            CheckHideElements(a_delta);
+            _checktimer = 0.0f;
         }
-
-        lua_State* L = GetElementScript(setting);
-        
-        if (!L)
-        {
-            ERROR("Cant find script for element {}",setting->config.name)
-            continue;
-        }
-
-        bool loc_cond = false;
-
-        if (lua_getglobal(L,"Condition") != LUA_TNIL)
-        {
-            Lua::PushTable(L,
-            {
-                {"Target",RE::PlayerCharacter::GetSingleton()},
-                {"Json",setting->json.get()}
-            });
-
-            auto loc_luares = lua_pcall(L,1,1,0);
-            if (loc_luares != LUA_OK)
-            {
-                ERROR("Error running function Condition - {}",loc_luares)
-            }
-            loc_cond = lua_toboolean(L,-1);
-            lua_pop(L,1);
-        }
-        else
-        {
-            ERROR("Can't find function Condition on Element {}",setting->config.name)
-        }
-
-        if (loc_cond)
-        {
-            HudElementData* loc_data = new HudElementData();
-            loc_data->id = _hudcntr;
-            _hudcntr++;
-            loc_data->Target = RE::PlayerCharacter::GetSingleton();
-            loc_data->Setting = setting;
-            loc_data->State = HudElementState::eShown;
-            HudElementDataPtr loc_dataPtr = HudElementDataPtr(loc_data);
-            _elements.push_back(loc_dataPtr);
-
-            if (lua_getglobal(L,"Show") != LUA_TNIL)
-            {
-                PushHudData(L,*loc_data);
-
-                auto loc_luares = lua_pcall(L,1,0,0);
-                if (loc_luares != LUA_OK)
-                {
-                    ERROR("Error running function Show - {}",loc_luares)
-                }
-            }
-        }
+        UpdateElements(a_delta);
     }
-
-    // TODO - Hide elements
-
-
 }
 
 bool UD::HudManager::InitConfig(HudElementSetting a_config)
@@ -309,6 +249,160 @@ lua_State* UD::HudManager::GetElementScript(HudElementSetting a_setting)
     }
 
     return L;
+}
+
+void UD::HudManager::CheckShowElements(float a_delta)
+{
+    // Check if meter should be shown
+    for(auto&& [name,setting] : _jsoncache)
+    {
+        if (setting->config.abstract) continue;
+
+        if (std::find_if(_elements.begin(),_elements.end(),[setting](const HudElementDataPtr& data)
+        {
+            return data->Setting->json == setting->json;
+        }) != _elements.end())
+        {
+            // Already open, continue
+            continue;
+        }
+
+        lua_State* L = GetElementScript(setting);
+        
+        if (!L)
+        {
+            ERROR("Cant find script for element {}",setting->config.name)
+            continue;
+        }
+
+        bool loc_cond = false;
+
+        if (lua_getglobal(L,"Condition") != LUA_TNIL)
+        {
+            Lua::PushTable(L,
+            {
+                {"Target",RE::PlayerCharacter::GetSingleton()},
+                {"Json",setting->json.get()}
+            });
+
+            auto loc_luares = lua_pcall(L,1,1,0);
+            if (loc_luares != LUA_OK)
+            {
+                ERROR("Error running function Condition - {}",loc_luares)
+                continue;
+            }
+            loc_cond = lua_toboolean(L,-1);
+            lua_pop(L,1);
+        }
+        else
+        {
+            ERROR("Can't find function Condition on Element {}",setting->config.name)
+        }
+
+        if (loc_cond)
+        {
+            HudElementData* loc_data = new HudElementData();
+            loc_data->id = _hudcntr;
+            _hudcntr++;
+            loc_data->Target = RE::PlayerCharacter::GetSingleton();
+            loc_data->Setting = setting;
+            loc_data->State = HudElementState::eShown;
+            HudElementDataPtr loc_dataPtr = HudElementDataPtr(loc_data);
+            _elements.push_back(loc_dataPtr);
+
+            if (lua_getglobal(L,"Show") != LUA_TNIL)
+            {
+                PushHudData(L,*loc_data);
+
+                auto loc_luares = lua_pcall(L,1,0,0);
+                if (loc_luares != LUA_OK)
+                {
+                    ERROR("Error running function Show - {}",loc_luares)
+                }
+            }
+        }
+    }
+}
+
+void UD::HudManager::CheckHideElements(float a_delta)
+{
+    std::vector<HudElementDataPtr> loc_toremove;
+    for(auto&& it : _elements)
+    {
+        lua_State* L = GetElementScript(it->Setting);
+        if (!L)
+        {
+            ERROR("Cant find script for element {}",it->Setting->config.name)
+            continue;
+        }
+
+        bool loc_cond = false;
+
+        if (lua_getglobal(L,"Condition") != LUA_TNIL)
+        {
+            PushHudData(L,*it);
+
+            auto loc_luares = lua_pcall(L,1,1,0);
+            if (loc_luares != LUA_OK)
+            {
+                ERROR("Error running function Condition - {}",loc_luares)
+                continue;
+            }
+
+            loc_cond = lua_toboolean(L,-1);
+
+            lua_pop(L,1);
+
+            if (!loc_cond)
+            {
+                loc_toremove.push_back(it);
+            }
+        }
+        else
+        {
+            ERROR("Can't find function Condition on Element {}",it->Setting->config.name)
+        }
+
+    }
+
+    for(auto&& it : loc_toremove)
+    {
+        auto loc_el = std::find(_elements.begin(),_elements.end(),it);
+
+        lua_State* L = GetElementScript(it->Setting);
+
+        if (lua_getglobal(L,"Hide") != LUA_TNIL)
+        {
+            PushHudData(L,*it);
+
+            auto loc_luares = lua_pcall(L,1,0,0);
+            if (loc_luares != LUA_OK)
+            {
+                ERROR("Error running function Hide - {}",loc_luares)
+            }
+        }
+        _elements.erase(loc_el);
+    }
+}
+
+void UD::HudManager::UpdateElements(float a_delta)
+{
+    for(auto&& it : _elements)
+    {
+        lua_State* L = GetElementScript(it->Setting);
+
+        if (lua_getglobal(L,"Update") != LUA_TNIL)
+        {
+            PushHudData(L,*it);
+            lua_pushnumber(L,a_delta);
+
+            auto loc_luares = lua_pcall(L,2,0,0);
+            if (loc_luares != LUA_OK)
+            {
+                ERROR("Error running function Update - {}",loc_luares)
+            }
+        }
+    }
 }
 
 void UD::HudManager::InvokeHud(std::string a_message)

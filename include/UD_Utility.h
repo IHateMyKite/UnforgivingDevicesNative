@@ -101,6 +101,8 @@ namespace UD
             return loc_res;
         }
 
+        static float Str2Float(string a_in, float a_def);
+        static int Str2Int(string a_in, int a_def);
     private:
 
     };

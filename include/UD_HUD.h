@@ -76,6 +76,9 @@ namespace UD
         bool OpenScript(HudElementSetting a_config);
         void PushHudData(lua_State* L,HudElementData& a_data);
         lua_State* GetElementScript(HudElementSetting a_setting);
+        void CheckShowElements(float a_delta);
+        void CheckHideElements(float a_delta);
+        void UpdateElements(float a_delta);
     public:
         static PRISMA_UI_API::IVPrismaUI1* PrismaUI;
     private:
@@ -84,6 +87,7 @@ namespace UD
         bool        _viewReady = false;
         bool        _init = false;
         int         _hudcntr = 0;
+        float       _checktimer = 0.0f;
         std::unordered_map<std::string,HudElementSetting> _jsoncache;
         std::unordered_map<std::string,lua_State*> _scripts;
         std::vector<HudElementDataPtr> _elements;

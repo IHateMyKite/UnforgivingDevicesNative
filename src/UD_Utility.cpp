@@ -452,6 +452,32 @@ namespace UD
         return loc_res;
     }
 
+    float Utility::Str2Float(string a_in, float a_def)
+    {
+        try
+        {
+            return ((a_in != "") ? boost::lexical_cast<float>(a_in) : a_def);
+        }
+        catch(boost::bad_lexical_cast &)
+        {
+            ERROR("Str2Float({},{}) - Error converting {} to float",a_in,a_def,a_in)
+            return a_def;
+        }
+    }
+
+    int Utility::Str2Int(string a_in, int a_def)
+    {
+        try
+        {
+            return ((a_in != "") ? boost::lexical_cast<int>(a_in) : a_def);
+        }
+        catch(boost::bad_lexical_cast &)
+        {
+            ERROR("Str2Int({},{}) - Error converting {} to int",a_in,a_def,a_in)
+            return a_def;
+        }
+    }
+
     template<class T>
     T GetStringParam(const std::string& a_param, int a_Index, T a_DefaultValue)
     {

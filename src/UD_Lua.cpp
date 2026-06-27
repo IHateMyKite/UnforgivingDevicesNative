@@ -3,6 +3,7 @@
 #include <UD_DeviceManager.h>
 #include <UD_Utility.h>
 #include <UD_HUD.h>
+#include <OrgasmSystem/OrgasmManager.h>
 
 lua_State* Lua::OpenScript(std::string a_path)
 {
@@ -129,6 +130,7 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_HideUI",HostFunctions::lua_HideUI);
     lua_register(L,"Host_GetGameForm",HostFunctions::lua_GetForm);
     lua_register(L,"Host_GetItemCount",HostFunctions::lua_GetItemCount);
+    lua_register(L,"Host_GetHudValue",HostFunctions::lua_GetHudValue);
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -933,5 +935,41 @@ int Lua::HostFunctions::lua_GetItemCount(lua_State* L)
     }
 
     lua_pushinteger(L,loc_res);
+    return 1;
+}
+
+int Lua::HostFunctions::lua_GetHudValue(lua_State* L)
+{
+    if (!lua_istable(L,1) || !lua_isstring(L,2))
+    {
+        ERROR("lua_GetMeterValue - Incorrect variables passed!")
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    LuaVariable loc_TargetVar("Target",(void*)nullptr);
+    GetTable(L,1,loc_TargetVar);
+
+    RE::Actor* loc_target = *(RE::Actor**)&loc_TargetVar.Value;
+
+    string loc_val = lua_tostring(L,2);
+
+    static std::regex loc_r_num(R"regex(^((?:\d+)|(?:\d+\.\d+))$)regex");
+    static std::regex loc_os_num(R"regex(^OS\[(\d+)\]$)regex");
+
+    float loc_res = 0.0;
+
+    if (std::regex_match(loc_val,loc_r_num))
+    {
+        // Do nothing
+        loc_res = UD::Utility::Str2Float(loc_val,0.0f);
+    }
+    else if (std::regex_match(loc_val,loc_os_num))
+    {
+        int loc_var = UD::Utility::Str2Int(std::regex_replace(loc_val,loc_os_num,"$1"),-1);
+        loc_res = ORS::OrgasmManager::GetSingleton()->GetOrgasmVariable(loc_target,(ORS::OrgasmVariable)loc_var);
+    }
+
+    lua_pushnumber(L,loc_res);
     return 1;
 }

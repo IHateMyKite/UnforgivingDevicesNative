@@ -104,6 +104,7 @@ namespace Lua
         int lua_HideUI(lua_State* L);
         int lua_GetForm(lua_State* L);
         int lua_GetItemCount(lua_State* L);
+        int lua_GetHudValue(lua_State* L);
     }
 
 }
