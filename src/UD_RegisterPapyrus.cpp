@@ -188,7 +188,8 @@ namespace UD
 
         //DeviceMenu
         REGISTERPAPYRUSFUNC(ShowDeviceMenu ,true)
-        REGISTERPAPYRUSFUNC(IsMenuOpen ,true)
+        REGISTERPAPYRUSFUNC(ShowDeviceMenuSingle ,true)
+        REGISTERPAPYRUSFUNC(IsDeviceMenuOpen ,true)
 
         //MinigameManager
         REGISTERPAPYRUSFUNC(GetListOfMinigames ,true)

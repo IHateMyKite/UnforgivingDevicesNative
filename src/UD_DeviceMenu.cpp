@@ -9,6 +9,7 @@ SINGLETONBODY(UD::DeviceMenu)
 
 PRISMA_UI_API::IVPrismaUI1* UD::DeviceMenu::PrismaUI = nullptr;
 bool UD::DeviceMenu::ViewReady = false;
+bool UD::DeviceMenu::ViewReadySingle = false;
 
 namespace UD
 {
@@ -16,6 +17,7 @@ namespace UD
     {
         DEBUG("Reload called")
         ViewReady = false;
+        ViewReadySingle = false;
         auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
         PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
         if (_view && PrismaUI)
@@ -24,29 +26,27 @@ namespace UD
             _view = 0x0UL;
         }
 
+        if (_viewSingle && PrismaUI)
+        {
+            PrismaUI->Destroy(_viewSingle);
+            _viewSingle = 0x0UL;
+        }
+
         std::thread([this]
         {
-            DEBUG("Init thread called")
             std::this_thread::sleep_for(std::chrono::milliseconds(3000));
             SKSE::GetTaskInterface()->AddTask([this]
             {
-                DEBUG("Init PrismaUI for DeviceMenu")
-                if (PrismaUI && _view == 0x0UL)
+                if (PrismaUI && _view == 0x0UL && _viewSingle == 0x0UL)
                 {
-                    _view = PrismaUI->CreateView("UD/DeviceMenu.html",[](PrismaView view) -> void
-                    {
-                        DEBUG("View DOM is ready {}", view);
-                        ViewReady = true;
-                        PrismaUI->Hide(view);
-                    });
-
                     // Listen for UI events
-                    PrismaUI->RegisterJSListener(_view, "ExitMenu", [](const char* a_type)
+                    static auto loc_exit = [](const char* a_type)
                     {
+                        DEBUG("ExitMenu({}) called",a_type)
                         DeviceMenu::GetSingleton()->HideMenu((UIMenu)std::stoi(a_type));
-                    });
+                    };
 
-                    PrismaUI->RegisterJSListener(_view, "SendCallback", [](const char* a_arg)
+                    static auto loc_sendcallback = [](const char* a_arg)
                     {
                         std::string loc_str = a_arg;
                         std::vector<std::string> loc_indx;
@@ -69,9 +69,9 @@ namespace UD
                         {
                             ERROR("Incorrect number of indexes received for SendCallback!")
                         }
-                    });
+                    };
 
-                    PrismaUI->RegisterJSListener(_view, "StartMinigame", [](const char* a_arg)
+                    static auto loc_startminigame = [](const char* a_arg)
                     {
                         DEBUG("StartMinigame({}) called",a_arg)
                         std::string loc_str = a_arg;
@@ -95,6 +95,26 @@ namespace UD
                         {
                             ERROR("Incorrect number of indexes received for StartMinigame!")
                         }
+                    };
+
+                    _view = PrismaUI->CreateView("UD/DeviceMenu/DeviceMenu.html",[](PrismaView view) -> void
+                    {
+                        PrismaUI->Hide(view);
+                        PrismaUI->RegisterJSListener(view, "ExitMenu", loc_exit);
+                        PrismaUI->RegisterJSListener(view, "SendCallback", loc_sendcallback);
+                        PrismaUI->RegisterJSListener(view, "StartMinigame", loc_startminigame);
+                        ViewReady = true;
+                        DEBUG("DeviceMenu ready {}", view);
+                    });
+
+                    _viewSingle = PrismaUI->CreateView("UD/DeviceMenu/DeviceMenuSingle.html",[](PrismaView view) -> void
+                    {
+                        PrismaUI->Hide(view);
+                        PrismaUI->RegisterJSListener(view, "ExitMenu", loc_exit);
+                        PrismaUI->RegisterJSListener(view, "SendCallback", loc_sendcallback);
+                        PrismaUI->RegisterJSListener(view, "StartMinigame", loc_startminigame);
+                        ViewReadySingle = true;
+                        DEBUG("DeviceMenuSingle ready {}", view);
                     });
                 }
             });
@@ -125,98 +145,10 @@ namespace UD
             std::vector<std::string> loc_devicesList;
             for (auto&& [loc_rd,loc_device] : loc_Devices)
             {
-                #undef GetObject
-
-                auto loc_obj = loc_device;
-
-                RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(loc_obj,"DeviceInventory",false,(RE::VMTypeID)RE::TESObjectARMO::FORMTYPE);
-                if (loc_id)
-                {
-                    std::string loc_arg = "{";
-
-                    loc_arg += "name: \"" + std::string(loc_id->GetName()) + "\",";
-
-                    loc_arg += "values: [";
-                    
-                    const float loc_acc = DeviceManager::GetSingleton()->GetDeviceAccessibility(loc_rd,loc_obj.get(),a_actor,a_helper);
-                    CreateValueDetail(loc_arg, true,"Accessibility",std::format("{}%",Utility::Round(loc_acc*100.0f)),"");
-
-                    const auto loc_configs = DeviceManager::GetSingleton()->GetDeviceConfigs(loc_obj);
-
-                    for (auto conf : loc_configs)
-                    {
-                        for (auto var : conf.variables)
-                        {
-                            const std::string loc_format    = var.atributes["format"].value_or("{}");
-                            const std::string loc_style     = var.atributes["style"].value_or("");
-                            const std::string loc_name      = var.atributes["name"].value_or(var.name);
-                            const std::string loc_convertor = var.atributes["conv"].value_or("");
-
-                            const auto loc_value = GetVariableValue(loc_obj.get(),"thisdevice::" + var.name + "()");
-
-                            auto loc_valueFormated = ProcessDeviceVariable(loc_value,loc_format,loc_convertor);
-
-                            CreateValueDetail(loc_arg, true,loc_name,loc_valueFormated,loc_style);
-                        }
-                    }
-
-                    loc_arg += "],";
-
-                    RE::BSString loc_str = "";
-                    loc_id->GetDescription(loc_str,loc_id);
-                    loc_arg += "desc: \"" + std::string(loc_str) + "\",";
-
-                    auto loc_mods = Utility::GetPropertyObjectArrayRaw(loc_obj,"UD_ModifiersRef",false);
-
-                    
-                    std::vector<std::string> loc_modlist;
-                    for (auto&& mod : loc_mods)
-                    {
-                        std::string loc_modname = Utility::GetPropertyString(mod,"NameFull",false,"");
-                        std::string loc_moddesc = Utility::GetPropertyString(mod,"Description",false,"");
-
-                        if (loc_modname != "")
-                        {
-                            std::string loc_modclass = std::format("{{name: \"{}\",desc: \"{}\"}}",loc_modname,loc_moddesc);
-                            loc_modlist.push_back(loc_modclass);
-                        }
-                    }
-                    std::string loc_modstr = "[" + boost::join(loc_modlist,",") + "],";
-                    loc_arg += "mods: " + loc_modstr;
-
-                    std::vector<std::string> loc_minigamelist;
-                    auto loc_minigames = MinigameManager::GetSingleton()->GetListOfMinigames(a_actor,a_helper,loc_id);
-                    for (auto&& min : loc_minigames)
-                    {
-                        std::string loc_minname = min->config.name;
-                        std::string loc_mindesc = min->config.description;
-                        if (loc_minname != "")
-                        {
-                            uint32_t    loc_state   = MinigameManager::GetSingleton()->GetMinigameCondition(a_actor,a_helper,loc_id,min);
-                            string      loc_context = MinigameManager::GetSingleton()->GetMinigameContexts(a_actor,a_helper,loc_id,min);
-                            if (loc_context != "")
-                            {
-                                std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {},context: {}}}",loc_minname,loc_mindesc,loc_state,min->id,loc_context);
-                                loc_minigamelist.push_back(loc_minclass);
-                            }
-                            else
-                            {
-                                std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {}}}",loc_minname,loc_mindesc,loc_state,min->id);
-                                loc_minigamelist.push_back(loc_minclass);
-                            }
-                        }
-                    }
-                    std::string loc_minstr = "[" + boost::join(loc_minigamelist,",") + "]";
-                    loc_arg += "minigames: " + loc_minstr;
-
-                    loc_arg += "}";
-
-                    _devMenuData.List.push_back({loc_device,loc_id,loc_rd});
-                    loc_devicesList.push_back(loc_arg);
-                }
-
+                AddDeviceToList(a_actor,a_helper,loc_rd,loc_device,loc_devicesList);
             }
             std::string loc_devicestr = "[" + boost::join(loc_devicesList,",") + "]";
+
             std::string loc_arg = "{";
             loc_arg += "wearer: \"" + std::string(a_actor->GetName()) + "\",";
             loc_arg += "helper: \"" + (a_helper ? std::string(a_helper->GetName()) : "none") + "\",";
@@ -243,6 +175,59 @@ namespace UD
         return false;
     }
 
+    bool DeviceMenu::ShowDeviceMenuSingle(RE::TESObjectARMO* a_id, RE::TESObjectARMO* a_rd, RE::Actor* a_actor, RE::Actor* a_helper, std::vector<std::string> a_callbacks)
+    {
+        DEBUG("ShowDeviceMenuSingle() called")
+        if (ViewReadySingle && _currentMenu == eNone && a_actor && (a_id || a_rd))
+        {
+            _devMenuData.Callbacks = ParseCallbacks(a_callbacks);
+            _devMenuData.List.clear();
+            _devMenuData.Wearer = a_actor;
+            _devMenuData.Helper = a_helper;
+
+            PrismaUI->Show(_viewSingle);
+            PrismaUI->Focus(_viewSingle,true);
+
+            auto loc_Devices = PapyrusDelegate::GetSingleton()->FindAllDeviceScripts(a_actor);
+
+            std::vector<std::string> loc_devicesList;
+            for (auto&& [loc_rd,loc_device] : loc_Devices)
+            {
+                bool loc_add = a_rd && a_rd == loc_rd;
+                if (!loc_add && a_id)
+                {
+                    RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(loc_device,"DeviceInventory",false,(RE::VMTypeID)RE::TESObjectARMO::FORMTYPE);
+                    loc_add = loc_id == a_id;
+                }
+                if (loc_add) AddDeviceToList(a_actor,a_helper,loc_rd,loc_device,loc_devicesList);
+            }
+            std::string loc_devicestr = "[" + boost::join(loc_devicesList,",") + "]";
+            std::string loc_arg = "{";
+            loc_arg += "wearer: \"" + std::string(a_actor->GetName()) + "\",";
+            loc_arg += "helper: \"" + (a_helper ? std::string(a_helper->GetName()) : "none") + "\",";
+            loc_arg += "arousal: " + std::to_string(ORS::OrgasmManager::GetSingleton()->GetOrgasmVariable(a_actor,ORS::OrgasmVariable::vArousal)) + ",";
+            loc_arg += "orgasm: " + std::to_string(ORS::OrgasmManager::GetSingleton()->GetOrgasmProgress(a_actor,1)*100.0f) + ",";
+
+            std::vector<std::string> loc_buttonNames(_devMenuData.Callbacks.size());
+            for (int i =0; i < loc_buttonNames.size(); i++)
+            {
+                std::string tmp_callback = std::format("{{name: \"{}\",module: \"{}\"}}",_devMenuData.Callbacks[i].Name,_devMenuData.Callbacks[i].Module);
+                loc_buttonNames[i] = tmp_callback;
+            }
+            loc_arg += "callbacks: [" + boost::join(loc_buttonNames,",") + "],";
+
+            loc_arg += "devices: " + loc_devicestr;
+            loc_arg += "}";
+            std::string loc_call = std::format("InitDeviceListSingle({})",loc_arg);
+            DEBUG("ShowDeviceMenuSingle() - Sending {}",loc_call)
+            PrismaUI->Invoke(_viewSingle,loc_call.c_str());
+
+            _currentMenu = UIMenu::eDeviceMenuSingle;
+            return true;
+        }
+        return false;
+    }
+
     bool DeviceMenu::IsMenuOpen()
     {
         return _currentMenu != eNone;
@@ -250,18 +235,24 @@ namespace UD
 
     void DeviceMenu::HideMenu(UIMenu arg_type)
     {
+        DEBUG("HideMenu({}) called",arg_type)
         _currentMenu = UIMenu::eNone;
-        PrismaUI->Unfocus(_view);
-        PrismaUI->Hide(_view);
 
         switch(arg_type)
         {
             case UIMenu::eDeviceMenu:
+                PrismaUI->Unfocus(_view);
+                PrismaUI->Hide(_view);
+                _devMenuData.List.clear();
+                _devMenuData = DeviceMenuData();
+            break;
+            case UIMenu::eDeviceMenuSingle:
+                PrismaUI->Unfocus(_viewSingle);
+                PrismaUI->Hide(_viewSingle);
                 _devMenuData.List.clear();
                 _devMenuData = DeviceMenuData();
             break;
             default:
-
             break;
         }
     }
@@ -300,7 +291,7 @@ namespace UD
         {
             // Void Callback, dont dispatch callback
         }
-        HideMenu(UIMenu::eDeviceMenu);
+        HideMenu(_currentMenu);
     }
 
     void DeviceMenu::StartMinigame(int a_indxDev, int a_minId, string a_cntx)
@@ -311,7 +302,7 @@ namespace UD
         {
             MinigameManager::GetSingleton()->StartMinigame(loc_min,_devMenuData.Wearer,_devMenuData.Helper,loc_dev.id,a_cntx);
         }
-        HideMenu(UIMenu::eDeviceMenu);
+        HideMenu(_currentMenu);
     }
 
     std::vector<ButtonCallback> DeviceMenu::ParseCallbacks(std::vector<std::string> a_callbacks)
@@ -330,6 +321,99 @@ namespace UD
         }
         
         return loc_res;
+    }
+
+    void DeviceMenu::AddDeviceToList(RE::Actor* a_wearer, RE::Actor* a_helper, RE::TESObjectARMO* a_rd, Object a_obj, std::vector<std::string>& a_list)
+    {
+        #undef GetObject
+
+        auto loc_obj = a_obj;
+
+        RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(loc_obj,"DeviceInventory",false,(RE::VMTypeID)RE::TESObjectARMO::FORMTYPE);
+        if (loc_id)
+        {
+            std::string loc_arg = "{";
+
+            loc_arg += "name: \"" + std::string(loc_id->GetName()) + "\",";
+
+            loc_arg += "values: [";
+                    
+            const float loc_acc = DeviceManager::GetSingleton()->GetDeviceAccessibility(a_rd,loc_obj.get(),a_wearer,a_helper);
+            CreateValueDetail(loc_arg, true,"Accessibility",std::format("{}%",Utility::Round(loc_acc*100.0f)),"");
+
+            const auto loc_configs = DeviceManager::GetSingleton()->GetDeviceConfigs(loc_obj);
+
+            for (auto conf : loc_configs)
+            {
+                for (auto var : conf.variables)
+                {
+                    const std::string loc_format    = var.atributes["format"].value_or("{}");
+                    const std::string loc_style     = var.atributes["style"].value_or("");
+                    const std::string loc_name      = var.atributes["name"].value_or(var.name);
+                    const std::string loc_convertor = var.atributes["conv"].value_or("");
+
+                    const auto loc_value = GetVariableValue(loc_obj.get(),"thisdevice::" + var.name + "()");
+
+                    auto loc_valueFormated = ProcessDeviceVariable(loc_value,loc_format,loc_convertor);
+
+                    CreateValueDetail(loc_arg, true,loc_name,loc_valueFormated,loc_style);
+                }
+            }
+
+            loc_arg += "],";
+
+            RE::BSString loc_str = "";
+            loc_id->GetDescription(loc_str,loc_id);
+            loc_arg += "desc: \"" + std::string(loc_str) + "\",";
+
+            auto loc_mods = Utility::GetPropertyObjectArrayRaw(loc_obj,"UD_ModifiersRef",false);
+
+                    
+            std::vector<std::string> loc_modlist;
+            for (auto&& mod : loc_mods)
+            {
+                std::string loc_modname = Utility::GetPropertyString(mod,"NameFull",false,"");
+                std::string loc_moddesc = Utility::GetPropertyString(mod,"Description",false,"");
+
+                if (loc_modname != "")
+                {
+                    std::string loc_modclass = std::format("{{name: \"{}\",desc: \"{}\"}}",loc_modname,loc_moddesc);
+                    loc_modlist.push_back(loc_modclass);
+                }
+            }
+            std::string loc_modstr = "[" + boost::join(loc_modlist,",") + "],";
+            loc_arg += "mods: " + loc_modstr;
+
+            std::vector<std::string> loc_minigamelist;
+            auto loc_minigames = MinigameManager::GetSingleton()->GetListOfMinigames(a_wearer,a_helper,loc_id);
+            for (auto&& min : loc_minigames)
+            {
+                std::string loc_minname = min->config.name;
+                std::string loc_mindesc = min->config.description;
+                if (loc_minname != "")
+                {
+                    uint32_t    loc_state   = MinigameManager::GetSingleton()->GetMinigameCondition(a_wearer,a_helper,loc_id,min);
+                    string      loc_context = MinigameManager::GetSingleton()->GetMinigameContexts(a_wearer,a_helper,loc_id,min);
+                    if (loc_context != "")
+                    {
+                        std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {},context: {}}}",loc_minname,loc_mindesc,loc_state,min->id,loc_context);
+                        loc_minigamelist.push_back(loc_minclass);
+                    }
+                    else
+                    {
+                        std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {}}}",loc_minname,loc_mindesc,loc_state,min->id);
+                        loc_minigamelist.push_back(loc_minclass);
+                    }
+                }
+            }
+            std::string loc_minstr = "[" + boost::join(loc_minigamelist,",") + "]";
+            loc_arg += "minigames: " + loc_minstr;
+
+            loc_arg += "}";
+
+            _devMenuData.List.push_back({a_obj,loc_id,a_rd});
+            a_list.push_back(loc_arg);
+        }
     }
 
     void DeviceMenu::CreateValueDetail(std::string& a_input,bool a_sep,std::string a_name, std::string a_value, std::string a_style)
