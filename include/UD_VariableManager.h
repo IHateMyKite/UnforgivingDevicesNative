@@ -1,0 +1,84 @@
+#pragma once
+
+namespace UD
+{
+    enum class VariableMod
+    {
+        eAbsolute,
+        eRelative,
+        eUpdate,
+        eBase,
+        eDamage
+    };
+
+    struct VariableDetails
+    {
+        std::string Owner;
+        std::string Name;
+        VariableMod Mod = VariableMod::eAbsolute;
+
+    };
+
+    struct VariableValue
+    {
+        std::string     Value = "";
+        VariableType    Type = VariableType::kNone;
+    };
+
+    VariableDetails ParseVariable(std::string a_var);
+    VariableMod     ParseVariableMod(char a_mod);
+    VariableValue   GetVariableRaw(void* a_source,VariableDetails a_var);
+    VariableValue   SetVariableRaw(void* a_source,VariableDetails a_var,VariableValue& a_val);
+    VariableValue   GetVariableRaw(void* a_source,std::string a_var);
+    template<class T> T GetValue(VariableValue a_var)
+    {
+        T loc_res;
+        switch (a_var.Type)
+        {
+            case VariableType::kInt:
+            case VariableType::kBool:
+            case VariableType::kFloat:
+            case VariableType::kString:
+            {
+                try 
+                {
+                    loc_res = boost::lexical_cast<T>(a_var.Value);
+                }
+                catch(const std::exception& e)
+                {
+                    ERROR("GetValue - Error parsing variable value {} - {}!",a_var.Value,e.what())
+                    return T();
+                };
+            }
+            break;
+            default:
+                ERROR("GetValue - Unsupported type")
+            break;
+        }
+        return loc_res;
+    }
+
+    template<class T> T GetVariable(void* a_source,VariableValue a_var)
+    {
+        T loc_res = GetValue<T>(a_var);
+        return loc_res;
+    }
+
+    template<class T> T GetVariable(void* a_source,std::string a_var)
+    {
+        VariableValue loc_var = GetVariableRaw(a_source,a_var);
+        return GetVariable<T>(a_source,loc_var);
+    }
+
+    inline VariableValue GetVariableValue(void* a_source,std::string a_var)
+    {
+        VariableValue loc_var = GetVariableRaw(a_source,a_var);
+        return loc_var;
+    }
+
+    string ProcessDeviceVariable(const VariableValue& a_var, const string& a_format, const string& a_conv);
+
+    VariableValue ConvertDeviceVariable(const VariableValue& a_in,string a_conv);
+
+    VariableValue ParsePapVar(Variable* a_var);
+}

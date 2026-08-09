@@ -3,7 +3,7 @@
 #include <UD_Config.h>
 #include <UD_Utility.h>
 #include <UD_PapyrusDelegate.h>
-#include <boost/algorithm/string.hpp>
+//#include <boost/algorithm/string.hpp>
 
 SINGLETONBODY(UD::ModifierManager)
 

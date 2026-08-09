@@ -38,8 +38,15 @@ set(source_files ${source_files}
     src/UD_FastTravelManager.cpp
     src/UD_Modifiers.cpp
     src/UD_Messagebox.cpp
-	src/UD_ModuleManager.cpp
+    src/UD_ModuleManager.cpp
     src/UD_SLPP.cpp
+    src/UD_DeviceManager.cpp
+	src/UD_DeviceMenu.cpp
+    src/UD_MinigameManager.cpp
+    src/UD_VariableManager.cpp
+    src/UD_CallbackManager.cpp
+	src/UD_HUD.cpp
+    src/UD_Lua.cpp
     src/OrgasmSystem/OrgasmEvents.cpp
     src/OrgasmSystem/OrgasmManager.cpp
     src/OrgasmSystem/OrgasmData.cpp
@@ -55,20 +62,18 @@ target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 find_path(DETOURS_INCLUDE_DIRS "detours/detours.h")
 find_library(DETOURS_LIBRARY detours REQUIRED)
-
-target_include_directories(
-    ${PROJECT_NAME} 
-    PRIVATE 
-    ${DETOURS_INCLUDE_DIRS}
-)
-
-target_link_libraries(
-    ${PROJECT_NAME} 
-    PRIVATE 
-    ${DETOURS_LIBRARY}
-)
+target_include_directories(${PROJECT_NAME} PRIVATE ${DETOURS_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${DETOURS_LIBRARY})
 
 set(SKSE_USE_XBYAK ON)
+
+find_package(Boost REQUIRED COMPONENTS container)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Boost_LIBRARIES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
+
+find_package(Lua REQUIRED)
+target_include_directories(${PROJECT_NAME} PRIVATE ${LUA_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LUA_LIBRARIES})
 
 # Copy localy compiled dll to bin folder
 add_custom_command(TARGET UDNative POST_BUILD

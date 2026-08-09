@@ -82,6 +82,17 @@ namespace UD
             std::vector<DeviceCallbackArg> _args;
     };
 
+    struct Control
+    {
+        std::string alias = "";
+        uint32_t codekeyboard = 0;
+        uint32_t codegamepad = 0;
+        bool operator==(const Control& other)
+        {
+            return codekeyboard == other.codekeyboard && codegamepad == other.codegamepad && alias == other.alias;
+        }
+    };
+
     class ControlManager
     {
     SINGLETONHEADER(ControlManager)
@@ -107,8 +118,11 @@ namespace UD
         void UnregisterAllDeviceCallbacks();
         std::unordered_map<uint32_t,DeviceCallback>& GetDeviceCallbacks(bool a_Gamepad);
         bool HaveDeviceCallbacks() const;
+        Control GetActionControl(std::string a_alias){return _controls[a_alias];}
     private:
         void AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm);
+        void ParseControlConfig();
+        void InitConfig(boost::property_tree::ptree& a_json,Control& a_control);
     private:
         bool _installed = false;
         std::atomic_uint8_t _state = cEnable;
@@ -116,6 +130,10 @@ namespace UD
         std::vector<RE::BSFixedString> _hardcoreFilter {};
         std::vector<RE::BSFixedString> _disableFilter {};
         std::vector<RE::BSFixedString> _freeCamFilter {};
+
+        std::unordered_map<std::string,std::shared_ptr<boost::property_tree::ptree>> _jsoncache;
+        std::unordered_map<std::string,Control> _controls;
+
 
         std::unordered_map<uint32_t,DeviceCallback> _DeviceCallbacks;
         std::unordered_map<uint32_t,DeviceCallback> _DeviceCallbacksGamepad;

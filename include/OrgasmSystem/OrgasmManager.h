@@ -8,8 +8,10 @@ namespace ORS
     class OrgasmActorData;
 
     typedef float(* ModifyArousal)(RE::Actor* actorRef, float value, bool sendevent);
+    typedef float(* GetArousal)(RE::Actor* actorRef);
 
-    extern ModifyArousal OSLAModifyArousal;
+    extern ModifyArousal    OSLAModifyArousal;
+    extern GetArousal       OSLAGetArousal;
 
     #define GETORGCHANGEANDVALIDATE(var,arg)        \
     OrgasmActorData& var = _actors[arg->GetHandle().native_handle()];            \

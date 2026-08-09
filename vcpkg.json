@@ -12,7 +12,8 @@
         "spdlog",
         "boost-json",
         "rapidcsv",
-        "detours"
+        "detours",
+        "lua"
     ],
     "overrides": [
         {

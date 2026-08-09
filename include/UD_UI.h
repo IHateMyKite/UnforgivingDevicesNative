@@ -1,8 +1,11 @@
 #pragma once
 
-#include <UD_Utility.h>
 #include <UD_Config.h>
+#include <OrgasmSystem/OrgasmManager.h>
 #include <OrgasmSystem/OrgasmData.h>
+#include <PrismaUI_API.h>
+#include <UD_PapyrusDelegate.h>
+//#include <UD_DeviceManager.h>
 
 namespace UD 
 {
@@ -328,10 +331,12 @@ namespace UD
     {
         MeterManager::updateallowed = b_toggle;
     }
+
     inline int RemoveAllMeterEntries(PAPYRUSFUNCHANDLE)
     {
         return MeterManager::RemoveAll();
     }
+
     #undef PROCESSMETER
     #undef PROCESSMETER2
 }

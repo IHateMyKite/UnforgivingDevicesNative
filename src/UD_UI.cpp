@@ -1,4 +1,10 @@
 #include <UD_UI.h>
+//#include <boost/algorithm/string.hpp>
+#include <UD_ModuleManager.h>
+#include <UD_Utility.h>
+#include <UD_MinigameManager.h>
+#include <UD_DeviceManager.h>
+#include <UD_VariableManager.h>
 
 SINGLETONBODY(UD::MeterManager)
 
@@ -214,5 +220,4 @@ namespace UD
             loc_ui->processMessagesLock.Unlock();
         }
     }
-
 }
