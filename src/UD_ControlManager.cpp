@@ -8,8 +8,6 @@
 
 #include <shared_mutex>
 
-#include <RE/Skyrim.h>
-
 SINGLETONBODY(UD::KeyEventSink)
 SINGLETONBODY(UD::CameraEventSink)
 SINGLETONBODY(UD::ControlManager)
