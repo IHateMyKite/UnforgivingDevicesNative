@@ -403,10 +403,6 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
     if (!eventPtr) return RE::BSEventNotifyControl::kContinue;
     if (!ControlManager::GetSingleton()->HardcoreMode() && (!ControlManager::GetSingleton()->HaveDeviceCallbacks())) return RE::BSEventNotifyControl::kContinue; //no hardcore mode - return
     
-    // As a test, we disable hotkey capturing unconditional for now??
-    // NO -->  STOPPING HERE PREVENTS MESSAGES, but won't make the original inventory key work, but WILL make ChatBox WORK!!!
-    // return RE::BSEventNotifyControl::kContinue;
-
     auto* event = *eventPtr;
     if (!event) return RE::BSEventNotifyControl::kContinue;
 
@@ -463,14 +459,6 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
                 };
                 SKSE::GetModCallbackEventSource()->SendEvent(&my_event);
 
-	            std::string final_message;
-                final_message = std::format("UD_ControlManager.cpp: This seems to be the spot of hotkey captures.  Hotkey was pressed:  {}  Device was:  {}", loc_dxScanCode, (int)loc_Device);
-                // RE::DebugMessageBox(final_message.c_str());  // short note to self.
-
-                // As a test, we disable hotkey capturing unconditional for now??
-                // NO -->  STOPPING HERE IS TOO LATE OR IRRELEVANT
-                // return RE::BSEventNotifyControl::kContinue;
-
                 if (loc_bound)
                 {
                     auto loc_messages = ControlManager::GetSingleton()->GetHardcoreMessages();
@@ -482,8 +470,6 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
                 ModEvents::GetSingleton()->HMTweenMenuEvent.QueueEvent();
 
                 LOG("Sending player tween menu event")
-
-
 
                 std::thread([this]()
                 {
