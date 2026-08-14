@@ -8,6 +8,8 @@
 
 #include <shared_mutex>
 
+#include <RE/Skyrim.h>
+
 SINGLETONBODY(UD::KeyEventSink)
 SINGLETONBODY(UD::CameraEventSink)
 SINGLETONBODY(UD::ControlManager)
@@ -401,6 +403,10 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
     if (!eventPtr) return RE::BSEventNotifyControl::kContinue;
     if (!ControlManager::GetSingleton()->HardcoreMode() && (!ControlManager::GetSingleton()->HaveDeviceCallbacks())) return RE::BSEventNotifyControl::kContinue; //no hardcore mode - return
     
+    // As a test, we disable hotkey capturing unconditional for now??
+    // NO -->  STOPPING HERE PREVENTS MESSAGES, but won't make the original inventory key work, but WILL make ChatBox WORK!!!
+    // return RE::BSEventNotifyControl::kContinue;
+
     auto* event = *eventPtr;
     if (!event) return RE::BSEventNotifyControl::kContinue;
 
@@ -448,6 +454,23 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
             const bool loc_hmbuttonpress = ControlManager::GetSingleton()->HardcoreButtonPressed(loc_dxScanCode,loc_Device);
             if (loc_hmbuttonpress)
             {
+                // RE::DebugMessageBox("JOHNSONJOE1:  IS THIS THE SPOT OF HOTKEY CAPTURES????  Yes, seems so.");  // short note to self.
+                SKSE::ModCallbackEvent my_event{
+                    "DDUDNG_Event_Hotkey_captured_and_stopped",        // event name
+                    "Find the hotkey in the number argument",          // str_arg
+                    static_cast<float>(loc_dxScanCode),                // num_arg e.g. 0.0f,
+                    nullptr                                            // sender
+                };
+                SKSE::GetModCallbackEventSource()->SendEvent(&my_event);
+
+	            std::string final_message;
+                final_message = std::format("UD_ControlManager.cpp: This seems to be the spot of hotkey captures.  Hotkey was pressed:  {}  Device was:  {}", loc_dxScanCode, (int)loc_Device);
+                // RE::DebugMessageBox(final_message.c_str());  // short note to self.
+
+                // As a test, we disable hotkey capturing unconditional for now??
+                // NO -->  STOPPING HERE IS TOO LATE OR IRRELEVANT
+                // return RE::BSEventNotifyControl::kContinue;
+
                 if (loc_bound)
                 {
                     auto loc_messages = ControlManager::GetSingleton()->GetHardcoreMessages();
@@ -459,6 +482,8 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
                 ModEvents::GetSingleton()->HMTweenMenuEvent.QueueEvent();
 
                 LOG("Sending player tween menu event")
+
+
 
                 std::thread([this]()
                 {
