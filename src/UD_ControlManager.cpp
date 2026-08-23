@@ -448,6 +448,15 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
             const bool loc_hmbuttonpress = ControlManager::GetSingleton()->HardcoreButtonPressed(loc_dxScanCode,loc_Device);
             if (loc_hmbuttonpress)
             {
+                // RE::DebugMessageBox("JOHNSONJOE1:  IS THIS THE SPOT OF HOTKEY CAPTURES????  Yes, seems so.");  // short note to self.
+                SKSE::ModCallbackEvent my_event{
+                    "DDUDNG_Event_Hotkey_captured_and_stopped",        // event name
+                    "Find the hotkey in the number argument",          // str_arg
+                    static_cast<float>(loc_dxScanCode),                // num_arg e.g. 0.0f,
+                    nullptr                                            // sender
+                };
+                SKSE::GetModCallbackEventSource()->SendEvent(&my_event);
+
                 if (loc_bound)
                 {
                     auto loc_messages = ControlManager::GetSingleton()->GetHardcoreMessages();
