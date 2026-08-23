@@ -477,6 +477,43 @@ lua_State* UD::MinigameManager::GetMinigameScriptById(int a_id)
     return L;
 }
 
+void UD::MinigameManager::OnGameLoaded(SKSE::SerializationInterface* serde)
+{
+
+}
+
+void UD::MinigameManager::OnGameSaved(SKSE::SerializationInterface* serde)
+{
+    Utils::UniqueLock lock(_lock);
+
+    if (!serde->OpenRecord(MinigameSerData, 0)) {
+        return;
+    }
+
+    const size_t loc_minigamenum = _minigames.size();
+    serde->WriteRecordData(&loc_minigamenum,sizeof(size_t)); //first number of minigames
+
+    //now iterate thru all actors
+    for (auto&& it : _minigames)
+    {
+        auto L = GetMinigameScript(it->Setting);
+        
+
+        //RE::Actor* loc_actor = RE::Actor::LookupByHandle(it.first).get();
+        //OrgasmActorData loc_od = it.second;
+        //RE::FormID loc_formid = loc_actor->GetFormID();
+        //serde->WriteRecordData(&loc_formid,sizeof(RE::FormID));
+        //LOG("Saving actor {}",loc_actor->GetName())
+        //loc_od.OnGameSaved(serde);
+    }
+
+}
+
+void UD::MinigameManager::OnRevert(SKSE::SerializationInterface* serde)
+{
+
+}
+
 UD::MinigameCallback UD::MinigameManager::ParseCallback(std::string a_callback)
 {
     static const std::regex loc_ParseRegex(R"((?:(.+)::(.+)\((.*)\))*)");
@@ -600,9 +637,12 @@ void UD::MinigameManager::PushMinigameData(lua_State* L, MinigameData& a_data)
     {
         {"Wearer",a_data.Wearer},
         {"Helper",a_data.Helper},
+        {"WearerHandle",(lua_Integer)a_data.Wearer->GetHandle().native_handle()},
+        {"HelperHandle",a_data.Helper ? (lua_Integer)a_data.Helper->GetHandle().native_handle() : 0},
         {"ID",a_data.Device.id},
         {"RD",a_data.Device.rd},
         {"DeviceObj",a_data.Device.obj.get()},
+        {"DeviceHandle",(lua_Integer)a_data.Device.obj->GetHandle()},
         {"Json",a_data.Setting->json.get()},
         {"Context",a_data.Context},
         {"MinigameId",(lua_Integer)a_data.id}

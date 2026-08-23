@@ -24,6 +24,8 @@
 
 namespace UD
 {
+    inline const auto MinigameSerData = _byteswap_ulong('UDMG');
+
     enum class MinigameState
     {
         eNotStarted,
@@ -90,6 +92,18 @@ namespace UD
         string Context;
     };
 
+    struct MinigameDataSafe
+    {
+        int id = 0;
+        RE::ActorHandle Wearer;
+        RE::ActorHandle Helper;
+        RE::VMHandle    Handle;
+        MinigameSetting Setting;
+        MinigameState State = MinigameState::eNotStarted;
+        std::vector<MinigameActionCallback> Controls;
+        string Context;
+    };
+
     typedef std::shared_ptr<MinigameData> MinigameDataPtr;
 
     class MinigameManager
@@ -122,6 +136,10 @@ namespace UD
             void SendOpenMinigameUICallback();
             void SendPapCallback(int a_id,std::string a_callback,VariableValue& a_var);
             lua_State* GetMinigameScriptById(int a_id);
+
+            void OnGameLoaded(SKSE::SerializationInterface* serde);
+            void OnGameSaved(SKSE::SerializationInterface* serde);
+            void OnRevert(SKSE::SerializationInterface* serde);
         private:
             MinigameCallback ParseCallback(std::string a_callback);
             bool InitMinigameConfig(MinigameSetting a_config);
@@ -140,6 +158,7 @@ namespace UD
             std::unordered_map<std::string,MinigameSetting> _jsoncache;
             std::unordered_map<std::string,lua_State*> _scripts;
             std::vector<MinigameDataPtr> _minigames;
+            mutable Utils::Spinlock  _lock;
     };
 
     inline std::vector<std::string> GetListOfMinigames(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, RE::TESObjectARMO* a_id)

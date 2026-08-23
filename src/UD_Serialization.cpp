@@ -4,6 +4,7 @@
 #include <UD_PapyrusDelegate.h>
 #include <UD_Animation.h>
 #include <OrgasmSystem/OrgasmManager.h>
+#include <UD_MinigameManager.h>
 
 namespace UD
 {
@@ -36,5 +37,18 @@ namespace UD
     {
         LOG("Reverting Cosave data")
         ORS::OrgasmManager::GetSingleton()->OnRevert(serde);
+    }
+
+    void OnGameLoadedLua(SKSE::SerializationInterface* serde)
+    {
+        UD::MinigameManager::GetSingleton()->OnGameLoaded(serde);
+    }
+    void OnGameSavedLua(SKSE::SerializationInterface* serde)
+    {
+        UD::MinigameManager::GetSingleton()->OnGameSaved(serde);
+    }
+    void OnRevertLua(SKSE::SerializationInterface* serde)
+    {
+        UD::MinigameManager::GetSingleton()->OnRevert(serde);
     }
 }

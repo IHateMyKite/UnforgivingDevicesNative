@@ -31,6 +31,13 @@ void InitializeSerialization() {
     serde->SetSaveCallback(UD::OnGameSaved);
     serde->SetRevertCallback(UD::OnRevert);
     serde->SetLoadCallback(UD::OnGameLoaded);
+
+    serde = SKSE::GetSerializationInterface();
+    serde->SetUniqueID(_byteswap_ulong('UDLE'));
+    serde->SetSaveCallback(UD::OnGameSavedLua);
+    serde->SetRevertCallback(UD::OnRevertLua);
+    serde->SetLoadCallback(UD::OnGameLoadedLua);
+
     LOG("Cosave serialization initialized.");
 }
 

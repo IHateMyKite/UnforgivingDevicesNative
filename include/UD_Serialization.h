@@ -13,4 +13,8 @@ namespace UD
     void OnGameLoaded(SKSE::SerializationInterface* serde);
     void OnGameSaved(SKSE::SerializationInterface* serde);
     void OnRevert(SKSE::SerializationInterface*);
+
+    void OnGameLoadedLua(SKSE::SerializationInterface* serde);
+    void OnGameSavedLua(SKSE::SerializationInterface* serde);
+    void OnRevertLua(SKSE::SerializationInterface*);
 }
