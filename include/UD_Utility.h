@@ -74,6 +74,7 @@ namespace UD
         static void* GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID a_type);
         static void* GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::FormType a_type);
 
+        static RE::BSTSmartPointer<RE::BSScript::Object> GetObjectByHandle(RE::VMHandle a_handle,string a_class);
 
         static bool ActorFreeHands(RE::Actor* a_actor,bool ab_checkGrasp = false,bool a_IgnoreHeavyBondage = false); // Return true if acvtor wears heavy bondage device
 
@@ -103,6 +104,8 @@ namespace UD
 
         static float Str2Float(string a_in, float a_def);
         static int Str2Int(string a_in, int a_def);
+
+        static string MemoryToString(void* a_data, size_t a_size);
     private:
 
     };

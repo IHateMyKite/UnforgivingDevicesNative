@@ -34,6 +34,7 @@ namespace UD
         std::string name;
         std::string description;
         std::string script;
+        bool        disabled;
         int         priority;
         std::string base;
         bool        abstract;

@@ -87,6 +87,21 @@ void UD::HudManager::Reload()
                 }
             }
 
+            // Calculated disable
+            for(auto [path,setting] : _jsoncache)
+            {
+                bool loc_res = setting->config.disabled;
+
+                auto loc_base = setting->base;
+                while (loc_base && !loc_res)
+                {
+                    loc_res     = loc_res || loc_base->config.disabled;
+                    loc_base    = loc_base->base;
+                }
+
+                setting->config.disabled = loc_res;
+            }
+
             // Open scripts
             for(auto&& [path,setting] : _jsoncache)
             {
@@ -157,6 +172,7 @@ bool UD::HudManager::InitConfig(HudElementSetting a_config)
             a_config->config.description  = a_config->json->get_optional<std::string>("description").get_value_or("MISSINGDESC");
             a_config->config.script       = a_config->json->get_optional<std::string>("script").get_value_or("");
             a_config->config.base         = a_config->json->get_optional<std::string>("base").get_value_or("");
+            a_config->config.disabled     = a_config->json->get_optional<bool>("disabled").get_value_or(false);
             a_config->config.abstract     = a_config->json->get_optional<bool>("abstract").get_value_or(false);
             
             a_config->config.priority     = a_config->json->get_optional<int>("priority").get_value_or(0);
@@ -256,7 +272,7 @@ void UD::HudManager::CheckShowElements(float a_delta)
     // Check if meter should be shown
     for(auto&& [name,setting] : _jsoncache)
     {
-        if (setting->config.abstract) continue;
+        if (setting->config.abstract || setting->config.disabled) continue;
 
         if (std::find_if(_elements.begin(),_elements.end(),[setting](const HudElementDataPtr& data)
         {

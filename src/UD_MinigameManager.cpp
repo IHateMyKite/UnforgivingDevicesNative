@@ -3,6 +3,7 @@
 #include <UD_Config.h>
 #include <UD_ModuleManager.h>
 #include <UD_PapyrusDelegate.h>
+#include <UD_DDAPI.h>
 
 SINGLETONBODY(UD::MinigameManager)
 
@@ -14,6 +15,7 @@ void UD::MinigameManager::Reload()
     PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
 
     _minigames.clear();
+    _minigameCntr = 0;
     CloseMinigameUI(0);
 
     if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
@@ -102,6 +104,12 @@ void UD::MinigameManager::Reload()
         {
             DEBUG("\t{} - {} / {}",name, file->status, file->error)
         }
+    }
+
+    if (_MinigameSaves.size() > 0)
+    {
+        DEBUG("Loading {} minigame saves",_MinigameSaves.size())
+        LoadSavedMinigames();
     }
 }
 
@@ -250,8 +258,6 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
         return false;
     }
 
-    static int loc_cntr = 0;
-
     DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
 
     MinigameData loc_data;
@@ -260,10 +266,10 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
     loc_data.Device.obj = loc_device.second;
     loc_data.Device.id = a_id;
     loc_data.Device.rd = loc_device.first;
-    loc_data.id = loc_cntr;
+    loc_data.id = _minigameCntr;
     loc_data.Setting = a_setting;
     loc_data.Context = a_cntx;
-    loc_cntr++;
+    _minigameCntr++;
 
     _minigames.push_back(MinigameDataPtr(new MinigameData(loc_data)));
 
@@ -326,9 +332,25 @@ bool UD::MinigameManager::StopMinigame(RE::Actor* a_actor)
 
 void UD::MinigameManager::Update(float a_delta)
 {
+    // Hide UI if menu is open
+    const bool loc_menuOpen = Utility::IsBlockingMenuOpen();
+    if (loc_menuOpen && _UIState == MinigameUIState::eShown)
+    {
+        PrismaUI->Hide(_view);
+        _UIState = MinigameUIState::eHidden;
+    }
+    else if (!loc_menuOpen && _UIState == MinigameUIState::eHidden)
+    {
+        PrismaUI->Show(_view);
+        _UIState = MinigameUIState::eShown;
+    }
+
     for (auto&& it : _minigames)
     {
-        UpdateMinigame(*it,a_delta);
+        if (it)
+        {
+            UpdateMinigame(*it,a_delta);
+        }
     }
 }
 
@@ -367,7 +389,7 @@ void UD::MinigameManager::OpenMinigameUI(int a_id,std::string a_callback)
 {
     DEBUG("OpenMinigameUI called");
     auto loc_data = GetMinigameDataById(a_id);
-    if (loc_data)
+    if (loc_data && loc_data->Setting->config.uiobject != "")
     {
         auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
         PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
@@ -401,6 +423,7 @@ void UD::MinigameManager::CloseMinigameUI(int a_id)
             PrismaUI->Destroy(_view);
             _view = 0;
             _viewReady = false;
+            _UIState = MinigameUIState::eNotStarted;
         }
     }
 }
@@ -477,41 +500,123 @@ lua_State* UD::MinigameManager::GetMinigameScriptById(int a_id)
     return L;
 }
 
-void UD::MinigameManager::OnGameLoaded(SKSE::SerializationInterface* serde)
+void UD::MinigameManager::OnGameLoaded(SKSE::SerializationInterface* serde,uint32_t a_type, uint32_t a_size, uint32_t a_version)
 {
+    DEBUG("Reading saved minigame data")
+    Utils::UniqueLock lock(_lock);
+    _MinigameSaves.clear();
 
+    if (a_type == MinigameSerData) 
+    {
+        DEBUG("Reading {} bytes of saved minigames",a_size)
+        uint32_t loc_readdata = 0U;
+
+        std::unique_ptr<char> loc_buffer = std::unique_ptr<char>(new char[65535U]);
+        memset(loc_buffer.get(),0,65535U);
+
+        while (loc_readdata < a_size)
+        {
+            MinigameSaveData loc_data;
+            loc_readdata += serde->ReadRecordData(&loc_data.Header, sizeof(MinigamePersData));
+
+            loc_readdata += serde->ReadRecordData(loc_buffer.get(), loc_data.Header.DataSize);
+            loc_data.RuntimeData = loc_buffer.get();
+            memset(loc_buffer.get(),0x0,loc_data.Header.DataSize);
+
+            DEBUG("Minigame data for {} read. Total Number of bytes read = {}",loc_data.Header.MinigameName,loc_readdata)
+            DEBUG("Minigame data for {} read. Base Data = {}",loc_data.Header.MinigameName,Utility::MemoryToString(&loc_data.Header,sizeof(loc_data.Header)))
+            DEBUG("Minigame data for {} read. Runtime Data = {}",loc_data.Header.MinigameName,loc_data.RuntimeData)
+
+            _MinigameSaves.push_back(loc_data);
+        }
+        DEBUG("Read {} minigames from cosave",_MinigameSaves.size())
+    }
 }
 
 void UD::MinigameManager::OnGameSaved(SKSE::SerializationInterface* serde)
 {
     Utils::UniqueLock lock(_lock);
 
-    if (!serde->OpenRecord(MinigameSerData, 0)) {
+    if (!serde->OpenRecord(MinigameSerData, 0)) 
+    {
+        ERROR("Failed to open save record for Minigames")
         return;
     }
 
-    const size_t loc_minigamenum = _minigames.size();
-    serde->WriteRecordData(&loc_minigamenum,sizeof(size_t)); //first number of minigames
+    //const size_t loc_minigamenum = _minigames.size();
+    //serde->WriteRecordData(&loc_minigamenum,sizeof(size_t)); //first number of minigames
 
     //now iterate thru all actors
     for (auto&& it : _minigames)
     {
         auto L = GetMinigameScript(it->Setting);
         
+        if (L)
+        {
+            if (lua_getglobal(L,"SaveData") != LUA_TNIL)
+            {
+                PushMinigameData(L,*it);
+                auto loc_luares = lua_pcall(L,1,1,0);
+                if (loc_luares != LUA_OK)
+                {
+                    ERROR("Error running function SaveData - {}",loc_luares)
+                }
+                else
+                {
+                    // Parse result
+                    if (lua_isstring(L,-1))
+                    {
+                        string loc_res = lua_tostring(L,-1);
+                        auto loc_data = MinigamePersData();
+                        loc_data.id = it->id;
+                        loc_data.Wearer = it->Wearer->GetHandle().native_handle();
+                        loc_data.Helper = it->Helper ? it->Helper->GetHandle().native_handle() : 0;
+                        loc_data.DeviceHandle = it->Device.obj->GetHandle();
+                        //loc_data.MinigameName = it->Setting->config.name;
+                        if (it->Setting->config.name.size() <= 32)
+                        {
+                            strcpy_s<32>(loc_data.MinigameName,it->Setting->config.name.c_str());
+                        }
+                        else
+                        {
+                            ERROR("Minigame name {} is too long to be stored!",it->Setting->config.name)
+                            continue;
+                        }
+                        loc_data.State = it->State;
 
-        //RE::Actor* loc_actor = RE::Actor::LookupByHandle(it.first).get();
-        //OrgasmActorData loc_od = it.second;
-        //RE::FormID loc_formid = loc_actor->GetFormID();
-        //serde->WriteRecordData(&loc_formid,sizeof(RE::FormID));
-        //LOG("Saving actor {}",loc_actor->GetName())
-        //loc_od.OnGameSaved(serde);
+                        if (it->Context.size() <= 16)
+                        {
+                            strcpy_s<16>(loc_data.Context,it->Context.c_str());
+                        }
+                        else
+                        {
+                            ERROR("Minigame Context {} is too long to be stored!",it->Setting->config.name)
+                            continue;
+                        }
+                        
+                        loc_data.DataSize = loc_res.size();
+
+
+                        serde->WriteRecordData(&loc_data,sizeof(loc_data));
+                        serde->WriteRecordData(loc_res.c_str(),loc_res.size());
+
+                        DEBUG("Minigame {}({}) saved, Base Data -> {}",it->Setting->config.name,it->Wearer->GetName(),Utility::MemoryToString(&loc_data,sizeof(loc_data)))
+                        DEBUG("Minigame {}({}) saved, Minigame Runtime Data -> {}",it->Setting->config.name,it->Wearer->GetName(),loc_res)
+                    }
+                    else
+                    {
+                        ERROR("Error getting save data for minigame")
+                        continue;
+                    }
+                }
+            }
+        }
     }
-
 }
 
 void UD::MinigameManager::OnRevert(SKSE::SerializationInterface* serde)
 {
-
+    Utils::UniqueLock lock(_lock);
 }
 
 UD::MinigameCallback UD::MinigameManager::ParseCallback(std::string a_callback)
@@ -637,14 +742,87 @@ void UD::MinigameManager::PushMinigameData(lua_State* L, MinigameData& a_data)
     {
         {"Wearer",a_data.Wearer},
         {"Helper",a_data.Helper},
-        {"WearerHandle",(lua_Integer)a_data.Wearer->GetHandle().native_handle()},
-        {"HelperHandle",a_data.Helper ? (lua_Integer)a_data.Helper->GetHandle().native_handle() : 0},
         {"ID",a_data.Device.id},
         {"RD",a_data.Device.rd},
         {"DeviceObj",a_data.Device.obj.get()},
-        {"DeviceHandle",(lua_Integer)a_data.Device.obj->GetHandle()},
         {"Json",a_data.Setting->json.get()},
         {"Context",a_data.Context},
         {"MinigameId",(lua_Integer)a_data.id}
     });
+}
+
+void UD::MinigameManager::LoadSavedMinigames()
+{
+    for(auto&& it : _MinigameSaves)
+    {
+        MinigameData loc_data;
+        loc_data.id = it.Header.id;
+        
+        loc_data.Wearer = RE::Actor::LookupByHandle(it.Header.Wearer).get();
+        loc_data.Helper = RE::Actor::LookupByHandle(it.Header.Helper).get();
+        loc_data.Device.obj = Utility::GetObjectByHandle(it.Header.DeviceHandle,"ud_customdevice_renderscript");
+        if (loc_data.Device.obj)
+        {
+            loc_data.Device.id = (RE::TESObjectARMO*)Utility::GetPropertyObject(loc_data.Device.obj,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE);
+            loc_data.Device.rd = DeviousDevicesAPI::g_API ? DeviousDevicesAPI::g_API->GetDeviceRender(loc_data.Device.id) : nullptr;
+        }
+        else
+        {
+            ERROR("Error reading device using vm handle 0x{:0X16}",it.Header.DeviceHandle)
+            continue;
+        }
+
+        loc_data.Context = it.Header.Context;
+
+        for(auto&& it2 : _jsoncache)
+        {
+            if (it2.second->config.name == string(it.Header.MinigameName))
+            {
+                loc_data.Setting = it2.second;
+                break;
+            }
+        }
+
+        if (!loc_data.Setting)
+        {
+            ERROR("Failed to find minigame config for {}",it.Header.MinigameName)
+            continue;
+        }
+
+        loc_data.State = it.Header.State;
+
+        loc_data.id = _minigameCntr;
+        _minigameCntr++;
+
+        MinigameDataPtr loc_res = MinigameDataPtr(new MinigameData(loc_data));
+        _minigames.push_back(loc_res);
+
+        bool loc_failed = false;
+        auto L = GetMinigameScript(loc_res->Setting);
+        
+        if (L && lua_getglobal(L,"LoadData") != LUA_TNIL)
+        {
+            PushMinigameData(L,*loc_res);
+            lua_pushstring(L,it.RuntimeData.c_str());
+
+            auto loc_luares = lua_pcall(L,2,0,0);
+            if (loc_luares != LUA_OK)
+            {
+                ERROR("Error running function LoadData - {}",loc_luares)
+                loc_failed = true;
+            }
+        }
+        else
+        {
+            ERROR("Error getting script instance or LoadData for {}",loc_res->Setting->config.script)
+            loc_failed = true;
+        }
+
+        if (loc_failed)
+        {
+            _minigames.pop_back();
+        }
+        
+        DEBUG("Minigame {} loaded",loc_res->Setting->config.name)
+    }
 }

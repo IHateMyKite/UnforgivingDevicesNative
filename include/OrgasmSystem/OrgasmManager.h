@@ -68,7 +68,7 @@ namespace ORS
 
         void    RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm);
 
-        void    OnGameLoaded(SKSE::SerializationInterface*);
+        void    OnGameLoaded(SKSE::SerializationInterface* serde,uint32_t a_type, uint32_t a_size, uint32_t a_version);
         void    OnGameSaved(SKSE::SerializationInterface*);
         void    OnRevert(SKSE::SerializationInterface*);
     private:

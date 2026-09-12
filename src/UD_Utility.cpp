@@ -410,6 +410,14 @@ namespace UD
         return GetPropertyObject(a_object, a_name, a_var, (RE::VMTypeID)a_type);
     }
 
+    RE::BSTSmartPointer<RE::BSScript::Object> Utility::GetObjectByHandle(RE::VMHandle a_handle,string a_class)
+    {
+        RE::BSTSmartPointer<RE::BSScript::Object> loc_res;
+        const auto loc_vm = InternalVM::GetSingleton();
+        loc_vm->FindBoundObject(a_handle,a_class.c_str(),loc_res);
+        return loc_res;
+    }
+
     bool Utility::ActorFreeHands(RE::Actor* a_actor, bool a_checkGrasp, bool a_IgnoreHeavyBondage)
     {
         if (!a_actor) return false;
@@ -476,6 +484,18 @@ namespace UD
             ERROR("Str2Int({},{}) - Error converting {} to int",a_in,a_def,a_in)
             return a_def;
         }
+    }
+
+    string Utility::MemoryToString(void* a_data, size_t a_size)
+    {
+        string loc_res;
+
+        for (int i = 0; i < a_size; i++)
+        {
+            loc_res += std::format(" {:02X}",reinterpret_cast<uint8_t*>(a_data)[i]);
+        }
+
+        return loc_res;
     }
 
     template<class T>

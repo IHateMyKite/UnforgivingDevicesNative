@@ -391,54 +391,46 @@ void ORS::OrgasmManager::RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine 
     OrgasmEvents::GetSingleton()->RegisterPapyrus(vm);
 }
 
-void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde)
+void ORS::OrgasmManager::OnGameLoaded(SKSE::SerializationInterface* serde,uint32_t a_type, uint32_t a_size, uint32_t a_version)
 {
-    uint32_t loc_type;
-    uint32_t loc_size;
-    uint32_t loc_version;
 
-    if (serde == nullptr) return;
-
-    while (serde->GetNextRecordInfo(loc_type, loc_version, loc_size)) 
+    if (a_type == OrgasmSerData) 
     {
-        if (loc_type == OrgasmSerData) 
+        size_t loc_actornum = 0;
+        serde->ReadRecordData(&loc_actornum, sizeof(size_t));
+
+        for (size_t i = 0; i < loc_actornum; i++)
         {
-            size_t loc_actornum = 0;
-            serde->ReadRecordData(&loc_actornum, sizeof(size_t));
+            RE::FormID loc_actorFormID;
+            serde->ReadRecordData(&loc_actorFormID, sizeof(RE::FormID));
 
-            for (size_t i = 0; i < loc_actornum; i++)
-            {
-                RE::FormID loc_actorFormID;
-                serde->ReadRecordData(&loc_actorFormID, sizeof(RE::FormID));
-
-                RE::FormID loc_newActorFormID;
-                if (!serde->ResolveFormID(loc_actorFormID, loc_newActorFormID)) {
-                    LOG("Actor ID {:X} could not be found after loading the save.", loc_actorFormID)
-                    continue;
-                }
-
-                RE::Actor* loc_actor = RE::TESForm::LookupByID<RE::Actor>(loc_newActorFormID);
-
-                if (loc_actor == nullptr)
-                {
-                    WARN("ERROR: Null actor ({:08X} -> {:08X}) found in cosave -> skipping",loc_actorFormID,loc_newActorFormID)
-
-                    //read data in same way even if actor is null, so correct data are read next time
-                    OrgasmActorData loc_data;
-                    loc_data.OnGameLoaded(serde);
-
-                    continue;
-                }
-
-                Utils::UniqueLock lock(_lock);
-
-                DEBUG("Loaded actor {} from save",loc_actor->GetName())
-                auto loc_handle = loc_actor->GetHandle().native_handle();
-                _actors[loc_handle] = OrgasmActorData();
-                _actors[loc_handle].SetActor(loc_actor);
-                _actors[loc_handle].UpdatePosition();
-                _actors[loc_handle].OnGameLoaded(serde);
+            RE::FormID loc_newActorFormID;
+            if (!serde->ResolveFormID(loc_actorFormID, loc_newActorFormID)) {
+                LOG("Actor ID {:X} could not be found after loading the save.", loc_actorFormID)
+                continue;
             }
+
+            RE::Actor* loc_actor = RE::TESForm::LookupByID<RE::Actor>(loc_newActorFormID);
+
+            if (loc_actor == nullptr)
+            {
+                WARN("ERROR: Null actor ({:08X} -> {:08X}) found in cosave -> skipping",loc_actorFormID,loc_newActorFormID)
+
+                //read data in same way even if actor is null, so correct data are read next time
+                OrgasmActorData loc_data;
+                loc_data.OnGameLoaded(serde);
+
+                continue;
+            }
+
+            Utils::UniqueLock lock(_lock);
+
+            DEBUG("Loaded actor {} from save",loc_actor->GetName())
+            auto loc_handle = loc_actor->GetHandle().native_handle();
+            _actors[loc_handle] = OrgasmActorData();
+            _actors[loc_handle].SetActor(loc_actor);
+            _actors[loc_handle].UpdatePosition();
+            _actors[loc_handle].OnGameLoaded(serde);
         }
     }
 }

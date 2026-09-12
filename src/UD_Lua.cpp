@@ -186,33 +186,41 @@ bool Lua::GetTable(lua_State* L,int a_indx, Lua::LuaVariable & a_res)
     lua_pushstring(L,a_res.Name.c_str());
     lua_gettable(L,a_indx);
 
-    if (lua_isnil(L,-1))
-    {
-        ERROR("Error reading value from table")
-        lua_pop(L,1);
-        return false;
-    }
+    //if (lua_isnil(L,-1))
+    //{
+    //    ERROR("Error reading value from table")
+    //    lua_pop(L,1);
+    //    return false;
+    //}
 
     switch(a_res.Type)
     {
         case LuaVariableType::eInteger:
             if (lua_isinteger(L,-1))
                 LUA_FILL(a_res.Value,lua_tointeger(L,-1),lua_Integer);
+            else if (lua_isnil(L,-1))
+                LUA_FILL(a_res.Value,0,lua_Integer);
             else ERROR("Value of {} at index {} is not integer",a_res.Name,lua_gettop(L))
         break;
         case LuaVariableType::eNumber:
             if (lua_isnumber(L,-1))
                 LUA_FILL(a_res.Value,lua_tonumber(L,-1),lua_Number);
+            else if (lua_isnil(L,-1))
+                LUA_FILL(a_res.Value,0.0f,lua_Number);
             else ERROR("Value of {} at index {} is not number",a_res.Name,lua_gettop(L))
         break;
         case LuaVariableType::eBool:
             if (lua_isboolean(L,-1))
                 LUA_FILL(a_res.Value,lua_toboolean(L,-1),bool);
+            else if (lua_isnil(L,-1))
+                LUA_FILL(a_res.Value,false,bool);
             else ERROR("Value of {} at index {} is not bool",a_res.Name,lua_gettop(L))
         break;
         case LuaVariableType::eString:
             if (lua_isstring(L,-1))
                 strcpy_s(a_res.Value,lua_tostring(L,-1));
+            else if (lua_isnil(L,-1))
+                strcpy_s(a_res.Value,"");
             else ERROR("Value of {} at index {} is not string",a_res.Name,lua_gettop(L))
         break;
         case LuaVariableType::ePtr:
@@ -221,6 +229,8 @@ bool Lua::GetTable(lua_State* L,int a_indx, Lua::LuaVariable & a_res)
         case LuaVariableType::eForm:
             if (lua_isuserdata(L,-1))
                 LUA_FILL(a_res.Value,lua_touserdata(L,-1),void*);
+            else if (lua_isnil(L,-1))
+                LUA_FILL(a_res.Value,nullptr,void*);
             else ERROR("Value of {} at index {} is not ptr",a_res.Name,lua_gettop(L))
         break;
         case LuaVariableType::eNill:

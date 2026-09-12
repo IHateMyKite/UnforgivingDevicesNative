@@ -152,6 +152,92 @@ namespace UD
     }
     void SkillManager::Setup()
     {
+        if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
+        {
+            _init = true;
+            _skills.clear();
 
+            std::string loc_confpath = RelToAbsPath("UD\\Skills");
+            std::regex loc_regex(R"regex(.*\\(.*\.[jJ][sS][oO][nN]))regex");
+            uint32_t loc_id = 0;
+            try
+            {
+                for (const auto & entry : std::filesystem::directory_iterator(loc_confpath))
+                {
+                    std::string loc_path = entry.path().string();
+
+                    if (entry.is_regular_file() && std::regex_match(loc_path,loc_regex)) 
+                    {
+                        const std::string loc_jsonname = std::regex_replace(loc_path,loc_regex,"$1");
+                        std::shared_ptr<boost::property_tree::ptree> loc_json = std::shared_ptr<boost::property_tree::ptree>(new boost::property_tree::ptree);
+                        try
+                        {
+                            boost::property_tree::read_json(loc_path, *loc_json.get());
+                        }
+                        catch(const std::exception& e)
+                        {
+                            ERROR("Error parsing json {} - {}",loc_jsonname,e.what())
+                            continue;
+                        }
+
+                        std::regex loc_regexname(R"regex((.*\\)(.*)(\.[jJ][sS][oO][nN]))regex");
+                        const std::string loc_name = std::regex_replace(loc_path,loc_regexname,"$2");
+
+                        auto loc_config = std::shared_ptr<SkillConfigJson>(new SkillConfigJson{loc_id++,loc_json,ConfigStatus::sOK,"OK"});
+                        if (InitConfig(loc_config))
+                        {
+                            DEBUG("Skill config {} initiated",loc_name)
+                            _skills[loc_name] = loc_config;
+                        }
+                    }
+                }
+            }
+            catch(...)
+            {
+                ERROR("Error reading skill configs")
+            }
+
+            DEBUG("=== Loaded Skill config files ===")
+            for (auto&& [name,file] : _skills)
+            {
+                DEBUG("\t{} - {} / {}",name, file->status, file->error)
+            }
+        }
+    }
+
+    bool SkillManager::InitConfig(SkillSetting a_config)
+    {
+        if (a_config && a_config->json)
+        {
+            try
+            {
+                a_config->config.name         = a_config->json->get_optional<std::string>("name").get_value_or("MISSINGNAME");
+                a_config->config.description  = a_config->json->get_optional<std::string>("description").get_value_or("MISSINGDESC");
+                a_config->config.priority     = a_config->json->get_optional<int>("priority").get_value_or(0);
+
+                auto loc_skills = a_config->json->get_child_optional("skills");
+                if (loc_skills)
+                {
+                    a_config->config.skills.clear();
+                    for(auto&& it : loc_skills.get())
+                    {
+                        SkyrimSkill loc_skill;
+                        loc_skill.name     = it.second.get_optional<string>("name").get_value_or("error");
+                        loc_skill.weight   = it.second.get_optional<int>("weigth").get_value_or(1);
+                        a_config->config.skills.push_back(loc_skill);
+                    }
+                }
+            }
+            catch(const std::exception& e)
+            {
+                ERROR("Error initiating Hud config from json - {}!",e.what())
+                return false;
+            };
+
+            DEBUG("Skill config [{}] initiated - Number of skyrim skills = {}",a_config->config.name,a_config->config.skills.size())
+            return true;
+        }
+        ERROR("Error reading Skill config")
+        return false;
     }
 }
