@@ -28,7 +28,7 @@ namespace UD
         FuncArgVal(){uInt = 0U;};
         ~FuncArgVal(){};
         int uInt;
-        float uFloat;
+        double uFloat;
         bool uBool;
         std::string uString;
         RE::TESForm* uForm;
@@ -40,7 +40,7 @@ namespace UD
     {
         FuncArg() : Type(FuncArgTypes::eInt) {Val.uInt = 0;}
         FuncArg(int val) : Type(FuncArgTypes::eInt) {Val.uInt = val;}
-        FuncArg(float val) : Type(FuncArgTypes::eFloat) {Val.uFloat = val;}
+        FuncArg(double val) : Type(FuncArgTypes::eFloat) {Val.uFloat = val;}
         FuncArg(bool val) : Type(FuncArgTypes::eBool) {Val.uBool = val;}
         FuncArg(std::string val) : Type(FuncArgTypes::eString) {Val.uString = val;}
         FuncArg(RE::TESForm* val) : Type(FuncArgTypes::eForm) {Val.uForm = val;}

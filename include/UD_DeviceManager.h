@@ -76,9 +76,9 @@ namespace UD
         std::vector<DeviceConfig> GetDeviceConfigs(Object a_device);
         std::vector<DeviceConfig> GetDeviceConfigs(ObjectPtr*a_device);
 
-        float GetDeviceAccessibility(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_rd);
+        float GetDeviceAccessibility(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_rd, bool a_checkHB);
 
-        float GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectPtr* a_device, RE::Actor* a_actor, RE::Actor* a_helper);
+        float GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectPtr* a_device, RE::Actor* a_actor, RE::Actor* a_helper, bool a_checkHB);
     private:
         void PushDeviceData(lua_State* L, DeviceData& a_data);
     private:
@@ -89,7 +89,7 @@ namespace UD
 
     inline float GetDeviceAccessibility(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_rd)
     {
-        return DeviceManager::GetSingleton()->GetDeviceAccessibility(a_actor,a_helper,a_rd);
+        return DeviceManager::GetSingleton()->GetDeviceAccessibility(a_actor,a_helper,a_rd, true);
     }
 
 }

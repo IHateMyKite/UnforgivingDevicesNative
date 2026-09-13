@@ -4,14 +4,6 @@ namespace UD
 {
     typedef RE::PlayerCharacter::PlayerSkills::Data::Skills::Skill Skill;
 
-    int CalculateSkillFromPerks(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, std::string a_skill, int a_increase);
-    std::vector<RE::BGSPerk*> GetPerksForSkill(PAPYRUSFUNCHANDLE,std::string a_skill);
-    void AdvanceSkillPerc(PAPYRUSFUNCHANDLE,std::string a_skill,float a_value);
-    void GetPerksFromTree(std::vector<RE::BGSPerk*>& a_res,RE::BSTArray<RE::BGSSkillPerkTreeNode*> a_tree);
-
-    Skill GetSkillByName(std::string asSkill);
-    RE::ActorValue GetActorValueByName(std::string asSkill);
-
     enum class ConfigStatus : uint8_t
     {
         sOK             = 0U,
@@ -52,11 +44,24 @@ namespace UD
     SINGLETONHEADER(SkillManager)
     public:
         void Setup();
+        void AdvanceSkillPerc(std::string a_skill,float a_value);
+        void AdvanceSingleSkillPerc(std::string a_skill,float a_value);
+        void GetPerksFromTree(std::vector<RE::BGSPerk*>& a_res,RE::BSTArray<RE::BGSSkillPerkTreeNode*> a_tree);
+        Skill GetSkillByName(std::string asSkill);
+        RE::ActorValue GetActorValueByName(std::string asSkill);
     private:
         bool InitConfig(SkillSetting a_config);
-
     private:
         bool _init = false;
         std::unordered_map<std::string,SkillSetting> _skills;
     };
+
+
+    int CalculateSkillFromPerks(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, std::string a_skill, int a_increase);
+    std::vector<RE::BGSPerk*> GetPerksForSkill(PAPYRUSFUNCHANDLE,std::string a_skill);
+    inline void AdvanceSkillPerc(PAPYRUSFUNCHANDLE,std::string a_skill,float a_value)
+    {
+        SkillManager::GetSingleton()->AdvanceSingleSkillPerc(a_skill,a_value);
+    }
+
 }

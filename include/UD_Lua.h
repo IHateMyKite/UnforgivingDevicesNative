@@ -105,6 +105,8 @@ namespace Lua
         int lua_GetForm(lua_State* L);
         int lua_GetItemCount(lua_State* L);
         int lua_GetHudValue(lua_State* L);
+        int lua_AdvanceMinigameSkill(lua_State* L);
+        int lua_GetSharpestWeaponPower(lua_State* L);
     }
 
 }

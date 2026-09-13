@@ -3,6 +3,8 @@
 #include <UD_DeviceManager.h>
 #include <UD_Utility.h>
 #include <UD_HUD.h>
+#include <UD_Skill.h>
+#include <UD_Inventory.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 lua_State* Lua::OpenScript(std::string a_path)
@@ -131,6 +133,8 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_GetGameForm",HostFunctions::lua_GetForm);
     lua_register(L,"Host_GetItemCount",HostFunctions::lua_GetItemCount);
     lua_register(L,"Host_GetHudValue",HostFunctions::lua_GetHudValue);
+    lua_register(L,"Host_AdvanceMinigameSkill",HostFunctions::lua_AdvanceMinigameSkill);
+    lua_register(L,"Host_GetSharpestWeaponPower",HostFunctions::lua_GetSharpestWeaponPower);
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -254,8 +258,6 @@ bool Lua::ParseArgTable(lua_State* L, int a_indx, std::vector<LuaVariablePtr>& a
         return false;
     }
 
-    //DEBUG("ParseArgTable called")
-
     Lua::LuaVariable loc_n("n",(lua_Integer)0);
     if (!GetTable(L,a_indx, loc_n))
     {
@@ -263,8 +265,6 @@ bool Lua::ParseArgTable(lua_State* L, int a_indx, std::vector<LuaVariablePtr>& a
         lua_pop(L,1);
         return false;
     }
-
-    //DEBUG("ParseArgTable - Number of args = {}",*(lua_Integer*)&loc_n.Value)
 
     for (lua_Integer i = 0; i < *(lua_Integer*)&loc_n.Value; i++)
     {
@@ -275,8 +275,6 @@ bool Lua::ParseArgTable(lua_State* L, int a_indx, std::vector<LuaVariablePtr>& a
             lua_pop(L,1);
             return false;
         }
-
-        //DEBUG("ParseArgTable - Type is {}",std::string(loc_type.Value))
 
         Lua::LuaVariablePtr loc_value = Lua::LuaVariablePtr(new Lua::LuaVariable(std::to_string(i) + "_v"));
         loc_value->Type = ParseArgTypeStr(std::string(loc_type.Value));
@@ -632,7 +630,7 @@ int Lua::HostFunctions::lua_CallPapyrusFunction(lua_State* L)
                     loc_funcArgs.push_back(UD::FuncArgPtr(new UD::FuncArg((*(int*)&it->Value))));
                 break;
                 case LuaVariableType::eNumber:
-                    loc_funcArgs.push_back(UD::FuncArgPtr(new UD::FuncArg((*(float*)&it->Value))));
+                    loc_funcArgs.push_back(UD::FuncArgPtr(new UD::FuncArg((*(double*)&it->Value))));
                 break;
                 case LuaVariableType::eBool:
                     loc_funcArgs.push_back(UD::FuncArgPtr(new UD::FuncArg((*(bool*)&it->Value))));
@@ -787,7 +785,7 @@ int Lua::HostFunctions::lua_RegisterActionCallback(lua_State* L)
 
 int Lua::HostFunctions::lua_GetDeviceAccesibility(lua_State* L)
 {
-    if (!lua_istable(L,1))
+    if (!lua_istable(L,1) || !lua_isboolean(L,2))
     {
         ERROR("lua_GetDeviceAccesibility - Incorrect variables passed!")
         lua_pushnil(L);
@@ -805,12 +803,14 @@ int Lua::HostFunctions::lua_GetDeviceAccesibility(lua_State* L)
     LuaVariable loc_idVar("ID",(void*)nullptr);
     GetTable(L,1,loc_idVar);
 
+    bool loc_checkHB = lua_toboolean(L,2);
+
     RE::Actor*  loc_wearer      = *(RE::Actor**)&loc_wearerVar.Value;
     RE::Actor*  loc_helper      = *(RE::Actor**)&loc_helperVar.Value;
     ObjectPtr*   loc_device     = *(ObjectPtr**)&loc_deviceVar.Value;
     RE::TESObjectARMO*  loc_rd  = *(RE::TESObjectARMO**)&loc_rdVar.Value;
 
-    const float loc_Res = UD::DeviceManager::GetSingleton()->GetDeviceAccessibility(loc_rd,loc_device,loc_wearer,loc_helper);
+    const float loc_Res = UD::DeviceManager::GetSingleton()->GetDeviceAccessibility(loc_rd,loc_device,loc_wearer,loc_helper,loc_checkHB);
     lua_pushnumber(L,loc_Res);
 
     return 1;
@@ -981,5 +981,38 @@ int Lua::HostFunctions::lua_GetHudValue(lua_State* L)
     }
 
     lua_pushnumber(L,loc_res);
+    return 1;
+}
+
+int Lua::HostFunctions::lua_AdvanceMinigameSkill(lua_State* L)
+{
+    if (!lua_isinteger(L,1) || !lua_isnumber(L,2))
+    {
+        ERROR("lua_AdvanceMinigameSkill - Incorrect variables passed!")
+        return 0;
+    }
+    auto loc_data = UD::MinigameManager::GetSingleton()->GetMinigameDataById(lua_tointeger(L,1));
+    UD::SkillManager::GetSingleton()->AdvanceSkillPerc(loc_data->Setting->config.skill,lua_tonumber(L,2));
+    return 0;
+}
+
+int Lua::HostFunctions::lua_GetSharpestWeaponPower(lua_State* L)
+{
+    if (!lua_isuserdata(L,1))
+    {
+        ERROR("lua_GetSharpestWeaponPower - Incorrect variables passed!")
+        lua_pushinteger(L,0);
+        return 1;
+    }
+
+    RE::Actor* loc_actor        = (RE::Actor*)lua_touserdata(L,1);
+    int loc_res = 0;
+    auto loc_weapon = UD::InventoryHandler::GetSingleton()->GetSharpestWeapon(loc_actor);
+    if (loc_weapon)
+    {
+        loc_res = loc_weapon->GetAttackDamage();
+    }
+    
+    lua_pushinteger(L,loc_res);
     return 1;
 }

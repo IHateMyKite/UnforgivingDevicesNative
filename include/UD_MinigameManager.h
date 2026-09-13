@@ -63,6 +63,7 @@ namespace UD
         std::string uiobject;
         std::string script;
         int         priority;
+        std::string skill;
         std::string base;
         std::vector<std::string> includes;
     };

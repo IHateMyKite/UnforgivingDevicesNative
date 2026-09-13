@@ -8,6 +8,28 @@ namespace UD
 
     typedef RE::PlayerCharacter::PlayerSkills::Data::Skills::Skill Skill;
 
+    std::unordered_map<std::string,std::pair<Skill,RE::ActorValue>> g_SkillTable = 
+    {
+        {"onehanded"   ,{Skill::kOneHanded  , RE::ActorValue::kOneHanded  }},
+        {"twohanded"   ,{Skill::kTwoHanded  , RE::ActorValue::kTwoHanded  }},
+        {"marksman"    ,{Skill::kArchery    , RE::ActorValue::kArchery    }}, // Why is it called two things ???
+        {"block"       ,{Skill::kBlock      , RE::ActorValue::kBlock      }},
+        {"smithing"    ,{Skill::kSmithing   , RE::ActorValue::kSmithing   }},
+        {"heavyarmor"  ,{Skill::kHeavyArmor , RE::ActorValue::kHeavyArmor }},
+        {"lightarmor"  ,{Skill::kLightArmor , RE::ActorValue::kLightArmor }},
+        {"pickpocket"  ,{Skill::kPickpocket , RE::ActorValue::kPickpocket }},
+        {"lockpicking" ,{Skill::kLockpicking, RE::ActorValue::kLockpicking}},
+        {"sneak"       ,{Skill::kSneak      , RE::ActorValue::kSneak      }},
+        {"alchemy"     ,{Skill::kAlchemy    , RE::ActorValue::kAlchemy    }},
+        {"speechcraft" ,{Skill::kSpeech     , RE::ActorValue::kSpeech     }},
+        {"alteration"  ,{Skill::kAlteration , RE::ActorValue::kAlteration }},
+        {"conjuration" ,{Skill::kConjuration, RE::ActorValue::kConjuration}},
+        {"destruction" ,{Skill::kDestruction, RE::ActorValue::kDestruction}},
+        {"illusion"    ,{Skill::kIllusion   , RE::ActorValue::kIllusion   }},
+        {"restoration" ,{Skill::kRestoration, RE::ActorValue::kRestoration}},
+        {"enchanting"  ,{Skill::kEnchanting , RE::ActorValue::kEnchanting }}
+    };
+
     int CalculateSkillFromPerks(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, std::string a_skill, int a_increase)
     {
         if (a_actor == nullptr || a_skill == "") return 10;
@@ -36,14 +58,14 @@ namespace UD
 
     std::vector<RE::BGSPerk*> GetPerksForSkill(PAPYRUSFUNCHANDLE, std::string a_skill)
     {
-        RE::ActorValue loc_value = GetActorValueByName(a_skill);
+        RE::ActorValue loc_value = SkillManager::GetSingleton()->GetActorValueByName(a_skill);
         auto loc_valueinfo = RE::ActorValueList::GetSingleton()->GetActorValue(loc_value);
         std::vector<RE::BGSPerk*> loc_res;
         if (loc_valueinfo != nullptr && loc_valueinfo->perkTree)
         {
             auto loc_tree = loc_valueinfo->perkTree;
             auto loc_childs = loc_tree->children;
-            GetPerksFromTree(loc_res,loc_childs);
+            SkillManager::GetSingleton()->GetPerksFromTree(loc_res,loc_childs);
         }
         else
         {
@@ -52,42 +74,7 @@ namespace UD
         return loc_res;
     }
 
-    void AdvanceSkillPerc(PAPYRUSFUNCHANDLE, std::string a_skill, float a_value)
-    {
-        #define GET_SKILL_DATA() loc_player->GetInfoRuntimeData().skills->data
-        RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
-        auto loc_av = GetActorValueByName(a_skill);
-        auto loc_avinfo = RE::ActorValueList::GetSingleton()->GetActorValue(loc_av);
-
-        if (loc_avinfo == nullptr) 
-        {
-            ERROR("AdvanceSkillPerc({},{}) - Can't get actor value info",a_skill,a_value)
-            return;
-        }
-
-        Skill loc_skill = GetSkillByName(a_skill);
-        const float loc_thd = GET_SKILL_DATA()->skills[loc_skill].levelThreshold;
-
-        // Check player level
-        const auto  loc_lvl = GET_SKILL_DATA()->skills[loc_skill].level;
-        const float loc_val = std::lerp(a_value*0.1,a_value,std::clamp(1.0 - ((loc_lvl - 15)/100.0),0.0,1.0));
-
-        LOG("AdvanceSkillPerc({},{}) - Recalculated perc. = {}, level = {}",a_skill,a_value,loc_val,loc_lvl)
-
-        if (loc_avinfo->skill && loc_avinfo->skill->useMult)
-        {
-            const float loc_xp = (loc_thd*loc_val - loc_avinfo->skill->offsetMult)/loc_avinfo->skill->useMult;
-            loc_player->AddSkillExperience(loc_av,loc_xp);
-        }
-        else
-        {
-            ERROR("AdvanceSkillPerc({},{}) - Use mult. is 0",a_skill,a_value)
-        }
-
-        #undef GET_SKILL_DATA
-    }
-
-    void GetPerksFromTree(std::vector<RE::BGSPerk*>& a_res,RE::BSTArray<RE::BGSSkillPerkTreeNode*> a_tree)
+    void SkillManager::GetPerksFromTree(std::vector<RE::BGSPerk*>& a_res,RE::BSTArray<RE::BGSSkillPerkTreeNode*> a_tree)
     {
         for (auto&& it : a_tree)
         {
@@ -117,35 +104,13 @@ namespace UD
         }
     }
 
-    std::unordered_map<std::string,std::pair<Skill,RE::ActorValue>> g_SkillTable = 
-    {
-        {"onehanded"   ,{Skill::kOneHanded  , RE::ActorValue::kOneHanded  }},
-        {"twohanded"   ,{Skill::kTwoHanded  , RE::ActorValue::kTwoHanded  }},
-        {"marksman"    ,{Skill::kArchery    , RE::ActorValue::kArchery    }}, // Why is it called two things ???
-        {"block"       ,{Skill::kBlock      , RE::ActorValue::kBlock      }},
-        {"smithing"    ,{Skill::kSmithing   , RE::ActorValue::kSmithing   }},
-        {"heavyarmor"  ,{Skill::kHeavyArmor , RE::ActorValue::kHeavyArmor }},
-        {"lightarmor"  ,{Skill::kLightArmor , RE::ActorValue::kLightArmor }},
-        {"pickpocket"  ,{Skill::kPickpocket , RE::ActorValue::kPickpocket }},
-        {"lockpicking" ,{Skill::kLockpicking, RE::ActorValue::kLockpicking}},
-        {"sneak"       ,{Skill::kSneak      , RE::ActorValue::kSneak      }},
-        {"alchemy"     ,{Skill::kAlchemy    , RE::ActorValue::kAlchemy    }},
-        {"speechcraft" ,{Skill::kSpeech     , RE::ActorValue::kSpeech     }},
-        {"alteration"  ,{Skill::kAlteration , RE::ActorValue::kAlteration }},
-        {"conjuration" ,{Skill::kConjuration, RE::ActorValue::kConjuration}},
-        {"destruction" ,{Skill::kDestruction, RE::ActorValue::kDestruction}},
-        {"illusion"    ,{Skill::kIllusion   , RE::ActorValue::kIllusion   }},
-        {"restoration" ,{Skill::kRestoration, RE::ActorValue::kRestoration}},
-        {"enchanting"  ,{Skill::kEnchanting , RE::ActorValue::kEnchanting }}
-    };
-
-    Skill GetSkillByName(std::string a_skill)
+    Skill SkillManager::GetSkillByName(std::string a_skill)
     {
         std::transform(a_skill.begin(), a_skill.end(), a_skill.begin(),[](unsigned char c){ return std::tolower(c); });
         return g_SkillTable[a_skill].first;
     }
 
-    RE::ActorValue GetActorValueByName(std::string a_skill)
+    RE::ActorValue SkillManager::GetActorValueByName(std::string a_skill)
     {
         std::transform(a_skill.begin(), a_skill.end(), a_skill.begin(),[](unsigned char c){ return std::tolower(c); });
         return g_SkillTable[a_skill].second;
@@ -203,6 +168,64 @@ namespace UD
                 DEBUG("\t{} - {} / {}",name, file->status, file->error)
             }
         }
+    }
+
+    void SkillManager::AdvanceSkillPerc(std::string a_skill, float a_value)
+    {
+        if (a_skill == "") return;
+
+        auto loc_res = std::find_if(_skills.begin(),_skills.end(),[a_skill](std::pair<string,SkillSetting> skill){return boost::iequals(skill.second->config.name,a_skill) || boost::iequals(skill.second->config.alias,a_skill);});
+        if (loc_res != _skills.end())
+        {
+            // First calculate total weigth
+            int loc_totalweigth = 0;
+            for (auto [name,weigth] : loc_res->second->config.skills)
+            {
+                loc_totalweigth += weigth;
+            }
+
+            // Now calculate parts and advance skills
+            for (auto [name,weigth] : loc_res->second->config.skills)
+            {
+                const float loc_increase = a_value*weigth/loc_totalweigth;
+                AdvanceSingleSkillPerc(name,loc_increase);
+            }
+        }
+    }
+
+    void SkillManager::AdvanceSingleSkillPerc(std::string a_skill, float a_value)
+    {
+        #define GET_SKILL_DATA() loc_player->GetInfoRuntimeData().skills->data
+        RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
+        auto loc_av = GetActorValueByName(a_skill);
+        auto loc_avinfo = RE::ActorValueList::GetSingleton()->GetActorValue(loc_av);
+
+        if (loc_avinfo == nullptr) 
+        {
+            ERROR("AdvanceSkillPerc({},{}) - Can't get actor value info",a_skill,a_value)
+            return;
+        }
+
+        Skill loc_skill = GetSkillByName(a_skill);
+        const float loc_thd = GET_SKILL_DATA()->skills[loc_skill].levelThreshold;
+
+        // Check player level
+        const auto  loc_lvl = GET_SKILL_DATA()->skills[loc_skill].level;
+        const float loc_val = std::lerp(a_value*0.1,a_value,std::clamp(1.0 - ((loc_lvl - 15)/100.0),0.0,1.0));
+
+        LOG("AdvanceSkillPerc({},{}) - Recalculated perc. = {}, level = {}",a_skill,a_value,loc_val,loc_lvl)
+
+        if (loc_avinfo->skill && loc_avinfo->skill->useMult)
+        {
+            const float loc_xp = (loc_thd*loc_val - loc_avinfo->skill->offsetMult)/loc_avinfo->skill->useMult;
+            loc_player->AddSkillExperience(loc_av,loc_xp);
+        }
+        else
+        {
+            ERROR("AdvanceSkillPerc({},{}) - Use mult. is 0",a_skill,a_value)
+        }
+
+        #undef GET_SKILL_DATA
     }
 
     bool SkillManager::InitConfig(SkillSetting a_config)

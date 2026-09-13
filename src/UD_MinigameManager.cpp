@@ -345,7 +345,8 @@ void UD::MinigameManager::Update(float a_delta)
         _UIState = MinigameUIState::eShown;
     }
 
-    for (auto&& it : _minigames)
+    auto loc_minigames = _minigames;
+    for (auto&& it : loc_minigames)
     {
         if (it)
         {
@@ -448,7 +449,11 @@ void UD::MinigameManager::CheckActionCallback(uint32_t a_dxcode)
                 auto L = _scripts[it1->Setting->config.script];
                 lua_getglobal(L,it2.callback.c_str());
                 PushMinigameData(L,*it1);
-                lua_pcall(L,1,0,0);
+                auto loc_luares = lua_pcall(L,1,0,0);
+                if (loc_luares != LUA_OK)
+                {
+                    ERROR("Error running function {} - {}",it2.callback,loc_luares)
+                }
             }
             /* TODO: Gamepad support*/
         }
@@ -466,7 +471,11 @@ void UD::MinigameManager::SendOpenMinigameUICallback()
         if (!L) return;
         lua_getglobal(L,_callback.c_str());
         PushMinigameData(L,*loc_data);
-        lua_pcall(L,1,0,0);
+        auto loc_luares = lua_pcall(L,1,0,0);
+        if (loc_luares != LUA_OK)
+        {
+            ERROR("Error running function {} - {}",_callback,loc_luares)
+        }
     }
 }
 
@@ -642,6 +651,8 @@ bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
             a_config->config.script       = a_config->json->get_optional<std::string>("script").get_value_or("");
             a_config->config.base         = a_config->json->get_optional<std::string>("base").get_value_or("");
             a_config->config.priority     = a_config->json->get_optional<int>("priority").get_value_or(0);
+            a_config->config.skill        = a_config->json->get_optional<std::string>("skill").get_value_or("");
+            
 
             auto loc_includes = a_config->json->get_child_optional("includes");
             if (loc_includes)

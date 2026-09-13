@@ -179,13 +179,13 @@ std::vector<UD::DeviceConfig> UD::DeviceManager::GetDeviceConfigs(ObjectPtr* a_d
     return loc_res;
 }
 
-float UD::DeviceManager::GetDeviceAccessibility(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_rd)
+float UD::DeviceManager::GetDeviceAccessibility(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_rd, bool a_checkHB)
 {
     auto [loc_rd,loc_device] = PapyrusDelegate::GetSingleton()->FindDeviceScriptRD(a_actor,a_rd);
-    return GetDeviceAccessibility(a_rd,loc_device.get(),a_actor,a_helper);
+    return GetDeviceAccessibility(a_rd,loc_device.get(),a_actor,a_helper,a_checkHB);
 }
 
-float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectPtr* a_device, RE::Actor* a_actor, RE::Actor* a_helper)
+float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectPtr* a_device, RE::Actor* a_actor, RE::Actor* a_helper, bool a_checkHB)
 {
     if (!a_rd || !a_device) return 0.0;
 
@@ -211,7 +211,8 @@ float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectP
                 loc_data.helper = a_helper;
 
                 PushDeviceData(L,loc_data);
-                lua_pcall(L,1,1,0);
+                lua_pushboolean(L,a_checkHB);
+                lua_pcall(L,2,1,0);
                 loc_res *= lua_tonumber(L,-1);
                 lua_pop(L,1);
             }
