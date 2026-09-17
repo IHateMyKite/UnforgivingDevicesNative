@@ -23,7 +23,7 @@ void UD::MinigameManager::Reload()
         _init = true;
         _jsoncache.clear();
 
-        for(auto&& [name,script] : _scripts) lua_close(script);
+        for(auto&& [name,script] : _scripts) if (script) lua_close(script);
         _scripts.clear();
 
         std::string loc_devconfpath = RelToAbsPath("UD\\Minigames");

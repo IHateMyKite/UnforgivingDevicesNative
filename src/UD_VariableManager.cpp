@@ -275,93 +275,115 @@ UD::VariableValue UD::ParsePapVar(Variable* a_var)
 {
     VariableValue loc_res;
     const VariableType loc_type = a_var->GetType().GetRawType();
-    switch (loc_type)
+    if (loc_type < VariableType::kArraysEnd)
     {
-        case RE::BSScript::TypeInfo::RawType::kFloat:
-            loc_res.Value = std::to_string(a_var->GetFloat());
-            loc_res.Type  = loc_type;
-        break;
-        case RE::BSScript::TypeInfo::RawType::kBool:
-            loc_res.Value = std::to_string(a_var->GetBool());
-            loc_res.Type  = loc_type;
-        break;
-        case RE::BSScript::TypeInfo::RawType::kInt:
-            loc_res.Value = std::to_string(a_var->GetSInt());
-            loc_res.Type  = loc_type;
-        break;
-        case RE::BSScript::TypeInfo::RawType::kString:
-            loc_res.Value = a_var->GetString();
-            loc_res.Type  = loc_type;
-        break;
-        case RE::BSScript::TypeInfo::RawType::kIntArray:
-            loc_res.Value = "";
-            if (a_var->GetArray())
+        switch (loc_type)
+        {
+            case RE::BSScript::TypeInfo::RawType::kFloat:
+                loc_res.Value = std::to_string(a_var->GetFloat());
+                loc_res.Type  = loc_type;
+            break;
+            case RE::BSScript::TypeInfo::RawType::kBool:
+                loc_res.Value = std::to_string(a_var->GetBool());
+                loc_res.Type  = loc_type;
+            break;
+            case RE::BSScript::TypeInfo::RawType::kInt:
+                loc_res.Value = std::to_string(a_var->GetSInt());
+                loc_res.Type  = loc_type;
+            break;
+            case RE::BSScript::TypeInfo::RawType::kString:
+                loc_res.Value = a_var->GetString();
+                loc_res.Type  = loc_type;
+            break;
+            case RE::BSScript::TypeInfo::RawType::kObject:
             {
-                auto loc_arr = a_var->GetArray();
-                for(size_t i = 0; i < loc_arr->size();i++)
+                #undef GetObject
+                void* loc_ptr = a_var->GetObject()->Resolve((RE::VMTypeID)RE::FormType::None);
+                DEBUG("Resolved object = 0x{:016X}",(uintptr_t)loc_ptr)
+                loc_res.Value = std::to_string(*(uint64_t*)&loc_ptr);
+                loc_res.Type  = loc_type;
+            }
+            break;
+            case RE::BSScript::TypeInfo::RawType::kIntArray:
+                loc_res.Value = "";
+                if (a_var->GetArray())
                 {
-                    loc_res.Value += std::to_string((*loc_arr)[i].GetSInt());
-                    if (i != (loc_arr->size() - 1))
+                    auto loc_arr = a_var->GetArray();
+                    for(size_t i = 0; i < loc_arr->size();i++)
                     {
-                        loc_res.Value += ",";
+                        loc_res.Value += std::to_string((*loc_arr)[i].GetSInt());
+                        if (i != (loc_arr->size() - 1))
+                        {
+                            loc_res.Value += ",";
+                        }
                     }
                 }
-            }
-            loc_res.Type  = loc_type;
-        break;
-        case RE::BSScript::TypeInfo::RawType::kStringArray:
-            loc_res.Value = "";
-            if (a_var->GetArray())
-            {
-                auto loc_arr = a_var->GetArray();
-                for(size_t i = 0; i < loc_arr->size();i++)
+                loc_res.Type  = loc_type;
+            break;
+            case RE::BSScript::TypeInfo::RawType::kStringArray:
+                loc_res.Value = "";
+                if (a_var->GetArray())
                 {
-                    loc_res.Value += ((*loc_arr)[i].GetString());
-                    if (i != (loc_arr->size() - 1))
+                    auto loc_arr = a_var->GetArray();
+                    for(size_t i = 0; i < loc_arr->size();i++)
                     {
-                        loc_res.Value += ",";
+                        loc_res.Value += ((*loc_arr)[i].GetString());
+                        if (i != (loc_arr->size() - 1))
+                        {
+                            loc_res.Value += ",";
+                        }
                     }
                 }
-            }
-            loc_res.Type  = loc_type;
-        break;
-        case RE::BSScript::TypeInfo::RawType::kFloatArray:
-            loc_res.Value = "";
-            if (a_var->GetArray())
-            {
-                auto loc_arr = a_var->GetArray();
-                for(size_t i = 0; i < loc_arr->size();i++)
+                loc_res.Type  = loc_type;
+            break;
+            case RE::BSScript::TypeInfo::RawType::kFloatArray:
+                loc_res.Value = "";
+                if (a_var->GetArray())
                 {
-                    loc_res.Value += std::to_string((*loc_arr)[i].GetFloat());
-                    if (i != (loc_arr->size() - 1))
+                    auto loc_arr = a_var->GetArray();
+                    for(size_t i = 0; i < loc_arr->size();i++)
                     {
-                        loc_res.Value += ",";
+                        loc_res.Value += std::to_string((*loc_arr)[i].GetFloat());
+                        if (i != (loc_arr->size() - 1))
+                        {
+                            loc_res.Value += ",";
+                        }
                     }
                 }
-            }
-            loc_res.Type  = loc_type;
-        break;
-        case RE::BSScript::TypeInfo::RawType::kBoolArray:
-            loc_res.Value = "";
-            if (a_var->GetArray())
-            {
-                auto loc_arr = a_var->GetArray();
-                for(size_t i = 0; i < loc_arr->size();i++)
+                loc_res.Type  = loc_type;
+            break;
+            case RE::BSScript::TypeInfo::RawType::kBoolArray:
+                loc_res.Value = "";
+                if (a_var->GetArray())
                 {
-                    loc_res.Value += std::to_string((*loc_arr)[i].GetBool());
-                    if (i != (loc_arr->size() - 1))
+                    auto loc_arr = a_var->GetArray();
+                    for(size_t i = 0; i < loc_arr->size();i++)
                     {
-                        loc_res.Value += ",";
+                        loc_res.Value += std::to_string((*loc_arr)[i].GetBool());
+                        if (i != (loc_arr->size() - 1))
+                        {
+                            loc_res.Value += ",";
+                        }
                     }
                 }
-            }
-            loc_res.Type  = loc_type;
-        break;
-        default:
-            //ERROR("Type of {} currently not supported",(int)loc_type)
-            loc_res.Value = "";
-            loc_res.Type  = loc_type;
-        break;
+                loc_res.Type  = loc_type;
+            break;
+            default:
+                ERROR("Type of {} currently not supported",(int)loc_type)
+                loc_res.Value = "";
+                loc_res.Type  = loc_type;
+            break;
+        }
     }
+    else
+    {
+        // Type is class, try to do something
+        #undef GetObject
+        void* loc_ptr = a_var->GetObject()->Resolve((RE::VMTypeID)RE::FormType::None);
+        DEBUG("Resolved object = 0x{:016X}",(uintptr_t)loc_ptr)
+        loc_res.Value = std::to_string(*(uint64_t*)&loc_ptr);
+        loc_res.Type  = VariableType::kObject;
+    }
+
     return loc_res;
 }

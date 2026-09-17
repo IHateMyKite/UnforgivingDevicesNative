@@ -38,6 +38,10 @@ namespace UD
         bool property = true;
     };
 
+    struct DeviceConfig;
+
+    typedef std::shared_ptr<DeviceConfig> DeviceConfigPtr;
+
     struct DeviceConfig
     {
         std::unordered_map<std::string,std::string> docustr;
@@ -45,6 +49,9 @@ namespace UD
         std::string script;
         std::string description;
         std::vector<DeviceVariable> variables;
+        string parentstr;
+        DeviceConfigPtr parent;
+        string lua_code = "";
         lua_State* luaScript = nullptr;
         /* TODO: Minigames */
     };
@@ -79,12 +86,17 @@ namespace UD
         float GetDeviceAccessibility(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_rd, bool a_checkHB);
 
         float GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectPtr* a_device, RE::Actor* a_actor, RE::Actor* a_helper, bool a_checkHB);
+
+        string GetTags(RE::TESObjectARMO* a_rd, ObjectPtr* a_device);
+
     private:
         void PushDeviceData(lua_State* L, DeviceData& a_data);
+        void InitConfigParents();
+        void InitConfigScripts();
     private:
         bool _init = false;
         //std::unordered_map<std::string,std::shared_ptr<DeviceConfigJson>> _jsoncache;
-        std::unordered_map<std::string,DeviceConfig> _DeviceTypes;
+        std::unordered_map<std::string,DeviceConfigPtr> _DeviceTypes;
     };
 
     inline float GetDeviceAccessibility(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_rd)

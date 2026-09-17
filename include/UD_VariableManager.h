@@ -39,6 +39,7 @@ namespace UD
             case VariableType::kBool:
             case VariableType::kFloat:
             case VariableType::kString:
+            case VariableType::kObject:
             {
                 try 
                 {

@@ -102,10 +102,17 @@ bool Lua::IncludeScripts(lua_State* a_script)
 {
     bool loc_res = true;
 
-    if (loc_res && (luaL_dofile(a_script, RelToAbsPath("UD\\Global.lua").c_str()) != LUA_OK))
+    std::vector<string> loc_scripts = {"UD\\Json.lua","UD\\Global.lua"};
+
+    for(auto&& it : loc_scripts)
     {
-        loc_res = false;
-        ERROR("Error including script {}","UD\\Global.lua")
+        auto loc_dores = luaL_dofile(a_script, RelToAbsPath(it).c_str());
+        if (loc_dores == LUA_OK) DEBUG("Script {} included",it)
+        else
+        {
+            ERROR("Error including script {}",it)
+            return false;
+        }
     }
 
     return loc_res;
@@ -135,6 +142,7 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_GetHudValue",HostFunctions::lua_GetHudValue);
     lua_register(L,"Host_AdvanceMinigameSkill",HostFunctions::lua_AdvanceMinigameSkill);
     lua_register(L,"Host_GetSharpestWeaponPower",HostFunctions::lua_GetSharpestWeaponPower);
+    lua_register(L,"Host_GetDeviceTags",HostFunctions::lua_GetDeviceTags);
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -316,6 +324,12 @@ void Lua::PushVariableResult(lua_State* L, UD::VariableValue& a_val)
         case VariableType::kString:
         {
             lua_pushstring(L,a_val.Value.c_str());
+        }
+        break;
+        case VariableType::kObject:
+        {
+            auto loc_tmp = UD::GetValue<uint64_t>(a_val);
+            lua_pushlightuserdata(L,*(void**)&loc_tmp);
         }
         break;
         case VariableType::kIntArray:
@@ -1014,5 +1028,29 @@ int Lua::HostFunctions::lua_GetSharpestWeaponPower(lua_State* L)
     }
     
     lua_pushinteger(L,loc_res);
+    return 1;
+}
+
+int Lua::HostFunctions::lua_GetDeviceTags(lua_State* L)
+{
+    if (!lua_istable(L,1))
+    {
+        ERROR("lua_GetDeviceTags - Incorrect variables passed!")
+        lua_pushstring(L,"{}");
+        return 1;
+    }
+
+    LuaVariable loc_deviceVar("DeviceObj",(void*)nullptr);
+    GetTable(L,1,loc_deviceVar);
+    LuaVariable loc_rdVar("RD",(void*)nullptr);
+    GetTable(L,1,loc_rdVar);
+    LuaVariable loc_idVar("ID",(void*)nullptr);
+    GetTable(L,1,loc_idVar);
+
+    ObjectPtr*   loc_device     = *(ObjectPtr**)&loc_deviceVar.Value;
+    RE::TESObjectARMO*  loc_rd  = *(RE::TESObjectARMO**)&loc_rdVar.Value;
+
+    const string loc_Res = UD::DeviceManager::GetSingleton()->GetTags(loc_rd,loc_device);
+    lua_pushstring(L,loc_Res.c_str());
     return 1;
 }

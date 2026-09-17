@@ -341,7 +341,7 @@ namespace UD
             const float loc_acc = DeviceManager::GetSingleton()->GetDeviceAccessibility(a_rd,loc_obj.get(),a_wearer,a_helper,true);
             CreateValueDetail(loc_arg, true,"Accessibility",std::format("{}%",Utility::Round(loc_acc*100.0f)),"");
 
-            const auto loc_configs = DeviceManager::GetSingleton()->GetDeviceConfigs(loc_obj);
+            auto loc_configs = DeviceManager::GetSingleton()->GetDeviceConfigs(loc_obj);
 
             for (auto conf : loc_configs)
             {
