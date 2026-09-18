@@ -498,6 +498,26 @@ namespace UD
         return loc_res;
     }
 
+    string Utility::SerializeJson(iptree& a_tree)
+    {
+        std::ostringstream os; 
+        write_json(os, a_tree, false);
+        return os.str();
+    }
+
+    iptree Utility::DeserializeJson(string a_serdata)
+    {
+        std::istringstream is (a_serdata);
+        iptree loc_res;
+        read_json(is, loc_res);
+        return loc_res;
+    }
+
+    void Utility::ToLower(string& a_in)
+    {
+        boost::to_lower(a_in);
+    }
+
     template<class T>
     T GetStringParam(const std::string& a_param, int a_Index, T a_DefaultValue)
     {

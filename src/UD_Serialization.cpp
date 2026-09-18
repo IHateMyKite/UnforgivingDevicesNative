@@ -5,6 +5,7 @@
 #include <UD_Animation.h>
 #include <OrgasmSystem/OrgasmManager.h>
 #include <UD_MinigameManager.h>
+#include <UD_SaveManager.h>
 
 namespace UD
 {
@@ -26,6 +27,7 @@ namespace UD
                 {
                     DEBUG("Reading record 0x{:08X} of size {}",loc_type,loc_size)
                     ORS::OrgasmManager::GetSingleton()->OnGameLoaded(serde,loc_type,loc_size,loc_version);
+                    UD::SaveManager::GetSingleton()->OnGameLoaded(serde,loc_type,loc_size,loc_version);
                     UD::MinigameManager::GetSingleton()->OnGameLoaded(serde,loc_type,loc_size,loc_version);
                 }
                 break;
@@ -43,12 +45,14 @@ namespace UD
     {
         DEBUG("Saving data to Cosave")
         ORS::OrgasmManager::GetSingleton()->OnGameSaved(serde);
+        UD::SaveManager::GetSingleton()->OnGameSaved(serde);
         UD::MinigameManager::GetSingleton()->OnGameSaved(serde);
     }
     void OnRevert(SKSE::SerializationInterface* serde)
     {
         DEBUG("Reverting Cosave data")
         ORS::OrgasmManager::GetSingleton()->OnRevert(serde);
+        UD::SaveManager::GetSingleton()->OnRevert(serde);
         UD::MinigameManager::GetSingleton()->OnRevert(serde);
     }
 }

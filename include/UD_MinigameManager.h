@@ -56,6 +56,16 @@ namespace UD
         sError          = 3U
     };
 
+    struct MinigameExportVar
+    {
+        string config;
+        string name;
+        string description;
+        string defaultvalue;
+        int    priority;
+        string json;
+    };
+
     struct MinigameConfig
     {
         std::string name;
@@ -63,9 +73,16 @@ namespace UD
         std::string uiobject;
         std::string script;
         int         priority;
+        bool        abstract;
         std::string skill;
         std::string base;
         std::vector<std::string> includes;
+
+        std::unordered_map<string,string> config_vars;      // Calculated values from parents
+        std::unordered_map<string,string> config_vars_def;  // Default values, do not change
+        
+        std::unordered_map<string,MinigameExportVar> exports;     // Calculated values from parents
+        std::unordered_map<string,MinigameExportVar> exports_def; // Default values, do not change
     };
 
     struct MinigameConfigJson;
@@ -75,7 +92,8 @@ namespace UD
     struct MinigameConfigJson
     {
         uint32_t id;
-        std::shared_ptr<boost::property_tree::ptree> json;
+        string name;
+        std::shared_ptr<iptree> json;
         MinigameConfigStatus status;
         std::string error;
         MinigameConfig config;
@@ -135,6 +153,7 @@ namespace UD
             bool StartMinigame(MinigameSetting a_minigame,RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id, string a_cntx);
             bool GetMinigameById(uint32_t a_id,MinigameSetting& a_output);
             MinigameDataPtr GetMinigameDataById(uint32_t a_id);
+            MinigameSetting GetMinigameConfigById(uint32_t a_id);
 
             bool StopMinigame(RE::Actor* a_actor);
 
@@ -152,6 +171,11 @@ namespace UD
             void SendPapCallback(int a_id,std::string a_callback,VariableValue& a_var);
             lua_State* GetMinigameScriptById(int a_id);
 
+            std::vector<string> GetMinigameConfigs(bool a_abstract);
+            std::vector<string> GetMinigameExports(int a_indx);
+            bool    SetMinigameConfig(int a_indx, string a_config, string a_value);
+            string  GetMinigameConfig(int a_indx, string a_config, string a_defvalue);
+
             void OnGameLoaded(SKSE::SerializationInterface* serde,uint32_t a_type, uint32_t a_size, uint32_t a_version);
             void OnGameSaved(SKSE::SerializationInterface* serde);
             void OnRevert(SKSE::SerializationInterface* serde);
@@ -162,7 +186,12 @@ namespace UD
             lua_State* GetMinigameScript(MinigameSetting a_config);
             void UpdateMinigame(MinigameData& a_data,float a_delta);
             void PushMinigameData(lua_State* L,MinigameData& a_data);
+            
+            MinigameDataPtr GetMinigameByName(string a_name);
 
+
+            void SetMinigameBases();
+            void SetMinigameConfigVars();
             void LoadSavedMinigames();
         private:
             static PRISMA_UI_API::IVPrismaUI1* PrismaUI;
@@ -196,4 +225,23 @@ namespace UD
         return MinigameManager::GetSingleton()->StopMinigame(a_actor);
     }
 
+    inline std::vector<std::string> GetMinigameConfigs(PAPYRUSFUNCHANDLE)
+    {
+        return MinigameManager::GetSingleton()->GetMinigameConfigs(false);
+    }
+
+    inline std::vector<std::string> GetMinigameExports(PAPYRUSFUNCHANDLE, int a_indx)
+    {
+        return MinigameManager::GetSingleton()->GetMinigameExports(a_indx);
+    }
+
+    inline bool SetMinigameVariable(PAPYRUSFUNCHANDLE, int a_indx, string a_config, string a_value)
+    {
+        return MinigameManager::GetSingleton()->SetMinigameConfig(a_indx,a_config,a_value);
+    }
+
+    inline string GetMinigameVariable(PAPYRUSFUNCHANDLE, int a_indx, string a_config, string a_defvalue)
+    {
+        return MinigameManager::GetSingleton()->GetMinigameConfig(a_indx,a_config,a_defvalue);
+    }
 }

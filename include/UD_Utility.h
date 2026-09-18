@@ -106,6 +106,9 @@ namespace UD
         static int Str2Int(string a_in, int a_def);
 
         static string MemoryToString(void* a_data, size_t a_size);
+        static string SerializeJson(iptree& a_tree);
+        static iptree DeserializeJson(string a_serdata);
+        static void ToLower(string& a_in);
     private:
 
     };
@@ -162,6 +165,23 @@ namespace UD
     inline RE::TESObjectARMO* CheckArmorEquipped(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, RE::TESObjectARMO* a_armor)
     {
         return Utility::GetSingleton()->CheckArmorEquipped(a_actor,a_armor);
+    }
+
+    inline string GetJsonValue(PAPYRUSFUNCHANDLE, string a_serdata, string a_key, string a_def)
+    {
+        if (a_serdata == "") return a_def;
+        //DEBUG("GetJsonValue({},{},{}) called",a_serdata,a_key,a_def)
+        iptree loc_pt = Utility::DeserializeJson(a_serdata);
+        return loc_pt.get_optional<string>(a_key).get_value_or(a_def);
+    }
+
+    inline string SetJsonValue(PAPYRUSFUNCHANDLE, string a_serdata, string a_key, string a_val)
+    {
+        if (a_serdata == "") return "{}";
+        //DEBUG("SetJsonValue({},{},{}) called",a_serdata,a_key,a_val)
+        iptree loc_pt = Utility::DeserializeJson(a_serdata);
+        loc_pt.put(a_key,a_val);
+        return Utility::SerializeJson(loc_pt);
     }
 
     std::string FormatFloat(PAPYRUSFUNCHANDLE,float a_value,int a_floatpoints);

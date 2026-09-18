@@ -571,29 +571,34 @@ int Lua::HostFunctions::lua_ArmorHasKeyword(lua_State* L)
 
 int Lua::HostFunctions::lua_GetConfigVar(lua_State* L)
 {
-    if (!lua_istable(L,1) || !lua_isstring(L,2) || !lua_isstring(L,3))
+    if (!lua_istable(L,1) || !lua_isstring(L,2) || !lua_isstring(L,3) || !lua_isstring(L,4))
     {
         ERROR("lua_GetConfigVar - Incorrect variables passed!")
         lua_pushnil(L);
         return 1;
     }
 
-    LuaVariable loc_jsonVar("Json",(void*)nullptr);
-    GetTable(L,1,loc_jsonVar);
+    std::string loc_type    = lua_tostring(L,2);
+    std::string loc_var     = lua_tostring(L,3);
+    std::string loc_def     = lua_tostring(L,4);
 
-    std::string loc_var     = lua_tostring(L,2);
-    std::string loc_def     = lua_tostring(L,3);
+    LuaVariable loc_indexVar("ConfigId",(lua_Integer)0);
+    GetTable(L,1,loc_indexVar);
+    auto loc_id = *(int*)&loc_indexVar.Value;
 
-    auto loc_json = *(boost::property_tree::ptree**)&loc_jsonVar.Value;
-    auto loc_config = loc_json->get_child_optional("config");
-    if (loc_config.has_value())
+    std::string loc_res = loc_def;
+    if (loc_type == "minigame")
     {
-        std::string loc_res = loc_config.get().get_optional<std::string>(loc_var).get_value_or(loc_def);
-        lua_pushstring(L,loc_res.c_str());
-        return 1;
+        loc_res = UD::MinigameManager::GetSingleton()->GetMinigameConfig(loc_id,loc_var,loc_def);
+    }
+    else if (loc_type == "hud")
+    {
+        loc_res = UD::HudManager::GetSingleton()->GetConfig(loc_id,loc_var,loc_def);
     }
 
-    lua_pushnil(L);
+    lua_pushstring(L,loc_res.c_str());
+
+    //DEBUG("lua_GetConfigVar({},{},{},{}) called -> {}",loc_id,loc_type,loc_var,loc_def,loc_res)
     return 1;
 }
 

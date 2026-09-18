@@ -40,10 +40,10 @@ void UD::HudManager::Reload()
                 if (entry.is_regular_file() && std::regex_match(loc_path,loc_regex)) 
                 {
                     const std::string loc_jsonname = std::regex_replace(loc_path,loc_regex,"$1");
-                    std::shared_ptr<boost::property_tree::ptree> loc_json = std::shared_ptr<boost::property_tree::ptree>(new boost::property_tree::ptree);
+                    std::shared_ptr<iptree> loc_json = std::shared_ptr<iptree>(new iptree);
                     try
                     {
-                        boost::property_tree::read_json(loc_path, *loc_json.get());
+                        read_json(loc_path, *loc_json.get());
                     }
                     catch(const std::exception& e)
                     {
@@ -190,6 +190,17 @@ bool UD::HudManager::InitConfig(HudElementSetting a_config)
                     }
                 }
             }
+
+            auto loc_config = a_config->json->get_child_optional("config");
+            if (loc_config.has_value())
+            {
+                for(auto&& [key,val] : loc_config.get())
+                {
+                    string loc_val = val.get_value<string>();
+                    a_config->config.config_vars[key] = loc_val;
+                }
+            }
+
         }
         catch(const std::exception& e)
         {
@@ -248,7 +259,8 @@ void UD::HudManager::PushHudData(lua_State* L, HudElementData& a_data)
     {
         {"Target",a_data.Target},
         {"Json",a_data.Setting->json.get()},
-        {"Id",(lua_Integer)a_data.id}
+        {"Id",(lua_Integer)a_data.id},
+        {"ConfigId",(lua_Integer)a_data.Setting->id}
     });
 }
 
@@ -298,7 +310,8 @@ void UD::HudManager::CheckShowElements(float a_delta)
             Lua::PushTable(L,
             {
                 {"Target",RE::PlayerCharacter::GetSingleton()},
-                {"Json",setting->json.get()}
+                {"Json",setting->json.get()},
+                {"ConfigId",(lua_Integer)setting->id}
             });
 
             auto loc_luares = lua_pcall(L,1,1,0);
@@ -421,10 +434,42 @@ void UD::HudManager::UpdateElements(float a_delta)
     }
 }
 
+UD::HudElementSetting UD::HudManager::GetConfigById(uint32_t a_id)
+{
+    for(auto&& [key,val] : _jsoncache)
+    {
+        if ((uint32_t)val->id == a_id)
+        {
+            return val;
+        }
+    }
+    return nullptr;
+}
+
 void UD::HudManager::InvokeHud(std::string a_message)
 {
     if (_viewReady)
     {
         PrismaUI->Invoke(_view,a_message.c_str());
     }
+}
+
+bool UD::HudManager::SetConfig(int a_indx, string a_config, string a_value)
+{
+    return false;
+}
+
+string UD::HudManager::GetConfig(int a_indx, string a_config, string a_defvalue)
+{
+    //DEBUG("GetMinigameConfig({},{},{}) called",a_indx,a_config,a_defvalue)
+    string loc_res = a_defvalue;
+    auto loc_cfg = GetConfigById(a_indx);
+    if (loc_cfg)
+    {
+        auto locval = loc_cfg->config.config_vars.find(a_config);
+        if (locval != loc_cfg->config.config_vars.end())
+            loc_res = locval->second;
+    }
+    else ERROR("GetConfig - Can't find hud element config with id {}",a_indx)
+    return loc_res;
 }

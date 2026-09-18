@@ -39,6 +39,7 @@ namespace UD
         std::string base;
         bool        abstract;
         std::vector<std::string> includes;
+        std::unordered_map<string,string> config_vars;
     };
 
     struct HudElementConfigJson;
@@ -46,7 +47,7 @@ namespace UD
     struct HudElementConfigJson
     {
         uint32_t id;
-        std::shared_ptr<boost::property_tree::ptree> json;
+        std::shared_ptr<iptree> json;
         HudElementConfigStatus status;
         std::string error;
         HudElementConfig config;
@@ -72,6 +73,9 @@ namespace UD
         void Update(float a_delta);
         void InvokeHud(std::string a_message);
         void SetViewReady() {_viewReady = true; _HudState = HudState::eShown;}
+
+        bool    SetConfig(int a_indx, string a_config, string a_value);
+        string  GetConfig(int a_indx, string a_config, string a_defvalue);
     private:
         bool InitConfig(HudElementSetting a_config);
         bool OpenScript(HudElementSetting a_config);
@@ -80,6 +84,7 @@ namespace UD
         void CheckShowElements(float a_delta);
         void CheckHideElements(float a_delta);
         void UpdateElements(float a_delta);
+        HudElementSetting GetConfigById(uint32_t a_id);
     public:
         static PRISMA_UI_API::IVPrismaUI1* PrismaUI;
     private:

@@ -27,6 +27,7 @@
 #include <UD_DeviceMenu.h>
 #include <UD_HUD.h>
 #include <UD_MinigameManager.h>
+#include <UD_SaveManager.h>
 
 namespace UD
 {
@@ -34,6 +35,7 @@ namespace UD
     {
         DEBUG("Game loaded -> Calling reloads")
         UD::ReloadLib();
+        SaveManager::GetSingleton()->Reload();
         ModuleManager::GetSingleton()->Reload(a_newGame); // If new game, add delay, so update does not happen during char creation
         PapyrusDelegate::GetSingleton()->Setup();
         RandomGenerator::GetSingleton()->Setup();
@@ -56,7 +58,7 @@ namespace UD
         DeviceManager::GetSingleton()->Reload();
         MinigameManager::GetSingleton()->Reload();
         HudManager::GetSingleton()->Reload();
-
+        
         //remove effect in case that user reloaded the game without exit
         if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
 

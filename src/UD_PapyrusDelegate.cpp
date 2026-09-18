@@ -939,8 +939,8 @@ DeviceObj UD::PapyrusDelegate::FindDeviceScriptRD(RE::Actor* a_actor, RE::TESObj
         auto loc_id = DeviousDevicesAPI::g_API->GetDeviceInventory(a_rd);
         if (loc_id)
         {
-            RE::TESObjectARMO* loc_id = (RE::TESObjectARMO*)Utility::GetPropertyObject(it.second,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE);
-            if (loc_id == loc_id) return it;
+            RE::TESObjectARMO* loc_id2 = (RE::TESObjectARMO*)Utility::GetPropertyObject(it.second,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE);
+            if (loc_id == loc_id2) return it;
         }
     }
     return DeviceObj();

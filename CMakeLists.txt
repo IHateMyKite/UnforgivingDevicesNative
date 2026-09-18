@@ -45,6 +45,7 @@ set(source_files ${source_files}
     src/UD_MinigameManager.cpp
     src/UD_VariableManager.cpp
     src/UD_CallbackManager.cpp
+	src/UD_SaveManager.cpp
 	src/UD_HUD.cpp
     src/UD_Lua.cpp
     src/OrgasmSystem/OrgasmEvents.cpp

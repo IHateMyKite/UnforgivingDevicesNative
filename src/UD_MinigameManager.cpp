@@ -4,6 +4,7 @@
 #include <UD_ModuleManager.h>
 #include <UD_PapyrusDelegate.h>
 #include <UD_DDAPI.h>
+#include <UD_SaveManager.h>
 
 SINGLETONBODY(UD::MinigameManager)
 
@@ -38,7 +39,7 @@ void UD::MinigameManager::Reload()
                 if (entry.is_regular_file() && std::regex_match(loc_path,loc_regex)) 
                 {
                     const std::string loc_jsonname = std::regex_replace(loc_path,loc_regex,"$1");
-                    std::shared_ptr<boost::property_tree::ptree> loc_json = std::shared_ptr<boost::property_tree::ptree>(new boost::property_tree::ptree);
+                    std::shared_ptr<iptree> loc_json = std::shared_ptr<iptree>(new iptree);
                     try
                     {
                         boost::property_tree::read_json(loc_path, *loc_json.get());
@@ -52,41 +53,19 @@ void UD::MinigameManager::Reload()
                     std::regex loc_regexname(R"regex((.*\\)(.*)(\.[jJ][sS][oO][nN]))regex");
                     const std::string loc_name = std::regex_replace(loc_path,loc_regexname,"$2");
     
-                    auto loc_config = std::shared_ptr<MinigameConfigJson>(new MinigameConfigJson{loc_id++,loc_json,MinigameConfigStatus::sOK,"OK"});
+                    auto loc_config = std::shared_ptr<MinigameConfigJson>(new MinigameConfigJson{loc_id++,loc_name,loc_json,MinigameConfigStatus::sOK,"OK"});
                     if (InitMinigameConfig(loc_config))
                     {
-                        DEBUG("Minigame config {} initiated",loc_name)
-                        DEBUG("0x{:016X}",(uintptr_t)loc_config.get())
                         _jsoncache[loc_name] = loc_config;
-                        DEBUG("0x{:016X}",(uintptr_t)_jsoncache[loc_name].get())
                     }
                 }
             }
 
-            // Set bases
-            for(auto [path,setting] : _jsoncache)
-            {
-                DEBUG("0x{:016X}",(uintptr_t)setting.get())
-                if (!setting.get())
-                {
-                    ERROR("Error reading setting for {}",path)
-                    continue;
-                }
+            // Set bases for minigames, and set script to some of its base if its missing
+            SetMinigameBases();
 
-                auto loc_baseStr = setting->config.base;
-
-                DEBUG("Checking {} base {}",path,loc_baseStr)
-
-                if (loc_baseStr != "" && _jsoncache.find(loc_baseStr) != _jsoncache.end())
-                {
-                    auto loc_base = _jsoncache[loc_baseStr];
-                    if (loc_base) 
-                    {
-                        setting->base = loc_base;
-                        DEBUG("{} base set to {}",setting->config.name,setting->base->config.name)
-                    }
-                }
-            }
+            // Set config vars from base to child
+            SetMinigameConfigVars();
 
             // Open scripts
             for(auto&& [path,setting] : _jsoncache)
@@ -125,7 +104,7 @@ std::vector<std::string> UD::MinigameManager::GetListOfMinigamesStr(RE::Actor* a
 std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id)
 {
     //DEBUG("GetListOfMinigames called")
-    std::vector<std::shared_ptr<UD::MinigameConfigJson>> loc_res;
+    std::vector<MinigameSetting> loc_res;
 
     DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
     
@@ -133,6 +112,9 @@ std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Act
     {
         for (auto&& [path,config] : _jsoncache)
         {
+            // Minigame is abstract, ignore it
+            if (config->config.abstract) continue;
+
             auto L = _scripts[config->config.script];
             if (!L) continue;
     
@@ -147,7 +129,8 @@ std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Act
                     {"ID",a_id},
                     {"RD",loc_device.first},
                     {"DeviceObj",loc_device.second.get()},
-                    {"Json",config->json.get()}
+                    {"Json",config->json.get()},
+                    {"ConfigId",(lua_Integer)config->id}
                 });
                 auto loc_luares = lua_pcall(L,1,1,0);
                 if (loc_luares != LUA_OK)
@@ -197,7 +180,8 @@ bool UD::MinigameManager::GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_
             {"ID",a_id},
             {"RD",loc_device.first},
             {"DeviceObj",loc_device.second.get()},
-            {"Json",a_setting->json.get()}
+            {"Json",a_setting->json.get()},
+            {"ConfigId",(lua_Integer)a_setting->id}
         });
         auto loc_luares = lua_pcall(L,1,1,0);
         if (loc_luares != LUA_OK)
@@ -228,7 +212,8 @@ string UD::MinigameManager::GetMinigameContexts(RE::Actor* a_actor, RE::Actor* a
             {"ID",a_id},
             {"RD",loc_device.first},
             {"DeviceObj",loc_device.second.get()},
-            {"Json",a_setting->json.get()}
+            {"Json",a_setting->json.get()},
+            {"ConfigId",(lua_Integer)a_setting->id}
         });
         auto loc_luares = lua_pcall(L,1,1,0);
         if (loc_luares != LUA_OK)
@@ -309,6 +294,18 @@ UD::MinigameDataPtr UD::MinigameManager::GetMinigameDataById(uint32_t a_id)
         if ((uint32_t)it->id == a_id)
         {
             return it;
+        }
+    }
+    return nullptr;
+}
+
+UD::MinigameSetting UD::MinigameManager::GetMinigameConfigById(uint32_t a_id)
+{
+    for(auto&& [key,val] : _jsoncache)
+    {
+        if ((uint32_t)val->id == a_id)
+        {
+            return val;
         }
     }
     return nullptr;
@@ -509,6 +506,95 @@ lua_State* UD::MinigameManager::GetMinigameScriptById(int a_id)
     return L;
 }
 
+std::vector<string> UD::MinigameManager::GetMinigameConfigs(bool a_abstract)
+{
+    std::vector<string> loc_res;
+
+    std::vector<MinigameSetting> loc_sorted;
+    loc_sorted.reserve(_jsoncache.size());
+    for(auto&& [key,val] : _jsoncache) loc_sorted.push_back(val);
+
+    std::sort(loc_sorted.begin(),loc_sorted.end(),[&](MinigameSetting& v1,MinigameSetting& v2) -> bool
+    {
+        auto loc_prio1 = v1.get() ? v1->config.priority : 0;
+        auto loc_prio2 = v2.get() ? v2->config.priority : 0;
+        return loc_prio1 > loc_prio2;
+    });
+
+    for(auto&& config : loc_sorted)
+    {
+        if (a_abstract || !config->config.abstract)
+        {
+            iptree loc_pt;
+            loc_pt.put("id",config->id);
+            loc_pt.put("name",config->config.name);
+
+            string loc_serdata = Utility::SerializeJson(loc_pt);
+            loc_res.push_back(loc_serdata);
+        }
+    }
+
+    return loc_res;
+}
+
+std::vector<string> UD::MinigameManager::GetMinigameExports(int a_indx)
+{
+    std::vector<string> loc_res;
+    MinigameSetting loc_min;
+    if (GetMinigameById(a_indx,loc_min))
+    {
+        std::vector<MinigameExportVar> loc_sorted;
+        loc_sorted.reserve(loc_min->config.exports.size());
+        for(auto&& [key,val] : loc_min->config.exports)loc_sorted.push_back(val);
+
+        std::sort(loc_sorted.begin(),loc_sorted.end(),[&](MinigameExportVar& v1,MinigameExportVar& v2) -> bool
+        {
+            auto loc_prio1 = v1.priority;
+            auto loc_prio2 = v2.priority;
+            return loc_prio1 > loc_prio2;
+        });
+
+        for(auto&& val : loc_sorted)
+        {
+            loc_res.push_back(val.json);
+        }
+    }
+    return loc_res;
+}
+
+bool UD::MinigameManager::SetMinigameConfig(int a_indx, string a_config, string a_value)
+{
+    //DEBUG("SetMinigameConfig({},{},{}) called",a_indx,a_config,a_value)
+    auto loc_min = GetMinigameConfigById(a_indx);
+    if (loc_min)
+    {
+        Utility::ToLower(a_value);
+        loc_min->config.config_vars[a_config] = a_value;
+        string loc_key = std::format("Minigames.{}.{}",loc_min->name,a_config);
+        SaveManager::GetSingleton()->SetValue(loc_key,a_value);
+        DEBUG("SetMinigameConfig({},{},{}) - Result = {}",a_indx,a_config,a_value,SaveManager::GetSingleton()->GetSaveString(false))
+        return true;
+    }
+    else ERROR("SetMinigameConfig - Cant find minigame config with id {}",a_indx)
+
+    return false;
+}
+
+string UD::MinigameManager::GetMinigameConfig(int a_indx, string a_config, string a_defvalue)
+{
+    //DEBUG("GetMinigameConfig({},{},{}) called",a_indx,a_config,a_defvalue)
+    string loc_res = a_defvalue;
+    auto loc_cfg = GetMinigameConfigById(a_indx);
+    if (loc_cfg)
+    {
+        auto locval = loc_cfg->config.config_vars.find(a_config);
+        if (locval != loc_cfg->config.config_vars.end())
+            loc_res = locval->second;
+    }
+    else ERROR("GetMinigameConfig - Can't find minigame config with id {}",a_indx)
+    return loc_res;
+}
+
 void UD::MinigameManager::OnGameLoaded(SKSE::SerializationInterface* serde,uint32_t a_type, uint32_t a_size, uint32_t a_version)
 {
     DEBUG("Reading saved minigame data")
@@ -651,9 +737,9 @@ bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
             a_config->config.script       = a_config->json->get_optional<std::string>("script").get_value_or("");
             a_config->config.base         = a_config->json->get_optional<std::string>("base").get_value_or("");
             a_config->config.priority     = a_config->json->get_optional<int>("priority").get_value_or(0);
+            a_config->config.abstract     = a_config->json->get_optional<bool>("abstract").get_value_or(false);
             a_config->config.skill        = a_config->json->get_optional<std::string>("skill").get_value_or("");
             
-
             auto loc_includes = a_config->json->get_child_optional("includes");
             if (loc_includes)
             {
@@ -665,6 +751,43 @@ bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
                     {
                         a_config->config.includes.push_back(loc_include);
                     }
+                }
+            }
+
+
+            auto loc_config = a_config->json->get_child_optional("config");
+            if (loc_config.has_value())
+            {
+                for(auto&& cfg : loc_config.get())
+                {
+                    string loc_val = cfg.second.get_value<string>();
+                    string loc_key = cfg.first;
+                    a_config->config.config_vars_def[cfg.first] = loc_val;
+                }
+            }
+
+
+            auto loc_exports = a_config->json->get_child_optional("export");
+            if (loc_exports)
+            {
+                for(auto&& [key,val] : loc_exports.get())
+                {
+
+                    MinigameExportVar loc_exp;
+                    loc_exp.config          = key;
+                    loc_exp.name            = val.get_optional<string>("name").get_value_or("ERROR");
+                    loc_exp.description     = val.get_optional<string>("description").get_value_or("");
+                    loc_exp.defaultvalue    = val.get_optional<string>("default").get_value_or("0.0");
+                    loc_exp.priority        = stoi(val.get_optional<string>("priority").get_value_or("0"));
+                    
+
+                    val.put("config",key);
+                    loc_exp.json            = Utility::SerializeJson(val);
+                    
+                    DEBUG("Export variable json = {}",loc_exp.json)
+
+                    string loc_key = key;
+                    a_config->config.exports_def[loc_key] = loc_exp;
                 }
             }
         }
@@ -758,8 +881,114 @@ void UD::MinigameManager::PushMinigameData(lua_State* L, MinigameData& a_data)
         {"DeviceObj",a_data.Device.obj.get()},
         {"Json",a_data.Setting->json.get()},
         {"Context",a_data.Context},
-        {"MinigameId",(lua_Integer)a_data.id}
+        {"MinigameId",(lua_Integer)a_data.id},
+        {"ConfigId",(lua_Integer)a_data.Setting->id}
     });
+}
+
+UD::MinigameDataPtr UD::MinigameManager::GetMinigameByName(string a_name)
+{
+    return MinigameDataPtr();
+}
+
+void UD::MinigameManager::SetMinigameBases()
+{
+    // Set bases
+    for(auto [path,setting] : _jsoncache)
+    {
+        if (!setting.get())
+        {
+            ERROR("Error reading setting for {}",path)
+            continue;
+        }
+
+        auto loc_baseStr = setting->config.base;
+
+        //DEBUG("Checking {} base {}",path,loc_baseStr)
+
+        if (loc_baseStr != "" && _jsoncache.find(loc_baseStr) != _jsoncache.end())
+        {
+            auto loc_base = _jsoncache[loc_baseStr];
+            if (loc_base) 
+            {
+                setting->base = loc_base;
+                //DEBUG("{} base set to {}",setting->config.name,setting->base->config.name)
+            }
+        }
+    }
+
+    for(auto [path,setting] : _jsoncache)
+    {
+        if (setting->config.script == "")
+        {
+            MinigameSetting loc_minigame = setting->base;
+            while(loc_minigame)
+            {
+                if (loc_minigame->config.script != "")
+                {
+                    setting->config.script = loc_minigame->config.script;
+                    break;
+                }
+                loc_minigame = loc_minigame->base;
+            }
+            if (setting->config.script != "")
+            {
+                DEBUG("[{}] Set script to {}",setting->config.name,setting->config.script)
+            }
+            else ERROR("[{}] Failed to find any script",setting->config.name)
+        }
+    }
+}
+
+void UD::MinigameManager::SetMinigameConfigVars()
+{
+    // Set config vars from child to parent
+    for(auto&& [key,val] : _jsoncache)
+    {
+        val->config.config_vars.clear();
+
+        // Ready tree of minigames
+        std::vector<MinigameSetting> loc_tree;
+        MinigameSetting loc_minigame = val;
+        while (loc_minigame)
+        {
+            loc_tree.push_back(loc_minigame);
+            loc_minigame = loc_minigame->base;
+        }
+        std::reverse(loc_tree.begin(),loc_tree.end());
+
+        // Set config values
+        for(auto&& entry : loc_tree)
+        {
+            for(auto&& [cfg_key,cfg_val] : entry->config.config_vars_def)
+            {
+                string loc_key = std::format("Minigames.{}.{}",entry->name,cfg_key);
+                string loc_savedval = SaveManager::GetSingleton()->GetValue(loc_key,"nan");
+                if (loc_savedval == "nan")
+                {
+                    val->config.config_vars[cfg_key] = cfg_val;
+                }
+                else
+                {
+                    // Stored value 
+                    DEBUG("Stored value {} found",loc_key)
+                    val->config.config_vars[cfg_key] = loc_savedval;
+                }
+            }
+        }
+
+        // Set export values
+        for(auto&& entry : loc_tree)
+        {
+            for(auto&& [exp_key,exp_val] : entry->config.exports_def)
+            {
+                val->config.exports[exp_key] = exp_val;
+            }
+        }
+
+        for(auto&& [cfg_key,cfg_val] : val->config.config_vars) DEBUG("[{}] Config Read : {} = {}",val->name, cfg_key,cfg_val)
+        for(auto&& [exp_key,exp_val] : val->config.exports)     DEBUG("[{}] Export Read : {} = {}",val->name, exp_key,exp_val.name)
+    }
 }
 
 void UD::MinigameManager::LoadSavedMinigames()

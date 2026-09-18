@@ -19,6 +19,7 @@
 #include <UD_MinigameManager.h>
 #include <UD_DeviceManager.h>
 #include <UD_DeviceMenu.h>
+#include <UD_SaveManager.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
@@ -65,6 +66,8 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetRandomDevice,true)
         REGISTERPAPYRUSFUNC(IsConcentrationSpell,true)
         REGISTERPAPYRUSFUNC(IsConcentrationEnch,true)
+        REGISTERPAPYRUSFUNC(GetJsonValue,true)
+        REGISTERPAPYRUSFUNC(SetJsonValue,true)
 
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
@@ -194,9 +197,17 @@ namespace UD
         //MinigameManager
         REGISTERPAPYRUSFUNC(GetListOfMinigames ,true)
         REGISTERPAPYRUSFUNC(StopMinigame ,true)
+        REGISTERPAPYRUSFUNC(GetMinigameConfigs ,true)
+        REGISTERPAPYRUSFUNC(GetMinigameExports ,true)
+        REGISTERPAPYRUSFUNC(SetMinigameVariable ,true)
+        REGISTERPAPYRUSFUNC(GetMinigameVariable ,true)
 
         //Device manager
         REGISTERPAPYRUSFUNC(GetDeviceAccessibility ,true)
+
+        //SaveManager
+        REGISTERPAPYRUSFUNC(SetSave ,true)
+        REGISTERPAPYRUSFUNC(GetSave ,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 
