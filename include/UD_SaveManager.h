@@ -30,9 +30,9 @@ namespace UD
         mutable Utils::Spinlock  _lock;
     };
 
-    inline void SetSave(PAPYRUSFUNCHANDLE, string a_input, bool a_devode)
+    inline void SetSave(PAPYRUSFUNCHANDLE, string a_input, bool a_decode)
     {
-        return SaveManager::GetSingleton()->SetSave(a_input,a_devode);
+        return SaveManager::GetSingleton()->SetSave(a_input,a_decode);
     }
 
     inline string GetSave(PAPYRUSFUNCHANDLE, bool a_encode)

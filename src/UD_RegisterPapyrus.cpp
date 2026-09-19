@@ -201,6 +201,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetMinigameExports ,true)
         REGISTERPAPYRUSFUNC(SetMinigameVariable ,true)
         REGISTERPAPYRUSFUNC(GetMinigameVariable ,true)
+        REGISTERPAPYRUSFUNC(ReloadMinigameConfigs ,true)
 
         //Device manager
         REGISTERPAPYRUSFUNC(GetDeviceAccessibility ,true)

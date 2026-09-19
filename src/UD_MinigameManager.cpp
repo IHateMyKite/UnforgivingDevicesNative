@@ -10,16 +10,25 @@ SINGLETONBODY(UD::MinigameManager)
 
 PRISMA_UI_API::IVPrismaUI1* UD::MinigameManager::PrismaUI = nullptr;
 
-void UD::MinigameManager::Reload()
+void UD::MinigameManager::Reload(bool a_hotreload)
 {
     auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
     PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
+
+    if (a_hotreload)
+    {
+        // Reloading ingame. Need to stop all minigames first to prevent issue with invalid ids and pointers
+        for(auto&& it : _minigames)
+        {
+            StopMinigame(it->id);
+        }
+    }
 
     _minigames.clear();
     _minigameCntr = 0;
     CloseMinigameUI(0);
 
-    if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
+    if (!_init || a_hotreload || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
     {
         _init = true;
         _jsoncache.clear();
@@ -962,7 +971,7 @@ void UD::MinigameManager::SetMinigameConfigVars()
         {
             for(auto&& [cfg_key,cfg_val] : entry->config.config_vars_def)
             {
-                string loc_key = std::format("Minigames.{}.{}",entry->name,cfg_key);
+                string loc_key = std::format("Minigames.{}.{}",val->name,cfg_key);
                 string loc_savedval = SaveManager::GetSingleton()->GetValue(loc_key,"nan");
                 if (loc_savedval == "nan")
                 {

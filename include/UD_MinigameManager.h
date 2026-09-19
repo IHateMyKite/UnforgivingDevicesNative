@@ -143,7 +143,7 @@ namespace UD
     {
         SINGLETONHEADER(MinigameManager)
         public:
-            void Reload();
+            void Reload(bool a_hotreload = false);
             std::vector<std::string> GetListOfMinigamesStr(RE::Actor* a_actor, RE::TESObjectARMO* a_id);
             std::vector<MinigameSetting> GetListOfMinigames(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_id);
 
@@ -243,5 +243,10 @@ namespace UD
     inline string GetMinigameVariable(PAPYRUSFUNCHANDLE, int a_indx, string a_config, string a_defvalue)
     {
         return MinigameManager::GetSingleton()->GetMinigameConfig(a_indx,a_config,a_defvalue);
+    }
+
+    inline void ReloadMinigameConfigs(PAPYRUSFUNCHANDLE)
+    {
+        MinigameManager::GetSingleton()->Reload(true);
     }
 }
