@@ -4,7 +4,10 @@
     "version-string": "3.0.0",
     "description": "",
     "dependencies": [
-        "commonlibsse-ng",
+        "directxtk",
+        "directxmath",
+        "openvr",
+        "commonlibsse-gg",
         "boost-algorithm",
         "boost-math",
         "boost-lexical-cast",
