@@ -108,6 +108,7 @@ namespace Lua
         int lua_AdvanceMinigameSkill(lua_State* L);
         int lua_GetSharpestWeaponPower(lua_State* L);
         int lua_GetDeviceTags(lua_State* L);
+        int lua_GetSaveConfig(lua_State* L);
     }
 
 }

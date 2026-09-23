@@ -5,6 +5,7 @@
 #include <UD_HUD.h>
 #include <UD_Skill.h>
 #include <UD_Inventory.h>
+#include <UD_SaveManager.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 lua_State* Lua::OpenScript(std::string a_path)
@@ -143,6 +144,8 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_AdvanceMinigameSkill",HostFunctions::lua_AdvanceMinigameSkill);
     lua_register(L,"Host_GetSharpestWeaponPower",HostFunctions::lua_GetSharpestWeaponPower);
     lua_register(L,"Host_GetDeviceTags",HostFunctions::lua_GetDeviceTags);
+    lua_register(L,"Host_GetSaveConfig",HostFunctions::lua_GetSaveConfig);
+    
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -1057,5 +1060,23 @@ int Lua::HostFunctions::lua_GetDeviceTags(lua_State* L)
 
     const string loc_Res = UD::DeviceManager::GetSingleton()->GetTags(loc_rd,loc_device);
     lua_pushstring(L,loc_Res.c_str());
+    return 1;
+}
+
+int Lua::HostFunctions::lua_GetSaveConfig(lua_State* L)
+{
+    if (!lua_isstring(L,1) || !lua_isstring(L,2))
+    {
+        ERROR("lua_GetSaveConfig - Incorrect variables passed!")
+        lua_pushnil(L);
+        return 1;
+    }
+
+    string loc_key = lua_tostring(L,1);
+    string loc_def = lua_tostring(L,2);
+
+    string loc_res = UD::SaveManager::GetSingleton()->GetValue(loc_key,loc_def);
+
+    lua_pushstring(L,loc_res.c_str());
     return 1;
 }

@@ -407,10 +407,12 @@ void UD::MinigameManager::OpenMinigameUI(int a_id,std::string a_callback)
             _callback = a_callback;
             _view = PrismaUI->CreateView(loc_data->Setting->config.uiobject.c_str(),[](PrismaView view) -> void
             {
-                DEBUG("Minigame DOM is ready {}", view);
-                MinigameManager::GetSingleton()->SendOpenMinigameUICallback();
-                MinigameManager::GetSingleton()->SetViewReady();
-
+                SKSE::GetTaskInterface()->AddTask([view]
+                {
+                    DEBUG("Minigame DOM is ready {}", view);
+                    MinigameManager::GetSingleton()->SetViewReady();
+                    MinigameManager::GetSingleton()->SendOpenMinigameUICallback();
+                });
             });
         }
     }
@@ -599,6 +601,15 @@ string UD::MinigameManager::GetMinigameConfig(int a_indx, string a_config, strin
         auto locval = loc_cfg->config.config_vars.find(a_config);
         if (locval != loc_cfg->config.config_vars.end())
             loc_res = locval->second;
+        else
+        {
+            // Try to find export with default value
+            auto loc_exp = loc_cfg->config.exports.find(a_config);
+            if (loc_exp != loc_cfg->config.exports.end() && loc_exp->second.defaultvalue != "nan")
+            {
+                loc_res = loc_exp->second.defaultvalue;
+            }
+        }
     }
     else ERROR("GetMinigameConfig - Can't find minigame config with id {}",a_indx)
     return loc_res;
@@ -786,7 +797,7 @@ bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
                     loc_exp.config          = key;
                     loc_exp.name            = val.get_optional<string>("name").get_value_or("ERROR");
                     loc_exp.description     = val.get_optional<string>("description").get_value_or("");
-                    loc_exp.defaultvalue    = val.get_optional<string>("default").get_value_or("0.0");
+                    loc_exp.defaultvalue    = val.get_optional<string>("default").get_value_or("nan");
                     loc_exp.priority        = stoi(val.get_optional<string>("priority").get_value_or("0"));
                     
 
@@ -830,7 +841,7 @@ bool UD::MinigameManager::OpenMinigameScript(MinigameSetting a_config)
             loc_includes.append_range(loc_baseincludes);
 
             loc_base = loc_base->base;
-            if (loc_base) loc_includes.push_back(loc_base->config.script);
+            if (loc_base && loc_base->config.script != a_config->config.script) loc_includes.push_back(loc_base->config.script);
         }
 
         std::reverse(loc_includes.begin(),loc_includes.end());
