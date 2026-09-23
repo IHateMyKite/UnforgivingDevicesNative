@@ -9,7 +9,7 @@ project(UDNative VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-
+find_package(directxtk CONFIG REQUIRED)
 # === Set source files ===
 # Add new .cpp here, otherwise the build will end with link error
 set(source_files ${source_files}

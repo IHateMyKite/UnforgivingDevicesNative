@@ -462,7 +462,7 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
                     auto loc_messages = ControlManager::GetSingleton()->GetHardcoreMessages();
                     if (loc_messages.size() > 0 && loc_messages[0] != "")
                     {
-                        RE::DebugNotification(loc_messages[RandomGenerator::GetSingleton()->RandomInt(0,(int)loc_messages.size() - 1)].c_str());
+                        RE::SendHUDMessage::ShowHUDMessage(loc_messages[RandomGenerator::GetSingleton()->RandomInt(0,(int)loc_messages.size() - 1)].c_str());
                     }
                 }
                 ModEvents::GetSingleton()->HMTweenMenuEvent.QueueEvent();

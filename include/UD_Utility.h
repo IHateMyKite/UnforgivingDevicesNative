@@ -231,7 +231,7 @@ namespace UD
     void ToggleDetection(PAPYRUSFUNCHANDLE, bool a_val);
     
     void ForEachReferenceInRange(RE::TESObjectREFR* origin, float radius,
-                                 std::function<RE::BSContainer::ForEachResult(RE::TESObjectREFR& ref)> callback);
+                                 std::function<RE::BSContainer::ForEachResult(RE::TESObjectREFR* ref)> callback);
 
     template<class T> T GetStringParam(const std::string& a_param,int a_Index,T a_DefaultValue);
     template<class T> std::vector<T> GetStringParamAllInter(const std::string& a_param, const std::string& a_del);

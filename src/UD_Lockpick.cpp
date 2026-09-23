@@ -185,13 +185,13 @@ RE::BSEventNotifyControl UD::MenuEventSink::ProcessEvent(const RE::MenuOpenClose
                     RE::LockpickingMenu* loc_lockpickmenuPtr = reinterpret_cast<RE::LockpickingMenu*>(loc_lockpickmenu.get());
                     if (PlayerStatus::GetSingleton()->PlayerHaveTelekinesis())
                     {
-                        RE::DebugNotification("You use telekinesis to help with lockpicking");
+                        RE::SendHUDMessage::ShowHUDMessage("You use telekinesis to help with lockpicking");
                         loc_lockpickmenuPtr->GetRuntimeData().sweetSpotAngle    *= 0.25f;
                         loc_lockpickmenuPtr->GetRuntimeData().partialPickAngle  *= 0.5f;
                     }
                     else
                     {
-                        RE::DebugNotification("You can't lockpick the lock in your current state!");
+                        RE::SendHUDMessage::ShowHUDMessage("You can't lockpick the lock in your current state!");
                         loc_lockpickmenuPtr->GetRuntimeData().sweetSpotAngle = 0.0f;
                         loc_lockpickmenuPtr->GetRuntimeData().partialPickAngle = 0.0f;
                     }

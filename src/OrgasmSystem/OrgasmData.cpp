@@ -926,7 +926,7 @@ inline void ORS::OrgasmActorData::CheckHornyLevel()
             auto loc_msg = it.Msg.c_str();
             SKSE::GetTaskInterface()->AddTask([loc_msg]
             {
-                RE::DebugNotification(loc_msg);
+                RE::SendHUDMessage::ShowHUDMessage(loc_msg);
             });
         }
         else if (!loc_inrange)
