@@ -11,7 +11,7 @@ namespace UD
         if (a_avowner == nullptr) return false;
         if ((f_dmg != 0.0f) && ((a_avowner->GetActorValue(a_av) - f_dmg) > f_min))
         {
-            a_avowner->RestoreActorValue(a_av,f_dmg);
+            a_avowner->DamageActorValue(a_av,f_dmg);
         }
         return true;
     }
