@@ -69,7 +69,7 @@ namespace UD
     {
     SINGLETONHEADER(HudManager)
     public:
-        void Reload();
+        void Reload(bool a_hotreload = false);
         void Update(float a_delta);
         void InvokeHud(std::string a_message);
         void SetViewReady() {_viewReady = true; _HudState = HudState::eShown;}
@@ -98,4 +98,10 @@ namespace UD
         std::unordered_map<std::string,lua_State*> _scripts;
         std::vector<HudElementDataPtr> _elements;
     };
+
+    inline void ReloadHudConfigs(PAPYRUSFUNCHANDLE)
+    {
+        DEBUG("=== Hot Reloading HUD ===")
+        HudManager::GetSingleton()->Reload(true);
+    }
 }

@@ -324,6 +324,8 @@ void UD::ControlManager::InitConfig(boost::property_tree::ptree& a_json, Control
     a_control.alias = a_json.get_optional<std::string>("alias").get_value_or("missing");
     a_control.codekeyboard = a_json.get_optional<int>("codekeyboard").get_value_or(0);
     a_control.codegamepad = a_json.get_optional<int>("codegamepad").get_value_or(0);
+    a_control.namekeyboard = a_json.get_optional<string>("namekeyboard").get_value_or("MISSING");
+    a_control.namegamepad = a_json.get_optional<string>("namegamepad").get_value_or("MISSING");
 }
 
 void UD::ControlManager::RefreshFilter()
@@ -459,13 +461,13 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
 
     if (event->GetEventType() == RE::INPUT_EVENT_TYPE::kButton) 
     {
-        const auto*       loc_buttonEvent = event->AsButtonEvent();
+        auto*       loc_buttonEvent = event->AsButtonEvent();
         const RE::INPUT_DEVICE loc_Device = loc_buttonEvent->GetDevice();
         const uint32_t    loc_dxScanCode  = loc_buttonEvent->GetIDCode();
 
-        if (loc_buttonEvent->IsRepeating()) return RE::BSEventNotifyControl::kContinue;
+        MinigameManager::GetSingleton()->CheckActionCallback(loc_dxScanCode,loc_buttonEvent);
 
-        MinigameManager::GetSingleton()->CheckActionCallback(loc_dxScanCode);
+        if (loc_buttonEvent->IsRepeating()) return RE::BSEventNotifyControl::kContinue;
 
         bool loc_ismenuopen = Utility::IsBlockingMenuOpen();
 

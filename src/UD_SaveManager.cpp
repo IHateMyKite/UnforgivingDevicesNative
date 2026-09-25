@@ -10,7 +10,7 @@ using boost::property_tree::write_json;
 
 void UD::SaveManager::Reload()
 {
-    if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
+    //if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
     {
         _init = true;
         DEBUG("Save = {}",GetSaveString(false))

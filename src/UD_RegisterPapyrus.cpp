@@ -19,6 +19,7 @@
 #include <UD_MinigameManager.h>
 #include <UD_DeviceManager.h>
 #include <UD_DeviceMenu.h>
+#include <UD_HUD.h>
 #include <UD_SaveManager.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
@@ -90,6 +91,8 @@ namespace UD
 
         REGISTERPAPYRUSFUNC(ToggleAllMeters,true)
         REGISTERPAPYRUSFUNC(RemoveAllMeterEntries,true)
+
+        REGISTERPAPYRUSFUNC(ReloadHudConfigs,true)
 
         //Inventory
         REGISTERPAPYRUSFUNC(GetInventoryDevices,true)

@@ -6,14 +6,14 @@ SINGLETONBODY(UD::HudManager)
 
 PRISMA_UI_API::IVPrismaUI1* UD::HudManager::PrismaUI = nullptr;
 
-void UD::HudManager::Reload()
+void UD::HudManager::Reload(bool a_hotreload)
 {
     auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
     PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
 
     _elements.clear();
 
-    if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
+    //if (!_init || a_hotreload || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
     {
         _init = true;
         _jsoncache.clear();
@@ -25,6 +25,7 @@ void UD::HudManager::Reload()
         {
             PrismaUI->Destroy(_view);
             _view = NULL;
+            _viewReady = false;
         }
 
 

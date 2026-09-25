@@ -156,7 +156,7 @@ UD::VariableValue UD::SetVariableRaw(void* a_source, VariableDetails a_var, Vari
         auto loc_val = boost::lexical_cast<float>(a_val.Value);
         loc_res.Value = a_val.Value;
         loc_res.Type = VariableType::kFloat;
-        if (loc_val != 0.0f)
+        //if (loc_val != 0.0f)
         {
             auto loc_av = RE::ActorValueList::GetSingleton()->LookupActorValueByName(a_var.Name);
             switch(a_var.Mod)

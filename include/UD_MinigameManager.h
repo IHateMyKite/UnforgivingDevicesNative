@@ -104,6 +104,7 @@ namespace UD
     {
         Control control;
         std::string callback;
+        string action;
     };
 
     struct MinigameData
@@ -139,6 +140,11 @@ namespace UD
 
     typedef std::shared_ptr<MinigameData> MinigameDataPtr;
 
+    inline void ConsoleCallback(PrismaView view, PRISMA_UI_API::ConsoleMessageLevel level, const char* message)
+    {
+        DEBUG("JS[ {} ]",message)
+    }
+
     class MinigameManager
     {
         SINGLETONHEADER(MinigameManager)
@@ -166,7 +172,10 @@ namespace UD
             void CloseMinigameUI(int a_id);
             void SetViewReady() {_viewReady = true; _UIState = MinigameUIState::eShown;}
             void InvokeUI(std::string a_command);
-            void CheckActionCallback(uint32_t a_dxcode);
+
+            void CheckActionCallback(uint32_t a_dxcode,RE::ButtonEvent* a_event);
+            string GetRegisteredActions(uint32_t a_id);
+
             void SendOpenMinigameUICallback();
             void SendPapCallback(int a_id,std::string a_callback,VariableValue& a_var);
             lua_State* GetMinigameScriptById(int a_id);
@@ -189,12 +198,11 @@ namespace UD
             
             MinigameDataPtr GetMinigameByName(string a_name);
 
-
             void SetMinigameBases();
             void SetMinigameConfigVars();
             void LoadSavedMinigames();
         private:
-            static PRISMA_UI_API::IVPrismaUI1* PrismaUI;
+            static PRISMA_UI_API::IVPrismaUI2* PrismaUI;
             PrismaView  _view = 0x0UL;
             bool        _viewReady = false;
             MinigameUIState _UIState = MinigameUIState::eNotStarted;

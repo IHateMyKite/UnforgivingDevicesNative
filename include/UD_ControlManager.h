@@ -87,9 +87,15 @@ namespace UD
         std::string alias = "";
         uint32_t codekeyboard = 0;
         uint32_t codegamepad = 0;
+        string namekeyboard;
+        string namegamepad;
         bool operator==(const Control& other)
         {
-            return codekeyboard == other.codekeyboard && codegamepad == other.codegamepad && alias == other.alias;
+            return codekeyboard == other.codekeyboard && 
+            codegamepad == other.codegamepad && 
+            alias == other.alias && 
+            namekeyboard == other.namekeyboard &&
+            namegamepad == other.namegamepad;
         }
     };
 
@@ -119,6 +125,9 @@ namespace UD
         std::unordered_map<uint32_t,DeviceCallback>& GetDeviceCallbacks(bool a_Gamepad);
         bool HaveDeviceCallbacks() const;
         Control GetActionControl(std::string a_alias){return _controls[a_alias];}
+
+
+
     private:
         void AddArgument(DeviceCallback* a_callback, CallbackArgFuns a_type, std::string a_argStr, RE::TESForm* a_argForm);
         void ParseControlConfig();

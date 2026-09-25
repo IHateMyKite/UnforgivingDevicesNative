@@ -145,7 +145,7 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_GetSharpestWeaponPower",HostFunctions::lua_GetSharpestWeaponPower);
     lua_register(L,"Host_GetDeviceTags",HostFunctions::lua_GetDeviceTags);
     lua_register(L,"Host_GetSaveConfig",HostFunctions::lua_GetSaveConfig);
-    
+    lua_register(L,"Host_GetRegisteredActions",HostFunctions::lua_GetRegisteredActions);
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -775,7 +775,7 @@ int Lua::HostFunctions::lua_IsNull(lua_State* L)
 
 int Lua::HostFunctions::lua_RegisterActionCallback(lua_State* L)
 {
-    if (!lua_isinteger(L,1) || !lua_isstring(L,2) || !lua_isstring(L,3))
+    if (!lua_isinteger(L,1) || !lua_isstring(L,2) || !lua_isstring(L,3) || !lua_isstring(L,4))
     {
         ERROR("lua_RegisterActionCallback - Incorrect variables passed!")
         return 0;
@@ -788,6 +788,7 @@ int Lua::HostFunctions::lua_RegisterActionCallback(lua_State* L)
         UD::MinigameActionCallback loc_callback;
         loc_callback.control    = loc_control;
         loc_callback.callback   = lua_tostring(L,3);
+        loc_callback.action     = lua_tostring(L,4);
         DEBUG("Action callback registered - {} , {} , {}",loc_callback.callback,loc_callback.control.alias,loc_callback.control.codekeyboard)
 
         auto loc_find = std::find_if(loc_data->Controls.begin(),loc_data->Controls.end(),[loc_control](UD::MinigameActionCallback& a_callback)
@@ -1077,6 +1078,20 @@ int Lua::HostFunctions::lua_GetSaveConfig(lua_State* L)
 
     string loc_res = UD::SaveManager::GetSingleton()->GetValue(loc_key,loc_def);
 
+    lua_pushstring(L,loc_res.c_str());
+    return 1;
+}
+
+int Lua::HostFunctions::lua_GetRegisteredActions(lua_State* L)
+{
+    if (!lua_isinteger(L,1))
+    {
+        ERROR("lua_GetRegisteredActions - Incorrect variables passed!")
+        lua_pushnil(L);
+        return 1;
+    }
+
+    string loc_res = UD::MinigameManager::GetSingleton()->GetRegisteredActions(lua_tointeger(L,1));
     lua_pushstring(L,loc_res.c_str());
     return 1;
 }

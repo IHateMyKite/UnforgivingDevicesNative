@@ -8,12 +8,12 @@
 
 SINGLETONBODY(UD::MinigameManager)
 
-PRISMA_UI_API::IVPrismaUI1* UD::MinigameManager::PrismaUI = nullptr;
+PRISMA_UI_API::IVPrismaUI2* UD::MinigameManager::PrismaUI = nullptr;
 
 void UD::MinigameManager::Reload(bool a_hotreload)
 {
     auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-    PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
+    PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
 
     if (a_hotreload)
     {
@@ -28,7 +28,7 @@ void UD::MinigameManager::Reload(bool a_hotreload)
     _minigameCntr = 0;
     CloseMinigameUI(0);
 
-    if (!_init || a_hotreload || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
+    //if (!_init || a_hotreload || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
     {
         _init = true;
         _jsoncache.clear();
@@ -268,7 +268,7 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
     _minigames.push_back(MinigameDataPtr(new MinigameData(loc_data)));
 
     auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-    PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
+    PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
         
     if (lua_getglobal(L,"OnStart") != LUA_TNIL)
     {
@@ -399,7 +399,7 @@ void UD::MinigameManager::OpenMinigameUI(int a_id,std::string a_callback)
     if (loc_data && loc_data->Setting->config.uiobject != "")
     {
         auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
+        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
         
         if (PrismaUI)
         {
@@ -410,6 +410,7 @@ void UD::MinigameManager::OpenMinigameUI(int a_id,std::string a_callback)
                 SKSE::GetTaskInterface()->AddTask([view]
                 {
                     DEBUG("Minigame DOM is ready {}", view);
+                    PrismaUI->RegisterConsoleCallback(view,ConsoleCallback);
                     MinigameManager::GetSingleton()->SetViewReady();
                     MinigameManager::GetSingleton()->SendOpenMinigameUICallback();
                 });
@@ -425,7 +426,7 @@ void UD::MinigameManager::CloseMinigameUI(int a_id)
     //if (loc_data)
     {
         auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
+        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
         
         if (PrismaUI)
         {
@@ -445,19 +446,25 @@ void UD::MinigameManager::InvokeUI(std::string a_command)
     }
 }
 
-void UD::MinigameManager::CheckActionCallback(uint32_t a_dxcode)
+void UD::MinigameManager::CheckActionCallback(uint32_t a_dxcode,RE::ButtonEvent* a_event)
 {
     for (auto&& it1 : _minigames)
     {
         for(auto&& it2 : it1->Controls)
         {
-            if (it2.control.codekeyboard == a_dxcode)
+            if (it2.control.codekeyboard == a_dxcode && (!a_event->IsRepeating() || a_event->IsUp()))
             {
+                //DEBUG("CheckActionCallback({}) - {} , {} , {} , {}",a_dxcode,a_event->IsUp(),a_event->IsDown(),a_event->IsHeld(),a_event->IsRepeating())
+                int loc_type = -1;
+                if (a_event->IsUp()) loc_type = 1;
+                else if (a_event->IsDown()) loc_type = 0;
+
                 //DEBUG("Calling callback")
                 auto L = _scripts[it1->Setting->config.script];
                 lua_getglobal(L,it2.callback.c_str());
                 PushMinigameData(L,*it1);
-                auto loc_luares = lua_pcall(L,1,0,0);
+                lua_pushinteger(L,loc_type);
+                auto loc_luares = lua_pcall(L,2,0,0);
                 if (loc_luares != LUA_OK)
                 {
                     ERROR("Error running function {} - {}",it2.callback,loc_luares)
@@ -466,8 +473,42 @@ void UD::MinigameManager::CheckActionCallback(uint32_t a_dxcode)
             /* TODO: Gamepad support*/
         }
     }
+}
+
+string UD::MinigameManager::GetRegisteredActions(uint32_t a_id)
+{
+    string loc_res = "{}";
+    iptree loc_tree;
+    MinigameDataPtr loc_data = GetMinigameDataById(a_id);
+    if (loc_data)
+    {
+        std::unordered_map<string,iptree> loc_keyboard;
+        std::unordered_map<string,iptree> loc_gamepad;
 
 
+        for(auto&& it : loc_data->Controls)
+        {
+            iptree loc_valkeyboard;
+            loc_valkeyboard.put("",it.control.namekeyboard);
+            loc_keyboard[it.action].push_back(std::make_pair("",loc_valkeyboard));
+            iptree loc_valgamepad;
+            loc_valgamepad.put("",it.control.namekeyboard);
+            loc_gamepad[it.action].push_back(std::make_pair("",loc_valgamepad));
+        }
+
+        for(auto&& [key,val] : loc_keyboard)
+        {
+            loc_tree.add_child("Keyboard."+key,val);
+        }
+        for(auto&& [key,val] : loc_gamepad)
+        {
+            loc_tree.add_child("Gamepad."+key,val);
+        }
+
+        loc_res = Utility::SerializeJson(loc_tree);
+    }
+    DEBUG("Returning registered actions -> {}",loc_res)
+    return loc_res;
 }
 
 void UD::MinigameManager::SendOpenMinigameUICallback()
@@ -977,6 +1018,20 @@ void UD::MinigameManager::SetMinigameConfigVars()
         }
         std::reverse(loc_tree.begin(),loc_tree.end());
 
+        // Set export values
+        for(auto&& entry : loc_tree)
+        {
+            for(auto&& [exp_key,exp_val] : entry->config.exports_def)
+            {
+                val->config.exports[exp_key] = exp_val;
+                if (val->config.config_vars_def.find(exp_key) == val->config.config_vars_def.end())
+                {
+                    DEBUG("Found missing export config for {} -> {} = {}",key,exp_key,exp_val.defaultvalue)
+                    val->config.config_vars_def[exp_key] = exp_val.defaultvalue;
+                }
+            }
+        }
+
         // Set config values
         for(auto&& entry : loc_tree)
         {
@@ -994,15 +1049,6 @@ void UD::MinigameManager::SetMinigameConfigVars()
                     DEBUG("Stored value {} found",loc_key)
                     val->config.config_vars[cfg_key] = loc_savedval;
                 }
-            }
-        }
-
-        // Set export values
-        for(auto&& entry : loc_tree)
-        {
-            for(auto&& [exp_key,exp_val] : entry->config.exports_def)
-            {
-                val->config.exports[exp_key] = exp_val;
             }
         }
 
