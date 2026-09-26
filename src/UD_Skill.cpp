@@ -37,7 +37,7 @@ namespace UD
     std::vector<RE::BGSPerk*> GetPerksForSkill(PAPYRUSFUNCHANDLE, std::string a_skill)
     {
         RE::ActorValue loc_value = GetActorValueByName(a_skill);
-        auto loc_valueinfo = RE::ActorValueList::GetSingleton()->GetActorValue(loc_value);
+        auto loc_valueinfo = RE::ActorValueList::GetSingleton()->GetActorValueInfo(loc_value);
         std::vector<RE::BGSPerk*> loc_res;
         if (loc_valueinfo != nullptr && loc_valueinfo->perkTree)
         {
@@ -57,7 +57,7 @@ namespace UD
         #define GET_SKILL_DATA() loc_player->GetInfoRuntimeData().skills->data
         RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
         auto loc_av = GetActorValueByName(a_skill);
-        auto loc_avinfo = RE::ActorValueList::GetSingleton()->GetActorValue(loc_av);
+        auto loc_avinfo = RE::ActorValueList::GetSingleton()->GetActorValueInfo(loc_av);
 
         if (loc_avinfo == nullptr) 
         {
