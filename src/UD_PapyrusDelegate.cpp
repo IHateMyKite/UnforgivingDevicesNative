@@ -495,7 +495,7 @@ RE::BSScript::ObjectTypeInfo* UD::PapyrusDelegate::HaveScriptBase(RE::BSTSmallSh
     {
         if (!it->IsValid() || !it->IsConstructed() || !it->IsInitialized()) {
             DEBUG("HaveScriptBase found invalid script")
-            return nullptr;
+            continue;
         }
         auto loc_info = it->GetTypeInfo();
 
