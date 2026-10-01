@@ -64,6 +64,7 @@ namespace UD
         string defaultvalue;
         int    priority;
         string json;
+        bool   global;
     };
 
     struct MinigameConfig
@@ -198,8 +199,11 @@ namespace UD
             
             MinigameDataPtr GetMinigameByName(string a_name);
 
+
             void SetMinigameBases();
+            void SetMinigameUIs();
             void SetMinigameConfigVars();
+
             void LoadSavedMinigames();
         private:
             static PRISMA_UI_API::IVPrismaUI2* PrismaUI;

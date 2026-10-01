@@ -110,6 +110,7 @@ namespace Lua
         int lua_GetDeviceTags(lua_State* L);
         int lua_GetSaveConfig(lua_State* L);
         int lua_GetRegisteredActions(lua_State* L);
+        int lua_GetMinigameSkillMult(lua_State* L);
     }
 
 }

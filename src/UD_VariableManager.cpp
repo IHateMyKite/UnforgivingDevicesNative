@@ -47,7 +47,7 @@ UD::VariableValue UD::GetVariableRaw(void* a_source, VariableDetails a_var)
         if (loc_var == nullptr) loc_var = loc_device->GetVariable(a_var.Name);
         if (loc_var == nullptr)
         {
-            ERROR("Error getting variable {} from {}",a_var.Name,a_var.Owner)
+            ERROR("Error getting variable {} from {}. Source = 0x{:016X}",a_var.Name,a_var.Owner,(uint64_t)loc_device)
             return loc_res;
         }
 
@@ -368,6 +368,11 @@ UD::VariableValue UD::ParsePapVar(Variable* a_var)
                 }
                 loc_res.Type  = loc_type;
             break;
+            case RE::BSScript::TypeInfo::RawType::kNone:
+            case RE::BSScript::TypeInfo::RawType::kNoneArray:
+                loc_res.Value = "";
+                loc_res.Type  = loc_type;
+            break;
             default:
                 ERROR("Type of {} currently not supported",(int)loc_type)
                 loc_res.Value = "";
@@ -379,10 +384,19 @@ UD::VariableValue UD::ParsePapVar(Variable* a_var)
     {
         // Type is class, try to do something
         #undef GetObject
-        void* loc_ptr = a_var->GetObject()->Resolve((RE::VMTypeID)RE::FormType::None);
-        DEBUG("Resolved object = 0x{:016X}",(uintptr_t)loc_ptr)
-        loc_res.Value = std::to_string(*(uint64_t*)&loc_ptr);
-        loc_res.Type  = VariableType::kObject;
+        if (a_var->GetObject())
+        {
+            //DEBUG("Trying to Resolved object of type {}",(uint64_t)loc_type)
+            void* loc_ptr = a_var->GetObject()->Resolve((RE::VMTypeID)RE::FormType::None);
+            //DEBUG("Resolved object = 0x{:016X}",(uintptr_t)loc_ptr)
+            loc_res.Value = std::to_string(*(uint64_t*)&loc_ptr);
+            loc_res.Type  = VariableType::kObject;
+        }
+        else
+        {
+            loc_res.Value = "";
+            loc_res.Type  = VariableType::kNone;
+        }
     }
 
     return loc_res;

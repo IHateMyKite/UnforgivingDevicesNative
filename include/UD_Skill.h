@@ -44,6 +44,7 @@ namespace UD
     SINGLETONHEADER(SkillManager)
     public:
         void Setup();
+        float GetSkillMult(RE::Actor* a_actor,std::string a_skill);
         void AdvanceSkillPerc(std::string a_skill,float a_value);
         void AdvanceSingleSkillPerc(std::string a_skill,float a_value);
         void GetPerksFromTree(std::vector<RE::BGSPerk*>& a_res,RE::BSTArray<RE::BGSSkillPerkTreeNode*> a_tree);
@@ -51,8 +52,8 @@ namespace UD
         RE::ActorValue GetActorValueByName(std::string asSkill);
     private:
         bool InitConfig(SkillSetting a_config);
+        int GetSkillValue(RE::Actor* a_actor, string a_skill);
     private:
-        bool _init = false;
         std::unordered_map<std::string,SkillSetting> _skills;
     };
 

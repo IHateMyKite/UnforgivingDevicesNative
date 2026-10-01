@@ -8,7 +8,7 @@ SINGLETONBODY(UD::DeviceManager)
 
 void UD::DeviceManager::Reload()
 {
-    if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
+    //if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
     {
         _init = true;
         //_jsoncache.clear();
@@ -293,6 +293,7 @@ void UD::DeviceManager::InitConfigParents()
         if (config->parentstr != "" &&  _DeviceTypes.find(config->parentstr) != _DeviceTypes.end())
         {
             config->parent = _DeviceTypes[config->parentstr];
+            DEBUG("Device script {} parent to {}",config->name,config->parent->name)
         }
     }
 }
@@ -323,11 +324,13 @@ void UD::DeviceManager::InitConfigScripts()
                 //DEBUG("Loading script for {}",it->name)
                 if (!loc_open) 
                 {
+                    DEBUG("Opening script for {} -> {}",name,it->lua_code)
                     loc_script = Lua::OpenScriptCode(it->lua_code);
                     loc_open = true;
                 }
                 else
                 {
+                    DEBUG("Extending script for {} -> {}",name,it->lua_code)
                     if (luaL_dostring(loc_script, it->lua_code.c_str()) != LUA_OK)
                     {
                         ERROR("Error opening lua code for {}",it->name)

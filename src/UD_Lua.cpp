@@ -146,6 +146,7 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_GetDeviceTags",HostFunctions::lua_GetDeviceTags);
     lua_register(L,"Host_GetSaveConfig",HostFunctions::lua_GetSaveConfig);
     lua_register(L,"Host_GetRegisteredActions",HostFunctions::lua_GetRegisteredActions);
+    lua_register(L,"Host_GetMinigameSkillMult",HostFunctions::lua_GetMinigameSkillMult);
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -392,6 +393,10 @@ void Lua::PushVariableResult(lua_State* L, UD::VariableValue& a_val)
                 lua_seti(L,-2,i);
             }
         }
+        break;
+        case VariableType::kNone:
+        case VariableType::kNoneArray:
+            lua_pushnil(L);
         break;
         default:
             lua_pushnil(L);
@@ -1093,5 +1098,25 @@ int Lua::HostFunctions::lua_GetRegisteredActions(lua_State* L)
 
     string loc_res = UD::MinigameManager::GetSingleton()->GetRegisteredActions(lua_tointeger(L,1));
     lua_pushstring(L,loc_res.c_str());
+    return 1;
+}
+
+int Lua::HostFunctions::lua_GetMinigameSkillMult(lua_State* L)
+{
+    if (!lua_isinteger(L,1))
+    {
+        ERROR("lua_AdvanceMinigameSkill - Incorrect variables passed!")
+        lua_pushnumber(L,1.0f);
+        return 1;
+    }
+
+    auto loc_data = UD::MinigameManager::GetSingleton()->GetMinigameDataById(lua_tointeger(L,1));
+
+    float loc_res = 1.0f;
+
+    loc_res *= UD::SkillManager::GetSingleton()->GetSkillMult(loc_data->Wearer,loc_data->Setting->config.skill);
+    loc_res *= UD::SkillManager::GetSingleton()->GetSkillMult(loc_data->Helper,loc_data->Setting->config.skill);
+
+    lua_pushnumber(L,loc_res);
     return 1;
 }

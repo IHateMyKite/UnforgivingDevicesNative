@@ -135,7 +135,7 @@ namespace UD
         {
             {{"UDCustomDeviceMain","UnforgivingDevices.esp",0x15E73C},{}},
             {{"UnforgivingDevicesMain","UnforgivingDevices.esp",0x005901},{}},
-            {{"UD_Config","UnforgivingDevices.esp",0x005901},{}}
+            {{"UD_Config","UnforgivingDevices.esp",0x0150F4},{}}
         };
     };
 

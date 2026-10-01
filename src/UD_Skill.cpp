@@ -117,9 +117,9 @@ namespace UD
     }
     void SkillManager::Setup()
     {
-        if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
+        //if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
         {
-            _init = true;
+            //_init = true;
             _skills.clear();
 
             std::string loc_confpath = RelToAbsPath("UD\\Skills");
@@ -168,6 +168,32 @@ namespace UD
                 DEBUG("\t{} - {} / {}",name, file->status, file->error)
             }
         }
+    }
+
+    float SkillManager::GetSkillMult(RE::Actor* a_actor, std::string a_skill)
+    {
+        if (a_skill == "" || a_actor == nullptr) return 1.0f;
+
+        float loc_res = 1.0f;
+
+        auto loc_skill = std::find_if(_skills.begin(),_skills.end(),[a_skill](std::pair<string,SkillSetting> skill){return boost::iequals(skill.second->config.name,a_skill) || boost::iequals(skill.second->config.alias,a_skill);});
+        if (loc_skill != _skills.end())
+        {
+            // First calculate total weigth
+            int loc_totalweigth = 0;
+            for (auto [name,weigth] : loc_skill->second->config.skills)
+            {
+                loc_totalweigth += weigth;
+            }
+
+            // Now calculate parts and advance skills
+            for (auto [name,weigth] : loc_skill->second->config.skills)
+            {
+                const float loc_increase = GetSkillValue(a_actor,name)*weigth/loc_totalweigth;
+                loc_res += loc_increase*0.01; //Increase by 1% for every point
+            }
+        }
+        return loc_res;
     }
 
     void SkillManager::AdvanceSkillPerc(std::string a_skill, float a_value)
@@ -262,5 +288,11 @@ namespace UD
         }
         ERROR("Error reading Skill config")
         return false;
+    }
+
+    int SkillManager::GetSkillValue(RE::Actor* a_actor, string a_skill)
+    {
+        float loc_res = a_actor->AsActorValueOwner()->GetActorValue(GetActorValueByName(a_skill));
+        return std::round(loc_res);
     }
 }

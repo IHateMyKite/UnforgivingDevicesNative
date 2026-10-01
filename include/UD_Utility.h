@@ -85,6 +85,12 @@ namespace UD
         static std::vector<T> ConvertStringToArray(string argIn)
         {
             std::vector<T> loc_res;
+
+            if (argIn == "")
+            {
+                return loc_res;
+            }
+
             try
             {
                 std::vector<std::string> loc_out;

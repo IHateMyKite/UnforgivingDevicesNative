@@ -73,6 +73,9 @@ void UD::MinigameManager::Reload(bool a_hotreload)
             // Set bases for minigames, and set script to some of its base if its missing
             SetMinigameBases();
 
+            // Set minigame UIs for special cases where UI should be inherited
+            SetMinigameUIs();
+
             // Set config vars from base to child
             SetMinigameConfigVars();
 
@@ -794,7 +797,7 @@ bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
         {
             a_config->config.name         = a_config->json->get_optional<std::string>("name").get_value_or("MISSINGNAME");
             a_config->config.description  = a_config->json->get_optional<std::string>("description").get_value_or("MISSINGDESC");
-            a_config->config.uiobject     = a_config->json->get_optional<std::string>("uiobject").get_value_or("");
+            a_config->config.uiobject     = a_config->json->get_optional<std::string>("uiobject").get_value_or("parent");
             a_config->config.script       = a_config->json->get_optional<std::string>("script").get_value_or("");
             a_config->config.base         = a_config->json->get_optional<std::string>("base").get_value_or("");
             a_config->config.priority     = a_config->json->get_optional<int>("priority").get_value_or(0);
@@ -840,6 +843,7 @@ bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
                     loc_exp.description     = val.get_optional<string>("description").get_value_or("");
                     loc_exp.defaultvalue    = val.get_optional<string>("default").get_value_or("nan");
                     loc_exp.priority        = stoi(val.get_optional<string>("priority").get_value_or("0"));
+                    loc_exp.global          = val.get_optional<bool>("global").get_value_or(false);
                     
 
                     val.put("config",key);
@@ -1001,6 +1005,41 @@ void UD::MinigameManager::SetMinigameBases()
     }
 }
 
+void UD::MinigameManager::SetMinigameUIs()
+{
+    // Go thru all object and replace uiobject if they are set to "parent"
+    for(auto&& [key,val] : _jsoncache)
+    {
+        // Ready tree of minigames
+        std::vector<MinigameSetting> loc_tree;
+        MinigameSetting loc_minigame = val;
+        while (loc_minigame)
+        {
+            loc_tree.push_back(loc_minigame);
+            loc_minigame = loc_minigame->base;
+        }
+
+        // Set export values
+        for(auto&& parent : loc_tree)
+        {
+            if (parent->config.uiobject != "parent")
+            {
+                val->config.uiobject = parent->config.uiobject;
+                DEBUG("Setting {} UI object to {}",val->name,parent->config.uiobject)
+                break;
+            }
+        }
+
+        // Check if UI is still set to parent. If yes, set to none
+        if (val->config.uiobject == "parent")
+        {
+            DEBUG("Setting {} UI object to none as it was set to parent but there was no parent",val->name)
+            val->config.uiobject = "";
+        }
+
+    }
+}
+
 void UD::MinigameManager::SetMinigameConfigVars()
 {
     // Set config vars from child to parent
@@ -1024,11 +1063,6 @@ void UD::MinigameManager::SetMinigameConfigVars()
             for(auto&& [exp_key,exp_val] : entry->config.exports_def)
             {
                 val->config.exports[exp_key] = exp_val;
-                if (val->config.config_vars_def.find(exp_key) == val->config.config_vars_def.end())
-                {
-                    DEBUG("Found missing export config for {} -> {} = {}",key,exp_key,exp_val.defaultvalue)
-                    val->config.config_vars_def[exp_key] = exp_val.defaultvalue;
-                }
             }
         }
 
@@ -1051,7 +1085,24 @@ void UD::MinigameManager::SetMinigameConfigVars()
                 }
             }
         }
+    }
 
+    for(auto&& [key,val] : _jsoncache)
+    {
+        // Set export values if config var is missing
+        for(auto&& [exp_key,exp_val] : val->config.exports)
+        {
+            if (val->config.config_vars.find(exp_key) == val->config.config_vars.end())
+            {
+                DEBUG("Found missing export config for {} -> {} = {}",key,exp_key,exp_val.defaultvalue)
+                val->config.config_vars[exp_key] = exp_val.defaultvalue;
+            }
+        }
+    }
+
+    // Print results for debug
+    for(auto&& [key,val] : _jsoncache)
+    {
         for(auto&& [cfg_key,cfg_val] : val->config.config_vars) DEBUG("[{}] Config Read : {} = {}",val->name, cfg_key,cfg_val)
         for(auto&& [exp_key,exp_val] : val->config.exports)     DEBUG("[{}] Export Read : {} = {}",val->name, exp_key,exp_val.name)
     }
