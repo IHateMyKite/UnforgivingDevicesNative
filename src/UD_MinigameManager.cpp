@@ -41,7 +41,7 @@ void UD::MinigameManager::Reload(bool a_hotreload)
         uint32_t loc_id = 0;
         try
         {
-            for (const auto & entry : std::filesystem::directory_iterator(loc_devconfpath))
+            for (const auto & entry : std::filesystem::recursive_directory_iterator(loc_devconfpath))
             {
                 std::string loc_path = entry.path().string();
     

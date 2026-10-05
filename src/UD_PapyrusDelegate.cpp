@@ -828,10 +828,10 @@ RE::BSScript::TypeInfo::RawType UD::PapyrusDelegate::GetTypeByName(string a_name
 
     for (auto it : loc_vm->objectTypeMap) 
     {
-        DEBUG("Checking script type {}",it.first)
+        //DEBUG("Checking script type {}",it.first)
         if (boost::iequals(string(it.first),a_name))
         {
-            DEBUG("Script type {} found",it.first)
+            //DEBUG("Script type {} found",it.first)
             return it.second->GetRawType();
         }
     }
