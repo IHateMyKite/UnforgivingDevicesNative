@@ -788,6 +788,58 @@ bool UD::PapyrusDelegate::GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO*
     return false;
 }
 
+Object UD::PapyrusDelegate::GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_id, RE::TESObjectARMO* a_rd)
+{
+    Object loc_device = nullptr;
+    if (a_id)
+    {
+        loc_device = FindDeviceScriptID(a_actor,a_id).second;
+    }
+    if (a_rd && !loc_device)
+    {
+        loc_device = FindDeviceScriptRD(a_actor,a_rd).second;
+    }
+    return loc_device;
+}
+
+RE::BSScript::Variable UD::PapyrusDelegate::GetDeviceVariable(Object a_device)
+{
+    auto loc_info = a_device->GetTypeInfo();
+    auto loc_type = loc_info->GetRawType();
+    while(loc_info && !boost::iequals(loc_info->GetName(), "ObjectReference"))
+    {
+        loc_info = loc_info->GetParent();
+        loc_type = loc_info->GetRawType();
+    }
+    RE::BSScript::Variable loc_res;
+    loc_res.SetObject(a_device,loc_type);
+    return loc_res;
+}
+
+RE::BSScript::TypeInfo::RawType UD::PapyrusDelegate::GetTypeByName(string a_name)
+{
+    const auto loc_vm = InternalVM::GetSingleton();
+    //RE::BSTSmartPointer<RE::BSScript::ObjectTypeInfo> loc_res;
+    //bool loc_found = loc_vm->GetScriptObjectType1(a_name,loc_res);
+    //if (loc_found)
+    //{
+    //    return loc_res->GetRawType();
+    //}
+
+    for (auto it : loc_vm->objectTypeMap) 
+    {
+        DEBUG("Checking script type {}",it.first)
+        if (boost::iequals(string(it.first),a_name))
+        {
+            DEBUG("Script type {} found",it.first)
+            return it.second->GetRawType();
+        }
+    }
+
+    ERROR("GetTypeByName({}) No type found",a_name)
+    return RE::BSScript::TypeInfo::RawType::kNone;
+}
+
 bool UD::PapyrusDelegate::GetInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable)
 {
     LOG("GetDeviceScript({},0x{:08X},{},{}) - Called",a_actor ? a_actor->GetName() : "NONE",a_device ? a_device->GetFormID() : 0,a_script,a_variable)

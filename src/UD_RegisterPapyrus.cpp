@@ -26,6 +26,7 @@
 namespace UD
 {
     #define REGISTERPAPYRUSFUNC(name,unhook) vm->RegisterFunction(#name, "UD_Native", UD::name,unhook);
+    #define REGISTERPAPYRUSFUNCVAR(name,unhook,rettype) UD::RegisterFunctionVar(#name, "UD_Native", UD::name,unhook,rettype);
 
     bool RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm) {
         REGISTERPAPYRUSFUNC(StartMinigameEffect,true)
@@ -138,6 +139,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(SetBitMapData,true)
         REGISTERPAPYRUSFUNC(UpdateVMHandles,true)
         REGISTERPAPYRUSFUNC(GetDeviceScript,true)
+        REGISTERPAPYRUSFUNCVAR(GetDeviceScript2,true,PapyrusDelegate::GetTypeByName("ObjectReference"))
         REGISTERPAPYRUSFUNC(GetInventoryDeviceScript,true)
 
         //materials

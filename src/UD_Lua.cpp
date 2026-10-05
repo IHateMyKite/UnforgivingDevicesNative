@@ -243,6 +243,7 @@ bool Lua::GetTable(lua_State* L,int a_indx, Lua::LuaVariable & a_res)
         case LuaVariableType::eActor:
         case LuaVariableType::eAlias:
         case LuaVariableType::eForm:
+        case LuaVariableType::eObject:
             if (lua_isuserdata(L,-1))
                 LUA_FILL(a_res.Value,lua_touserdata(L,-1),void*);
             else if (lua_isnil(L,-1))
@@ -415,6 +416,7 @@ Lua::LuaVariableType Lua::ParseArgTypeStr(std::string a_var)
     else if (a_var == "form")   loc_res = Lua::LuaVariableType::eForm;
     else if (a_var == "actor")  loc_res = Lua::LuaVariableType::eActor;
     else if (a_var == "alias")  loc_res = Lua::LuaVariableType::eAlias;
+    else if (a_var == "object") loc_res = Lua::LuaVariableType::eObject;
     else loc_res = Lua::LuaVariableType::eNill;
     return loc_res;
 }
@@ -673,6 +675,11 @@ int Lua::HostFunctions::lua_CallPapyrusFunction(lua_State* L)
                 break;
                 case LuaVariableType::eAlias:
                     loc_funcArgs.push_back(UD::FuncArgPtr(new UD::FuncArg((*(RE::BGSBaseAlias**)&it->Value))));
+                break;
+                case LuaVariableType::eObject:
+                    ObjectPtr*  loc_objptr  = *(ObjectPtr**)&it->Value;
+                    Object      loc_obj = Object(loc_objptr);
+                    loc_funcArgs.push_back(UD::FuncArgPtr(new UD::FuncArg(loc_obj)));
                 break;
             }
         }
@@ -1020,7 +1027,9 @@ int Lua::HostFunctions::lua_AdvanceMinigameSkill(lua_State* L)
         return 0;
     }
     auto loc_data = UD::MinigameManager::GetSingleton()->GetMinigameDataById(lua_tointeger(L,1));
-    UD::SkillManager::GetSingleton()->AdvanceSkillPerc(loc_data->Setting->config.skill,lua_tonumber(L,2));
+    if (loc_data)
+        UD::SkillManager::GetSingleton()->AdvanceSkillPerc(loc_data->Setting->config.skill,lua_tonumber(L,2));
+    else ERROR("lua_AdvanceMinigameSkill() - Error getting minigame data for index {}",lua_tointeger(L,1))
     return 0;
 }
 

@@ -20,6 +20,7 @@ namespace UD
         // Internal API
         string GetValue(string a_key,string a_defvalue);
         void SetValue(string a_key,string a_value);
+        bool SetValueEmpty(string a_key,string a_value);
 
         void OnGameLoaded(SKSE::SerializationInterface* serde,uint32_t a_type, uint32_t a_size, uint32_t a_version);
         void OnGameSaved(SKSE::SerializationInterface* serde);

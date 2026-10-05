@@ -99,6 +99,11 @@ namespace UD
         bool GetScriptVariableBool(std::string a_script,std::string a_variable,bool a_property);
 
         bool GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable);
+        Object GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_id, RE::TESObjectARMO* a_rd);
+        RE::BSScript::Variable GetDeviceVariable(Object a_device);
+
+        static RE::BSScript::TypeInfo::RawType GetTypeByName(string a_name);
+
         bool GetInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable);
 
         void Lock();
@@ -183,6 +188,15 @@ namespace UD
     {
         PapyrusDelegate::GetSingleton()->Lock();
         bool loc_res = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_actor,a_device,a_script,a_variable);
+        PapyrusDelegate::GetSingleton()->Unlock();
+        return loc_res;
+    }
+
+    inline RE::BSScript::Variable GetDeviceScript2(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, RE::TESObjectARMO* a_id, RE::TESObjectARMO* a_rd)
+    {
+        PapyrusDelegate::GetSingleton()->Lock();
+        Object loc_obj = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_actor,a_id,a_rd);
+        RE::BSScript::Variable loc_res = PapyrusDelegate::GetSingleton()->GetDeviceVariable(loc_obj);
         PapyrusDelegate::GetSingleton()->Unlock();
         return loc_res;
     }

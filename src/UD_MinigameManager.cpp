@@ -595,12 +595,36 @@ std::vector<string> UD::MinigameManager::GetMinigameConfigs(bool a_abstract)
 std::vector<string> UD::MinigameManager::GetMinigameExports(int a_indx)
 {
     std::vector<string> loc_res;
+    if (a_indx == -2)
+    {
+        auto loc_global = GetGlobalMinigameExports();
+        std::vector<MinigameExportVar> loc_globalv;
+        loc_globalv.reserve(loc_global.size());
+        for(auto&& [key,val] : loc_global) loc_globalv.push_back(val);
+        std::sort(loc_globalv.begin(),loc_globalv.end(),[&](MinigameExportVar& v1,MinigameExportVar& v2) -> bool
+        {
+            auto loc_prio1 = v1.priority;
+            auto loc_prio2 = v2.priority;
+            return loc_prio1 > loc_prio2;
+        });
+
+        loc_res.reserve(loc_global.size());
+        for(auto&& val : loc_globalv) loc_res.push_back(val.json);
+
+        return loc_res;
+    }
+
+    
     MinigameSetting loc_min;
     if (GetMinigameById(a_indx,loc_min))
     {
         std::vector<MinigameExportVar> loc_sorted;
         loc_sorted.reserve(loc_min->config.exports.size());
-        for(auto&& [key,val] : loc_min->config.exports)loc_sorted.push_back(val);
+        for(auto&& [key,val] : loc_min->config.exports)
+        {
+            if (!val.global)
+                loc_sorted.push_back(val);
+        }
 
         std::sort(loc_sorted.begin(),loc_sorted.end(),[&](MinigameExportVar& v1,MinigameExportVar& v2) -> bool
         {
@@ -617,9 +641,92 @@ std::vector<string> UD::MinigameManager::GetMinigameExports(int a_indx)
     return loc_res;
 }
 
+std::unordered_map<string,UD::MinigameExportVar> UD::MinigameManager::GetGlobalMinigameExports()
+{
+    std::unordered_map<string,MinigameExportVar> loc_res;
+    std::vector<MinigameExportVar> loc_sorted;
+    for (auto&& [minkey,minval] : _jsoncache)
+    {
+        
+        for(auto&& [key,val] : minval->config.exports)
+        {
+            if (val.global && std::find_if(loc_sorted.begin(),loc_sorted.end(),[val](MinigameExportVar& a_val){return a_val.name == val.name;}) == loc_sorted.end())
+                loc_sorted.push_back(val);
+        }
+    }
+
+    //std::sort(loc_sorted.begin(),loc_sorted.end(),[&](MinigameExportVar& v1,MinigameExportVar& v2) -> bool
+    //{
+    //    auto loc_prio1 = v1.priority;
+    //    auto loc_prio2 = v2.priority;
+    //    return loc_prio1 > loc_prio2;
+    //});
+
+    for(auto&& val : loc_sorted)
+    {
+        loc_res[val.name] = val;
+    }
+
+    return loc_res;
+}
+
+std::unordered_map<string, UD::MinigameExportVar> UD::MinigameManager::GetGlobalMinigameExports(int a_indx)
+{
+    //DEBUG("GetGlobalMinigameExports({}) called",a_indx)
+    std::unordered_map<string,MinigameExportVar> loc_res;
+    std::vector<MinigameExportVar> loc_sorted;
+
+    MinigameSetting loc_min;
+    if (GetMinigameById(a_indx,loc_min))
+    {
+        
+        for(auto&& [key,val] : loc_min->config.exports)
+        {
+            if (val.global) loc_sorted.push_back(val);
+        }
+    }
+
+    std::sort(loc_sorted.begin(),loc_sorted.end(),[&](MinigameExportVar& v1,MinigameExportVar& v2) -> bool
+    {
+        auto loc_prio1 = v1.priority;
+        auto loc_prio2 = v2.priority;
+        return loc_prio1 > loc_prio2;
+    });
+
+    for(auto&& val : loc_sorted)
+    {
+        loc_res[val.config] = val;
+        //DEBUG("Returning global export {}",val.config)
+    }
+
+    return loc_res;
+}
+
+bool UD::MinigameManager::IsConfigGlobal(string a_name)
+{
+    auto loc_global = GetGlobalMinigameExports();
+    auto loc_globalcfg = loc_global.find(a_name);
+    return (loc_globalcfg != loc_global.end());
+}
+
+bool UD::MinigameManager::IsConfigGlobal(int a_indx, string a_name)
+{
+    //DEBUG("IsConfigGlobal({},{}) called",a_indx,a_name)
+    auto loc_global = GetGlobalMinigameExports(a_indx);
+    auto loc_globalcfg = loc_global.find(a_name);
+    return (loc_globalcfg != loc_global.end());
+}
+
 bool UD::MinigameManager::SetMinigameConfig(int a_indx, string a_config, string a_value)
 {
     //DEBUG("SetMinigameConfig({},{},{}) called",a_indx,a_config,a_value)
+    if (a_indx == -2)
+    {
+        string loc_key = std::format("Minigames.Global.{}",a_config);
+        SaveManager::GetSingleton()->SetValue(loc_key,a_value);
+        return true;
+    }
+
     auto loc_min = GetMinigameConfigById(a_indx);
     if (loc_min)
     {
@@ -638,13 +745,29 @@ bool UD::MinigameManager::SetMinigameConfig(int a_indx, string a_config, string 
 string UD::MinigameManager::GetMinigameConfig(int a_indx, string a_config, string a_defvalue)
 {
     //DEBUG("GetMinigameConfig({},{},{}) called",a_indx,a_config,a_defvalue)
+    if (a_indx == -2)
+    {
+        string loc_key = std::format("Minigames.Global.{}",a_config);
+        string loc_val = SaveManager::GetSingleton()->GetValue(loc_key,a_defvalue);
+        //DEBUG("Reading global value for {} -> {}",loc_key,loc_val)
+        return loc_val;
+    }
+
     string loc_res = a_defvalue;
     auto loc_cfg = GetMinigameConfigById(a_indx);
     if (loc_cfg)
     {
         auto locval = loc_cfg->config.config_vars.find(a_config);
-        if (locval != loc_cfg->config.config_vars.end())
+        if (IsConfigGlobal(a_indx,a_config))
+        {
+            string loc_key = std::format("Minigames.Global.{}",a_config);
+            loc_res = SaveManager::GetSingleton()->GetValue(loc_key,a_defvalue);
+            //DEBUG("Reading global value for {} -> {}",loc_key,loc_res)
+        }
+        else if (locval != loc_cfg->config.config_vars.end())
+        {
             loc_res = locval->second;
+        }
         else
         {
             // Try to find export with default value
@@ -1105,6 +1228,17 @@ void UD::MinigameManager::SetMinigameConfigVars()
     {
         for(auto&& [cfg_key,cfg_val] : val->config.config_vars) DEBUG("[{}] Config Read : {} = {}",val->name, cfg_key,cfg_val)
         for(auto&& [exp_key,exp_val] : val->config.exports)     DEBUG("[{}] Export Read : {} = {}",val->name, exp_key,exp_val.name)
+    }
+
+    // Set global values to default values if they dont exists
+    auto loc_global = GetGlobalMinigameExports();
+    for(auto&& [key,val] : loc_global)
+    {
+        string loc_key = std::format("Minigames.Global.{}",val.config);
+        if (SaveManager::GetSingleton()->SetValueEmpty(loc_key,val.defaultvalue))
+        {
+            DEBUG("Global config value {} set to {}",loc_key,val.defaultvalue)
+        }
     }
 }
 

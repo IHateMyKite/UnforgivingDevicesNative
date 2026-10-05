@@ -183,6 +183,10 @@ namespace UD
 
             std::vector<string> GetMinigameConfigs(bool a_abstract);
             std::vector<string> GetMinigameExports(int a_indx);
+            std::unordered_map<string,MinigameExportVar> GetGlobalMinigameExports();
+            std::unordered_map<string,MinigameExportVar> GetGlobalMinigameExports(int a_indx);
+            bool    IsConfigGlobal(string a_name);
+            bool    IsConfigGlobal(int a_indx, string a_name);
             bool    SetMinigameConfig(int a_indx, string a_config, string a_value);
             string  GetMinigameConfig(int a_indx, string a_config, string a_defvalue);
 

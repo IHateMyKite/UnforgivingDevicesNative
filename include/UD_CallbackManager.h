@@ -20,7 +20,8 @@ namespace UD
         eString,
         eForm,
         eActor,
-        eAlias
+        eAlias,
+        eObject
     };
 
     union FuncArgVal
@@ -34,6 +35,7 @@ namespace UD
         RE::TESForm* uForm;
         RE::Actor* uActor;
         RE::BGSBaseAlias* uAlias;
+        Object* uObject;
     };
 
     struct FuncArg
@@ -46,6 +48,7 @@ namespace UD
         FuncArg(RE::TESForm* val) : Type(FuncArgTypes::eForm) {Val.uForm = val;}
         FuncArg(RE::Actor* val) : Type(FuncArgTypes::eActor) {Val.uActor = val;}
         FuncArg(RE::BGSBaseAlias* val) : Type(FuncArgTypes::eAlias) {Val.uAlias = val;}
+        FuncArg(Object val) : Type(FuncArgTypes::eObject) {Val.uObject = new Object(val);}
         FuncArgVal   Val;
         FuncArgTypes Type;
     };
@@ -90,6 +93,24 @@ namespace UD
                     break;
                     case FuncArgTypes::eForm:
                         a_dst[i].Pack(_args2[i]->Val.uForm);
+                    break;
+                    case FuncArgTypes::eObject:
+                    {
+                        //a_dst[i].Pack(_args2[i]->Val.uObject);
+                        auto loc_obj = *_args2[i]->Val.uObject;
+                        // Get raw type for ObjectReference
+                        if(loc_obj)
+                        {
+                            auto loc_info = loc_obj->GetTypeInfo();
+                            auto loc_type = loc_info->GetRawType();
+                            while(loc_info && !boost::iequals(loc_info->GetName(), "ObjectReference"))
+                            {
+                                loc_info = loc_info->GetParent();
+                                loc_type = loc_info->GetRawType();
+                            }
+                            a_dst[i].SetObject(*_args2[i]->Val.uObject,loc_type);
+                        }
+                    }
                     break;
                     default:
                         ERROR("Unsupported argument type")

@@ -65,7 +65,7 @@ string UD::SaveManager::GetSaveString(bool a_encode)
 
 string UD::SaveManager::GetValue(string a_key, string a_defvalue)
 {
-    auto loc_res = _save.get_optional<string>(a_key).get_value_or(a_defvalue);;
+    auto loc_res = _save.get_optional<string>(a_key).get_value_or(a_defvalue);
     //DEBUG("GetValue({},{}) called -> {}",a_key,a_defvalue,loc_res)
     return loc_res;
 }
@@ -74,6 +74,17 @@ void UD::SaveManager::SetValue(string a_key, string a_value)
 {
     DEBUG("SetValue({},{}) called",a_key,a_value)
     _save.put(a_key,a_value);
+}
+
+bool UD::SaveManager::SetValueEmpty(string a_key, string a_value)
+{
+    string loc_val = _save.get_optional<string>(a_key).get_value_or("__MISSING__");
+    if (loc_val == "__MISSING__")
+    {
+        _save.put(a_key,a_value);
+        return true;
+    }
+    return false;
 }
 
 void UD::SaveManager::OnGameLoaded(SKSE::SerializationInterface* serde, uint32_t a_type, uint32_t a_size, uint32_t a_version)

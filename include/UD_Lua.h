@@ -48,7 +48,8 @@ namespace Lua
         ePtr,
         eActor,
         eForm,
-        eAlias
+        eAlias,
+        eObject
     };
 
     struct LuaVariable
