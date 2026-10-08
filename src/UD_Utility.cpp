@@ -143,14 +143,14 @@ namespace UD
     }
 
     void ForEachReferenceInRange(RE::TESObjectREFR* origin, float radius,
-                                 std::function<RE::BSContainer::ForEachResult(RE::TESObjectREFR& ref)> callback) {
+                                 std::function<RE::BSContainer::ForEachResult(RE::TESObjectREFR* ref)> callback) {
         if (origin && radius > 0.0f) {
             const auto originPos = origin->GetPosition();
             auto* tesSingleton = RE::TES::GetSingleton();
             auto* interiorCell = tesSingleton->interiorCell;
             if (interiorCell) {
                 interiorCell->ForEachReferenceInRange(originPos, radius,
-                                                      [&](RE::TESObjectREFR& a_ref) { return callback(a_ref); });
+                                                      callback);
             } else {
                 if (const auto gridLength = tesSingleton->gridCells ? tesSingleton->gridCells->length : 0;
                     gridLength > 0) {
@@ -168,9 +168,9 @@ namespace UD
                                     const RE::NiPoint2 worldPos{cellCoords->worldX, cellCoords->worldY};
                                     if (worldPos.x < xPlus && (worldPos.x + 4096.0f) > xMinus && worldPos.y < yPlus &&
                                         (worldPos.y + 4096.0f) > yMinus) {
-                                        cell->ForEachReferenceInRange(originPos, radius, [&](RE::TESObjectREFR& a_ref) {
-                                            return callback(a_ref);
-                                        });
+                                        cell->ForEachReferenceInRange(originPos, radius, callback
+                                            
+                                        );
                                     }
                                 }
                             }
@@ -181,7 +181,7 @@ namespace UD
                 }
             }
         } else {
-            RE::TES::GetSingleton()->ForEachReference([&](RE::TESObjectREFR& a_ref) { return callback(a_ref); });
+            RE::TES::GetSingleton()->ForEachReference(callback);
         }
     }
 
@@ -312,7 +312,7 @@ namespace UD
             RE::TESObjectARMO* loc_armor = nullptr;
             if (loc_object != nullptr && loc_object->IsArmor()) loc_armor = static_cast<RE::TESObjectARMO*>(loc_object);
 
-            if (loc_armor != nullptr && ((int)loc_armor->GetSlotMask() & a_mask))
+            if (loc_armor != nullptr && ((int)loc_armor->GetSlotMask().underlying() & a_mask))
             {
                 loc_res = loc_armor;
                 return RE::BSContainer::ForEachResult::kStop;
@@ -328,7 +328,7 @@ namespace UD
         if (a_actor == nullptr || a_armor == nullptr) return nullptr;
         
         uint32_t loc_mask = 0x00000001;
-        const uint32_t loc_devicemask = (uint32_t)a_armor->GetSlotMask();
+        const uint32_t loc_devicemask = (uint32_t)a_armor->GetSlotMask().underlying();
 
         for (loc_mask = 0x00000001; loc_mask < loc_devicemask; loc_mask <<= 1)
         {

@@ -26,26 +26,46 @@ void UD::LockpickManager::Setup()
         } else {
             _PatchLockpickCrimeAddr = REL::Relocation<std::uintptr_t>{REL::RelocationID(51099, 51981), REL::VariantOffset(0xEEU, 0xF2U, 0xF2U)};
         }
+        _PatchLockpickCrimeDisable.ready();
+        _PatchLockpickCrimeDisableAE1p7.ready();
         DEBUG("_PatchLockpickCrimeAddr = 0x{:016X}",_PatchLockpickCrimeAddr.address())
 
-        _PatchLockpickCrimeDisable.ready();
+        
+        
+        if (REL::Module::get().version() > REL::Version("1.7.0.0")) {
+            DEBUG("_PatchLockpickCrimeDisableAE1p7 size = 0x{:02X}",_PatchLockpickCrimeDisableAE1p7.getSize())
+            //store original code
+            std::memcpy(_PatchLockpickCrimeOld,(uintptr_t*)_PatchLockpickCrimeAddr.address(),_PatchLockpickCrimeDisableAE1p7.getSize());
 
-        DEBUG("PatchLockpickCrimeDisable size = 0x{:02X}",_PatchLockpickCrimeDisable.getSize())
+            if (_PatchLockpickCrimeDisableAE1p7.getSize() > 0xCU)
+            {
+                SKSE::stl::report_and_fail("UnforgivingDevices: PatchLockpickCrimeDisableAE1p7 was too large, failed to install"sv);
+            }
+                    std::string loc_rawdata = "";
+            for (size_t i = 0; i < _PatchLockpickCrimeDisableAE1p7.getSize(); i++)
+            {
+                loc_rawdata += std::format(" {:02X}",_PatchLockpickCrimeOld[i]);
+            }
+            DEBUG("_PatchLockpickCrimeOld = {}",loc_rawdata)
+        } else {
+            DEBUG("PatchLockpickCrimeDisable size = 0x{:02X}",_PatchLockpickCrimeDisable.getSize())
+            //store original code
+            std::memcpy(_PatchLockpickCrimeOld,(uintptr_t*)_PatchLockpickCrimeAddr.address(),_PatchLockpickCrimeDisable.getSize());
 
-        //store original code
-        std::memcpy(_PatchLockpickCrimeOld,(uintptr_t*)_PatchLockpickCrimeAddr.address(),_PatchLockpickCrimeDisable.getSize());
-
-        if (_PatchLockpickCrimeDisable.getSize() > 0xCU)
-        {
-            SKSE::stl::report_and_fail("UnforgivingDevices: PatchLockpickCrimeDisable was too large, failed to install"sv);
+            if (_PatchLockpickCrimeDisable.getSize() > 0xCU)
+            {
+                SKSE::stl::report_and_fail("UnforgivingDevices: PatchLockpickCrimeDisable was too large, failed to install"sv);
+            }
+                    std::string loc_rawdata = "";
+            for (size_t i = 0; i < _PatchLockpickCrimeDisable.getSize(); i++)
+            {
+                loc_rawdata += std::format(" {:02X}",_PatchLockpickCrimeOld[i]);
+            }
+            DEBUG("_PatchLockpickCrimeOld = {}",loc_rawdata)
         }
+        
 
-        std::string loc_rawdata = "";
-        for (size_t i = 0; i < _PatchLockpickCrimeDisable.getSize(); i++)
-        {
-            loc_rawdata += std::format(" {:02X}",_PatchLockpickCrimeOld[i]);
-        }
-        DEBUG("_PatchLockpickCrimeOld = {}",loc_rawdata)
+
     }
 }
 
@@ -55,11 +75,23 @@ float UD::LockpickManager::GetLockpickVariable(LockpickVariable a_var) const
     if (loc_lockpickmenu)
     {
         RE::LockpickingMenu* loc_lockpickmenuPtr = reinterpret_cast<RE::LockpickingMenu*>(loc_lockpickmenu.get());
-        auto loc_rnd = loc_lockpickmenuPtr->GetRuntimeData();
-
-        #define GetLockpickVariable_CASE(var)   \
-        case LockpickVariable::v##var:          \
-            return loc_rnd.var;                 \
+        auto& loc_rnd = loc_lockpickmenuPtr->GetRuntimeData();
+        uint64_t pick_offset=0x0;
+        if (REL::Module::get().version() > REL::Version("1.7.0.0")) {
+            if ((uintptr_t)(&loc_rnd.numBrokenPicks)-(uintptr_t)(&loc_rnd) == 0xBC) {
+                pick_offset=(uint64_t)0x14;
+            }
+            
+        }
+        #define GetLockpickVariable_CASE(var)                 \
+        case LockpickVariable::v##var:                        \
+            {                                                   \
+                decltype(loc_rnd.var)* p = static_cast<decltype(loc_rnd.var)*>(&(loc_rnd.var));                         \
+                if (((uint64_t)p-(uint64_t)&loc_rnd) >= 0xb8) { \
+                    p += pick_offset/sizeof(decltype(loc_rnd.var));                          \
+                }    \
+                return *p;                                        \
+            }                                                   \
             break;
 
         switch (a_var)
@@ -93,11 +125,24 @@ bool UD::LockpickManager::SetLockpickVariable(LockpickVariable a_var, float a_va
     if (loc_lockpickmenu)
     {
         RE::LockpickingMenu* loc_lockpickmenuPtr = reinterpret_cast<RE::LockpickingMenu*>(loc_lockpickmenu.get());
-        auto loc_rnd = loc_lockpickmenuPtr->GetRuntimeData();
-    
+        auto& loc_rnd = loc_lockpickmenuPtr->GetRuntimeData();
+        uint64_t pick_offset=(uint64_t)0x0;
+        if (REL::Module::get().version() > REL::Version("1.7.0.0")) {
+            if ((uintptr_t)(&loc_rnd.numBrokenPicks) - (uintptr_t)(&loc_rnd) == 0xBC) {
+                pick_offset=(uint64_t)0x14;
+            }
+            
+        }
         #define SetLockpickVariable_CASE(var)   \
         case LockpickVariable::v##var:          \
-            loc_rnd.var = a_value;              \
+            {                                   \
+                decltype(loc_rnd.var)* p = static_cast<decltype(loc_rnd.var)*>(&(loc_rnd.var));  \
+                uint64_t* raw_p=(uint64_t*)&p;                            \
+                if (((uint64_t)p-(uint64_t)&loc_rnd) >= 0xb8) { \
+                    *raw_p += pick_offset; \
+                }                                                   \
+                *p = a_value;                                       \
+            }                                                   \
             return true;
     
         switch (a_var)
@@ -131,8 +176,13 @@ void UD::LockpickManager::DisableLockpickCrime()
     {
         _PatchLockpickCrimeApplied = true;
 
-        REL::safe_fill(_PatchLockpickCrimeAddr.address(), REL::NOP, _PatchLockpickCrimeDisable.getSize());
-        REL::safe_write(_PatchLockpickCrimeAddr.address(), _PatchLockpickCrimeDisable.getCode(), _PatchLockpickCrimeDisable.getSize());
+        if (REL::Module::get().version() > REL::Version("1.7.0.0")) {
+            REL::safe_fill(_PatchLockpickCrimeAddr.address(), REL::NOP, _PatchLockpickCrimeDisableAE1p7.getSize());
+            REL::safe_write(_PatchLockpickCrimeAddr.address(), _PatchLockpickCrimeDisableAE1p7.getCode(), _PatchLockpickCrimeDisableAE1p7.getSize());
+        } else {
+            REL::safe_fill(_PatchLockpickCrimeAddr.address(), REL::NOP, _PatchLockpickCrimeDisable.getSize());
+            REL::safe_write(_PatchLockpickCrimeAddr.address(), _PatchLockpickCrimeDisable.getCode(), _PatchLockpickCrimeDisable.getSize());
+        }
     }
 }
 
@@ -140,9 +190,13 @@ void UD::LockpickManager::EnableLockpickCrime()
 {
     if (_PatchLockpickCrimeApplied)
     {
-        REL::safe_fill(_PatchLockpickCrimeAddr.address(), REL::NOP, _PatchLockpickCrimeDisable.getSize());
-        REL::safe_write(_PatchLockpickCrimeAddr.address(), _PatchLockpickCrimeOld, _PatchLockpickCrimeDisable.getSize());
-    
+        if (REL::Module::get().version() > REL::Version("1.7.0.0")) {
+            REL::safe_fill(_PatchLockpickCrimeAddr.address(), REL::NOP, _PatchLockpickCrimeDisableAE1p7.getSize());
+            REL::safe_write(_PatchLockpickCrimeAddr.address(), _PatchLockpickCrimeOld, _PatchLockpickCrimeDisableAE1p7.getSize());
+        } else {
+            REL::safe_fill(_PatchLockpickCrimeAddr.address(), REL::NOP, _PatchLockpickCrimeDisable.getSize());
+            REL::safe_write(_PatchLockpickCrimeAddr.address(), _PatchLockpickCrimeOld, _PatchLockpickCrimeDisable.getSize());
+        }
         _PatchLockpickCrimeApplied = false;
     }
 }
@@ -183,17 +237,25 @@ RE::BSEventNotifyControl UD::MenuEventSink::ProcessEvent(const RE::MenuOpenClose
                 if (loc_lockpickmenu)
                 {
                     RE::LockpickingMenu* loc_lockpickmenuPtr = reinterpret_cast<RE::LockpickingMenu*>(loc_lockpickmenu.get());
+                    auto& loc_rnd = loc_lockpickmenuPtr->GetRuntimeData();
+                    uint64_t pick_offset=0x0;
+                    if (REL::Module::get().version() > REL::Version("1.7.0.0")) {
+                        if ((uintptr_t)(&loc_rnd.numBrokenPicks)-(uintptr_t)(&loc_rnd) == 0xBC) {
+                            pick_offset=(uint64_t)0x14;
+                        }
+                        
+                    }
                     if (PlayerStatus::GetSingleton()->PlayerHaveTelekinesis())
                     {
-                        RE::DebugNotification("You use telekinesis to help with lockpicking");
-                        loc_lockpickmenuPtr->GetRuntimeData().sweetSpotAngle    *= 0.25f;
-                        loc_lockpickmenuPtr->GetRuntimeData().partialPickAngle  *= 0.5f;
+                        RE::SendHUDMessage::ShowHUDMessage("You use telekinesis to help with lockpicking");
+                        loc_rnd.sweetSpotAngle    *= 0.25f;
+                        (*((float*)(&loc_rnd.partialPickAngle)+(pick_offset/sizeof(float))))  *= 0.5f;
                     }
                     else
                     {
-                        RE::DebugNotification("You can't lockpick the lock in your current state!");
-                        loc_lockpickmenuPtr->GetRuntimeData().sweetSpotAngle = 0.0f;
-                        loc_lockpickmenuPtr->GetRuntimeData().partialPickAngle = 0.0f;
+                        RE::SendHUDMessage::ShowHUDMessage("You can't lockpick the lock in your current state!");
+                        loc_rnd.sweetSpotAngle = 0.0f;
+                        (*((float*)(&loc_rnd.partialPickAngle)+(pick_offset/sizeof(float)))) = 0.0f;
                     }
                     return RE::BSEventNotifyControl::kStop;
                 }

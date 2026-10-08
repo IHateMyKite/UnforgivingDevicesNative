@@ -33,9 +33,9 @@ namespace UD
     public:
         ~MessageBoxResultCallback() override {}
         MessageBoxResultCallback(std::function<void(uint32_t)> callback) : _callback(callback) {}
-        void Run(RE::IMessageBoxCallback::Message message) override 
+        void Run(uint8_t button) override 
         {
-            _callback(static_cast<uint32_t>(message));
+            _callback(static_cast<uint32_t>(button));
         }
     private:
         std::function<void(uint32_t)> _callback;
