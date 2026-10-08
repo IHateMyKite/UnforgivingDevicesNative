@@ -26,7 +26,7 @@ namespace UD
     public:
         void Setup();
     private:
-        static void FastTravelConfirmCallback_Run_Patched(RE::FastTravelConfirmCallback* a_this, RE::IMessageBoxCallback::Message a_msg);
+        static void FastTravelConfirmCallback_Run_Patched(RE::FastTravelConfirmCallback* a_this, uint8_t a_msg);
         REL::Relocation<decltype(FastTravelConfirmCallback_Run_Patched)> FastTravelConfirmCallback_Run;
 
         bool _init = false;

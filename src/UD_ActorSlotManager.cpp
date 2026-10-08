@@ -139,19 +139,21 @@ void UD::ActorSlotManager::ValidateAliases()
 
     _closeactors.clear();
     const int loc_distance = UD::Config::GetSingleton()->GetVariable<int>("General.iUpdateDistance",5000);
-    UD::ForEachReferenceInRange(loc_player, loc_distance > 0.0f ? loc_distance : 100.0f, [&](RE::TESObjectREFR& a_ref) {
-        auto loc_refBase    = a_ref.GetBaseObject();
-        auto loc_actor      = a_ref.As<RE::Actor>();
-        if (loc_actor && !loc_actor->IsDisabled() && 
-            loc_actor->Is3DLoaded() && 
-            loc_actor != loc_player &&
-            !loc_actor->IsDead()    &&
-            (a_ref.Is(RE::FormType::NPC) || (loc_refBase && loc_refBase->Is(RE::FormType::NPC)) &&
-            _slots->find(loc_actor) == _slots->end() //only if actor is not already registered
-           )
-        ) 
-        {
-            _closeactors.push_back(loc_actor->GetHandle().native_handle());
+    UD::ForEachReferenceInRange(loc_player, loc_distance > 0.0f ? loc_distance : 100.0f, [&](RE::TESObjectREFR* a_ref) {
+        if (a_ref) {
+            auto loc_refBase    = a_ref->GetBaseObject();
+            auto loc_actor      = a_ref->As<RE::Actor>();
+            if (loc_actor && !loc_actor->IsDisabled() && 
+                loc_actor->Is3DLoaded() && 
+                loc_actor != loc_player &&
+                !loc_actor->IsDead()    &&
+                (a_ref->Is(RE::FormType::NPC) || (loc_refBase && loc_refBase->Is(RE::FormType::NPC)) &&
+                _slots->find(loc_actor) == _slots->end() //only if actor is not already registered
+            )
+            ) 
+            {
+                _closeactors.push_back(loc_actor->GetHandle().native_handle());
+            }
         }
         return RE::BSContainer::ForEachResult::kContinue;
     });

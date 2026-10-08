@@ -379,8 +379,13 @@ void UD::PapyrusDelegate::ValidateCache() const
 void UD::PapyrusDelegate::ValidateInvalidDevices() const
 {
     const auto loc_vm = InternalVM::GetSingleton();
+    loc_vm->attachedScriptsLock.Lock();
     std::for_each(std::execution::seq,loc_vm->objectsAwaitingCleanup.begin(),loc_vm->objectsAwaitingCleanup.end(),[&](RE::BSTSmartPointer<RE::BSScript::Object>& a_script)
     {
+        if (!a_script->IsValid() || !a_script->IsConstructed()|| !a_script->IsInitialized()) {
+            DEBUG("Validate Invalid Devices found invalid script")
+            return;
+        }
         auto loc_removed = std::find_if(std::execution::seq,_removeddevices.begin(),_removeddevices.end(),[a_script](Device& a_device)
         {
             return a_device.object.get() == a_script.get();
@@ -390,7 +395,9 @@ void UD::PapyrusDelegate::ValidateInvalidDevices() const
         {
             return;
         }
-
+        if (!a_script->GetTypeInfo()) {
+            return;
+        }
         auto loc_type = HaveScriptBase(a_script->GetTypeInfo(),"ud_customdevice_renderscript");
         if (loc_type != nullptr)
         {
@@ -479,12 +486,17 @@ void UD::PapyrusDelegate::ValidateInvalidDevices() const
             }
         }
     });
+    loc_vm->attachedScriptsLock.Unlock();
 }
 
 RE::BSScript::ObjectTypeInfo* UD::PapyrusDelegate::HaveScriptBase(RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>& a_scripts, const std::string& a_base) const
 {
     for (auto&& it : a_scripts)
     {
+        if (!it->IsValid() || !it->IsConstructed() || !it->IsInitialized()) {
+            DEBUG("HaveScriptBase found invalid script")
+            continue;
+        }
         auto loc_info = it->GetTypeInfo();
 
         while (loc_info != nullptr)

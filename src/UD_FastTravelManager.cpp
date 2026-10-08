@@ -15,7 +15,7 @@ void UD::FastTravelManager::Setup()
     }
 }
 
-void UD::FastTravelManager::FastTravelConfirmCallback_Run_Patched(RE::FastTravelConfirmCallback* a_this, RE::IMessageBoxCallback::Message a_msg)
+void UD::FastTravelManager::FastTravelConfirmCallback_Run_Patched(RE::FastTravelConfirmCallback* a_this, uint8_t a_msg)
 {
     LOG("FastTravelConfirmCallback_Run_Patched called = Msg = {}",(int)a_msg)
 
@@ -75,8 +75,8 @@ void UD::FastTravelManager::FastTravelConfirmCallback_Run_Patched(RE::FastTravel
     //If player selected Yes, change it to No :)
     if (loc_disable && (int)a_msg == 1)
     {
-        a_msg = (RE::IMessageBoxCallback::Message)2;
-        RE::DebugNotification(loc_msg.c_str());
+        a_msg = (uint8_t)2;
+        RE::SendHUDMessage::ShowHUDMessage(loc_msg.c_str());
     }
     FastTravelManager::GetSingleton()->FastTravelConfirmCallback_Run(a_this,a_msg);
 }

@@ -36,7 +36,14 @@ namespace UD
             mov(byte [rbx + 0x10D],0U); //originaly was setting variable to 1, which was forcing the menu to close if player was detected
         }
     };
-
+    struct PatchLockpickCrimeDisableAE1p7 : public Xbyak::CodeGenerator
+    {
+        PatchLockpickCrimeDisableAE1p7()
+        {
+            nop(5,false); //noped call for some function which adds bounty and makes guards approach player
+            mov(byte [rbx + 0x121],0U); //originaly was setting variable to 1, which was forcing the menu to close if player was detected
+        }
+    };
     class LockpickManager
     {
     SINGLETONHEADER(LockpickManager)
@@ -52,6 +59,7 @@ namespace UD
         uint8_t _PatchLockpickCrimeOld[100]; //buffer for storing original data so we can restore it later
         REL::Relocation<std::uintptr_t> _PatchLockpickCrimeAddr;
         PatchLockpickCrimeDisable       _PatchLockpickCrimeDisable;
+        PatchLockpickCrimeDisableAE1p7       _PatchLockpickCrimeDisableAE1p7;
     };
 
     inline float GetLockpickVariable(PAPYRUSFUNCHANDLE, int a_var)

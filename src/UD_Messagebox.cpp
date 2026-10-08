@@ -16,14 +16,13 @@ void UD::MessageboxManager::ShowMessageBox(const std::string& bodyText, const st
     messagebox->callback = messageCallback;
     messagebox->bodyText = bodyText;
     for (auto text : buttonTextValues) messagebox->buttonText.push_back(text.c_str());
-
-    messagebox->unk4D = useHtml; // yes, this actually enables html
+    messagebox->useHtml = useHtml; // yes, this actually enables html
 
     MessageBoxCalibration::GetSingleton()->Inject(messagebox);
 
     loc_injectwordwrap = !wordWrap;
 
-    messagebox->QueueMessage();
+    RE::MessageBoxMenu::QueueMessage(messagebox);
 }
 
 void UD::MessageboxManager::Setup()
@@ -172,13 +171,6 @@ RE::UI_MESSAGE_RESULTS UD::MessageboxManager::ProcessMessagebox(RE::MessageBoxMe
 void UD::MessageBoxCalibration::Inject(RE::MessageBoxData* aData)
 {
     lastMsgPtr = (uintptr_t)aData;
-    if (inject & 0x01U) aData->unk38 = unk38; else unk38 = aData->unk38;
-    if (inject & 0x02U) aData->unk3C = unk3C; else unk3C = aData->unk3C;
-    if (inject & 0x04U) aData->unk48 = unk48; else unk48 = aData->unk48;
-    if (inject & 0x08U) aData->unk4C = unk4C; else unk4C = aData->unk4C;
-    if (inject & 0x10U) aData->unk4D = unk4D; else unk4D = aData->unk4D;
-    if (inject & 0x20U) aData->unk4E = unk4E; else unk4E = aData->unk4E;
-    if (inject & 0x40U) aData->unk4F = unk4F; else unk4F = aData->unk4F;
-    if (inject & 0x80U) aData->unk08 = unk08; else unk08 = aData->unk08;
+    
     sizeof(RE::BSTArray<RE::IMessageBoxCallback>);
 }
