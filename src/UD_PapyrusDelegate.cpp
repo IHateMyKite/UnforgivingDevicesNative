@@ -493,10 +493,19 @@ RE::BSScript::ObjectTypeInfo* UD::PapyrusDelegate::HaveScriptBase(RE::BSTSmallSh
 {
     for (auto&& it : a_scripts)
     {
-        if (!it->IsValid() || !it->IsConstructed() || !it->IsInitialized()) {
-            DEBUG("HaveScriptBase found invalid script")
+        if (!it->IsValid()) {
+            DEBUG("HaveScriptBase found invalid script {}",it->GetTypeInfo()->GetName())
             continue;
         }
+        if (!it->IsConstructed()) {
+            DEBUG("HaveScriptBase found not constructed script {}",it->GetTypeInfo()->GetName())
+            continue;
+        }
+        //if (!it->IsInitialized()) {
+        //    DEBUG("HaveScriptBase found not initialized script {}",it->GetTypeInfo()->GetName())
+        //    continue;
+        //}
+
         auto loc_info = it->GetTypeInfo();
 
         while (loc_info != nullptr)
