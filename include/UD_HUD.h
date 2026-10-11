@@ -71,7 +71,7 @@ namespace UD
     public:
         void Reload(bool a_hotreload = false);
         void Update(float a_delta);
-        void InvokeHud(std::string a_message);
+        void InvokeHud(std::string a_message, bool a_fast);
         void SetViewReady() {_viewReady = true; _HudState = HudState::eShown;}
 
         bool    SetConfig(int a_indx, string a_config, string a_value);

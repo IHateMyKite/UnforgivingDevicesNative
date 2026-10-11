@@ -56,7 +56,7 @@ UD::VariableValue UD::GetVariableRaw(void* a_source, VariableDetails a_var)
     else if (a_var.Owner == "wearer" || a_var.Owner == "helper")
     {
         RE::Actor* loc_actor = reinterpret_cast<RE::Actor*>(a_source);
-        const auto loc_av = RE::ActorValueList::GetSingleton()->LookupActorValueByName(a_var.Name);
+        const auto loc_av = RE::ActorValueList::GetSingleton()->LookupActorValueByName(a_var.Name.c_str());
         const float loc_avbase = loc_actor->AsActorValueOwner()->GetPermanentActorValue(loc_av);
         switch(a_var.Mod)
         {
@@ -158,7 +158,7 @@ UD::VariableValue UD::SetVariableRaw(void* a_source, VariableDetails a_var, Vari
         loc_res.Type = VariableType::kFloat;
         //if (loc_val != 0.0f)
         {
-            auto loc_av = RE::ActorValueList::GetSingleton()->LookupActorValueByName(a_var.Name);
+            auto loc_av = RE::ActorValueList::GetSingleton()->LookupActorValueByName(a_var.Name.c_str());
             switch(a_var.Mod)
             {
                 case VariableMod::eAbsolute:
@@ -171,7 +171,7 @@ UD::VariableValue UD::SetVariableRaw(void* a_source, VariableDetails a_var, Vari
                     loc_actor->AsActorValueOwner()->SetActorValue(loc_av,loc_actor->AsActorValueOwner()->GetActorValue(loc_av) + loc_val);
                 break;
                 case VariableMod::eDamage:
-                    loc_actor->AsActorValueOwner()->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kDamage,loc_av,-1.0*loc_val);
+                    loc_actor->AsActorValueOwner()->DamageActorValue(loc_av,-1.0*loc_val);
                 break;
             }
         }

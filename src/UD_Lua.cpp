@@ -750,23 +750,23 @@ int Lua::HostFunctions::lua_ActorIsPlayer(lua_State* L)
 
 int Lua::HostFunctions::lua_InvokeUI(lua_State* L)
 {
-    if (!lua_isinteger(L,1) || !lua_isstring(L,2))
+    if (!lua_isinteger(L,1) || !lua_isstring(L,2) || !lua_isboolean(L,3))
     {
         ERROR("lua_InvokeUI - Incorrect variables passed!")
         return 0;
     }
 
-    //DEBUG("lua_InvokeUI({})",lua_tostring(L,2))
+    //DEBUG("lua_InvokeUI({},{},{})",lua_tointeger(L,1),lua_tostring(L,2),lua_toboolean(L,3))
 
     int loc_id = lua_tointeger(L,1);
     if (loc_id != -1)
     {
-        UD::MinigameManager::GetSingleton()->InvokeUI(lua_tostring(L,2));
+        UD::MinigameManager::GetSingleton()->InvokeUI(lua_tostring(L,2),lua_toboolean(L,3));
     }
     else
     {
         // HUD Invoke
-        UD::HudManager::GetSingleton()->InvokeHud(lua_tostring(L,2));
+        UD::HudManager::GetSingleton()->InvokeHud(lua_tostring(L,2),lua_toboolean(L,3));
     }
 
     return 0;

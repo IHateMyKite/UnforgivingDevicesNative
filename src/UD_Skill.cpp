@@ -59,7 +59,7 @@ namespace UD
     std::vector<RE::BGSPerk*> GetPerksForSkill(PAPYRUSFUNCHANDLE, std::string a_skill)
     {
         RE::ActorValue loc_value = SkillManager::GetSingleton()->GetActorValueByName(a_skill);
-        auto loc_valueinfo = RE::ActorValueList::GetSingleton()->GetActorValue(loc_value);
+        auto loc_valueinfo = RE::ActorValueList::GetSingleton()->GetActorValueInfo(loc_value);
         std::vector<RE::BGSPerk*> loc_res;
         if (loc_valueinfo != nullptr && loc_valueinfo->perkTree)
         {
@@ -193,6 +193,7 @@ namespace UD
                 loc_res += loc_increase*0.01; //Increase by 1% for every point
             }
         }
+        else  ERROR("Cant find skill {}",a_skill)
         return loc_res;
     }
 
@@ -261,6 +262,7 @@ namespace UD
             try
             {
                 a_config->config.name         = a_config->json->get_optional<std::string>("name").get_value_or("MISSINGNAME");
+                a_config->config.alias        = a_config->json->get_optional<std::string>("alias").get_value_or("MISSINGALIAS");
                 a_config->config.description  = a_config->json->get_optional<std::string>("description").get_value_or("MISSINGDESC");
                 a_config->config.priority     = a_config->json->get_optional<int>("priority").get_value_or(0);
 

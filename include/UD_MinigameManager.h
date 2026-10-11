@@ -172,7 +172,7 @@ namespace UD
             void OpenMinigameUI(int a_id,std::string a_callback);
             void CloseMinigameUI(int a_id);
             void SetViewReady() {_viewReady = true; _UIState = MinigameUIState::eShown;}
-            void InvokeUI(std::string a_command);
+            void InvokeUI(std::string a_command, bool a_fast);
 
             void CheckActionCallback(uint32_t a_dxcode,RE::ButtonEvent* a_event);
             string GetRegisteredActions(uint32_t a_id);

@@ -447,11 +447,18 @@ UD::HudElementSetting UD::HudManager::GetConfigById(uint32_t a_id)
     return nullptr;
 }
 
-void UD::HudManager::InvokeHud(std::string a_message)
+void UD::HudManager::InvokeHud(std::string a_message, bool a_fast)
 {
     if (_viewReady)
     {
-        PrismaUI->Invoke(_view,a_message.c_str());
+        if (!a_fast) PrismaUI->Invoke(_view,a_message.c_str());
+        else
+        {
+            std::regex loc_regex(R"regex((.*)\((.*)\))regex");
+            const std::string loc_funname = std::regex_replace(a_message,loc_regex,"$1");
+            std::string loc_funarg = std::regex_replace(a_message,loc_regex,"$2");
+            PrismaUI->InteropCall(_view,loc_funname.c_str(),loc_funarg.c_str());
+        }
     }
 }
 

@@ -441,11 +441,18 @@ void UD::MinigameManager::CloseMinigameUI(int a_id)
     }
 }
 
-void UD::MinigameManager::InvokeUI(std::string a_command)
+void UD::MinigameManager::InvokeUI(std::string a_command, bool a_fast)
 {
     if (_viewReady)
     {
-        PrismaUI->Invoke(_view,a_command.c_str());
+        if (!a_fast) PrismaUI->Invoke(_view,a_command.c_str());
+        else
+        {
+            std::regex loc_regex(R"regex((.*)\((.*)\))regex");
+            const std::string loc_funname = std::regex_replace(a_command,loc_regex,"$1");
+            std::string loc_funarg = std::regex_replace(a_command,loc_regex,"$2");
+            PrismaUI->InteropCall(_view,loc_funname.c_str(),loc_funarg.c_str());
+        }
     }
 }
 
