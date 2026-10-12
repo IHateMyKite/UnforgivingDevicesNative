@@ -1,6 +1,12 @@
 #pragma once
 
 #include <unordered_set>
+#include <typeinfo>
+
+namespace boost::json
+{
+    class value;
+}
 
 namespace UD 
 {
@@ -46,20 +52,69 @@ namespace UD
     SINGLETONHEADER(Utility)
     public:
         std::vector<RE::TESForm*> RemoveDuplicateForms(PAPYRUSFUNCHANDLE, std::vector<RE::TESForm*> modifier_forms);
-        int     CodeBit(int a_codedmap,int a_value,int a_size,int a_index) const;
-        int     DecodeBit(int i_codedMap,int i_size,int i_index) const;
-        int     Round(float a_value) const;
-        int     iRange(int a_value,int a_min,int a_max) const;
-        float   fRange(float a_value,float a_min,float a_max) const;
-        bool    iInRange(int a_value,int a_min,int a_max) const;
-        bool    fInRange(float a_value,float a_min,float a_max) const;
+        static int      CodeBit(int a_codedmap,int a_value,int a_size,int a_index);
+        static int      DecodeBit(int i_codedMap,int i_size,int i_index);
+        static int      Round(float a_value);
+        static int      iRange(int a_value,int a_min,int a_max);
+        static float    fRange(float a_value,float a_min,float a_max);
+        static bool     iInRange(int a_value,int a_min,int a_max);
+        static bool     fInRange(float a_value,float a_min,float a_max);
 
-        bool WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw) const;
-        bool WornHasKeyword(RE::Actor* a_actor, std::string a_kw) const;
-        RE::TESObjectARMO* GetWornArmor(RE::Actor* a_actor,int a_mask) const;
-        RE::TESObjectARMO* CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_device) const;
+        static bool WornHasKeyword(RE::Actor* a_actor, RE::BGSKeyword* a_kw);
+        static bool WornHasKeyword(RE::Actor* a_actor, std::string a_kw);
+        static RE::TESObjectARMO* GetWornArmor(RE::Actor* a_actor,int a_mask);
+        static RE::TESObjectARMO* CheckArmorEquipped(RE::Actor* a_actor, RE::TESObjectARMO* a_device);
 
-        bool IsBlockingMenuOpen();
+        static bool IsBlockingMenuOpen();
+
+        static int GetPropertyInt(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, int a_defval);
+        static std::string GetPropertyString(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, std::string a_defval);
+        static float GetPropertyFloat(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, float a_defval);
+        static bool GetPropertyBool(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, bool a_defval);
+        static void* GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID a_type);
+        static void* GetPropertyObject(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::FormType a_type);
+
+        static RE::BSTSmartPointer<RE::BSScript::Object> GetObjectByHandle(RE::VMHandle a_handle,string a_class);
+
+        static bool ActorFreeHands(RE::Actor* a_actor,bool ab_checkGrasp = false,bool a_IgnoreHeavyBondage = false); // Return true if acvtor wears heavy bondage device
+
+        static std::vector<void*> GetPropertyObjectArray(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var, RE::VMTypeID);
+        static std::vector<RE::BSTSmartPointer<RE::BSScript::Object>> GetPropertyObjectArrayRaw(RE::BSTSmartPointer<RE::BSScript::Object> a_object, std::string a_name, bool a_var);
+
+        template<class T>
+        static std::vector<T> ConvertStringToArray(string argIn)
+        {
+            std::vector<T> loc_res;
+
+            if (argIn == "")
+            {
+                return loc_res;
+            }
+
+            try
+            {
+                std::vector<std::string> loc_out;
+                boost::split(loc_out,argIn,boost::is_any_of(","));
+                for(auto&& it : loc_out)
+                {
+                    loc_res.push_back(boost::lexical_cast<T>(it));
+                }
+            }
+            catch(...)
+            {
+                ERROR("Error converting string {} to array of type {}",argIn,typeid(T).name())
+            }
+
+            return loc_res;
+        }
+
+        static float Str2Float(string a_in, float a_def);
+        static int Str2Int(string a_in, int a_def);
+
+        static string MemoryToString(void* a_data, size_t a_size);
+        static string SerializeJson(iptree& a_tree);
+        static iptree DeserializeJson(string a_serdata);
+        static void ToLower(string& a_in);
     private:
 
     };
@@ -84,38 +139,55 @@ namespace UD
 
     inline int CodeBit(PAPYRUSFUNCHANDLE,int a_codedmap,int a_value,int a_size,int a_index)
     {
-        return Utility::GetSingleton()->CodeBit(a_codedmap,a_value,a_size,a_index);
+        return Utility::CodeBit(a_codedmap,a_value,a_size,a_index);
     }
 
     inline int DecodeBit(PAPYRUSFUNCHANDLE,int a_codedMap,int a_size,int a_index)
     {
-        return Utility::GetSingleton()->DecodeBit(a_codedMap,a_size,a_index);
+        return Utility::DecodeBit(a_codedMap,a_size,a_index);
     }
 
     inline int Round(PAPYRUSFUNCHANDLE,float a_value)
     {
-        return Utility::GetSingleton()->Round(a_value);
+        return Utility::Round(a_value);
     }
     inline int iRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max)
     {
-        return Utility::GetSingleton()->iRange(a_value,a_min,a_max);
+        return Utility::iRange(a_value,a_min,a_max);
     }
     inline float fRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max)
     {
-        return Utility::GetSingleton()->fRange(a_value,a_min,a_max);
+        return Utility::fRange(a_value,a_min,a_max);
     }
     inline bool iInRange(PAPYRUSFUNCHANDLE,int a_value,int a_min,int a_max)
     {
-        return Utility::GetSingleton()->iInRange(a_value,a_min,a_max);
+        return Utility::iInRange(a_value,a_min,a_max);
     }
     inline bool fInRange(PAPYRUSFUNCHANDLE,float a_value,float a_min,float a_max)
     {
-        return Utility::GetSingleton()->fInRange(a_value,a_min,a_max);
+        return Utility::fInRange(a_value,a_min,a_max);
     }
 
     inline RE::TESObjectARMO* CheckArmorEquipped(PAPYRUSFUNCHANDLE,RE::Actor* a_actor, RE::TESObjectARMO* a_armor)
     {
         return Utility::GetSingleton()->CheckArmorEquipped(a_actor,a_armor);
+    }
+
+    inline string GetJsonValue(PAPYRUSFUNCHANDLE, string a_serdata, string a_key, string a_def)
+    {
+        if (a_serdata == "") return a_def;
+        //DEBUG("GetJsonValue({},{},{}) called",a_serdata,a_key,a_def)
+        iptree loc_pt = Utility::DeserializeJson(a_serdata);
+        return loc_pt.get_optional<string>(a_key).get_value_or(a_def);
+    }
+
+    inline string SetJsonValue(PAPYRUSFUNCHANDLE, string a_serdata, string a_key, string a_val)
+    {
+        if (a_serdata == "") return "{}";
+        //DEBUG("SetJsonValue({},{},{}) called",a_serdata,a_key,a_val)
+        iptree loc_pt = Utility::DeserializeJson(a_serdata);
+        loc_pt.put(a_key,a_val);
+        return Utility::SerializeJson(loc_pt);
     }
 
     std::string FormatFloat(PAPYRUSFUNCHANDLE,float a_value,int a_floatpoints);
@@ -264,6 +336,14 @@ namespace UD
     bool IsConcentrationSpell(PAPYRUSFUNCHANDLE,RE::SpellItem* a_spell);
     bool IsConcentrationEnch(PAPYRUSFUNCHANDLE,RE::EnchantmentItem* a_ench);
 
-    
+    class JSONUtility
+    {
+    SINGLETONHEADER(JSONUtility)
+    public:
+        boost::json::value RecursiveFind(boost::json::value a_obj,std::string a_path);
+        std::vector<boost::json::value> RecursiveFindArray(boost::json::value a_obj,std::string a_path);
+        std::string RecursiveGetString(boost::json::value a_obj,std::string a_path,std::string a_def = "");
+    };
+
 
 }

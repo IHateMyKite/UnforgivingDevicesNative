@@ -3,17 +3,11 @@
 #include <UD_Spinlock.h>
 #include <map>
 
-namespace boost::json
-{
-    class object;
-    class value;
-}
-
 namespace UD 
 {
     typedef uint8_t DisableCounter;
 
-    enum AnimationFileStatus : uint8_t
+    enum class AnimationFileStatus : uint8_t
     {
         sOK             = 0U,
         sDisabled       = 1U,
@@ -53,8 +47,6 @@ namespace UD
         static void DrawWeaponMagicHands(RE::Actor* a_actor, bool a_draw);
         inline static REL::Relocation<decltype(DrawWeaponMagicHands)> DrawWeaponMagicHands_old;
         bool _CheckConstraints(boost::json::value a_obj, std::string a_ObjPath, int a_ActorConstraints) const;
-
-        boost::json::value RecursiveFind(boost::json::value a_obj,std::string a_path) const;
 
     private:
         bool _init = false;

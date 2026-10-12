@@ -8,6 +8,28 @@ namespace UD
 
     typedef RE::PlayerCharacter::PlayerSkills::Data::Skills::Skill Skill;
 
+    std::unordered_map<std::string,std::pair<Skill,RE::ActorValue>> g_SkillTable = 
+    {
+        {"onehanded"   ,{Skill::kOneHanded  , RE::ActorValue::kOneHanded  }},
+        {"twohanded"   ,{Skill::kTwoHanded  , RE::ActorValue::kTwoHanded  }},
+        {"marksman"    ,{Skill::kArchery    , RE::ActorValue::kArchery    }}, // Why is it called two things ???
+        {"block"       ,{Skill::kBlock      , RE::ActorValue::kBlock      }},
+        {"smithing"    ,{Skill::kSmithing   , RE::ActorValue::kSmithing   }},
+        {"heavyarmor"  ,{Skill::kHeavyArmor , RE::ActorValue::kHeavyArmor }},
+        {"lightarmor"  ,{Skill::kLightArmor , RE::ActorValue::kLightArmor }},
+        {"pickpocket"  ,{Skill::kPickpocket , RE::ActorValue::kPickpocket }},
+        {"lockpicking" ,{Skill::kLockpicking, RE::ActorValue::kLockpicking}},
+        {"sneak"       ,{Skill::kSneak      , RE::ActorValue::kSneak      }},
+        {"alchemy"     ,{Skill::kAlchemy    , RE::ActorValue::kAlchemy    }},
+        {"speechcraft" ,{Skill::kSpeech     , RE::ActorValue::kSpeech     }},
+        {"alteration"  ,{Skill::kAlteration , RE::ActorValue::kAlteration }},
+        {"conjuration" ,{Skill::kConjuration, RE::ActorValue::kConjuration}},
+        {"destruction" ,{Skill::kDestruction, RE::ActorValue::kDestruction}},
+        {"illusion"    ,{Skill::kIllusion   , RE::ActorValue::kIllusion   }},
+        {"restoration" ,{Skill::kRestoration, RE::ActorValue::kRestoration}},
+        {"enchanting"  ,{Skill::kEnchanting , RE::ActorValue::kEnchanting }}
+    };
+
     int CalculateSkillFromPerks(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, std::string a_skill, int a_increase)
     {
         if (a_actor == nullptr || a_skill == "") return 10;
@@ -36,14 +58,14 @@ namespace UD
 
     std::vector<RE::BGSPerk*> GetPerksForSkill(PAPYRUSFUNCHANDLE, std::string a_skill)
     {
-        RE::ActorValue loc_value = GetActorValueByName(a_skill);
+        RE::ActorValue loc_value = SkillManager::GetSingleton()->GetActorValueByName(a_skill);
         auto loc_valueinfo = RE::ActorValueList::GetSingleton()->GetActorValueInfo(loc_value);
         std::vector<RE::BGSPerk*> loc_res;
         if (loc_valueinfo != nullptr && loc_valueinfo->perkTree)
         {
             auto loc_tree = loc_valueinfo->perkTree;
             auto loc_childs = loc_tree->children;
-            GetPerksFromTree(loc_res,loc_childs);
+            SkillManager::GetSingleton()->GetPerksFromTree(loc_res,loc_childs);
         }
         else
         {
@@ -52,7 +74,153 @@ namespace UD
         return loc_res;
     }
 
-    void AdvanceSkillPerc(PAPYRUSFUNCHANDLE, std::string a_skill, float a_value)
+    void SkillManager::GetPerksFromTree(std::vector<RE::BGSPerk*>& a_res,RE::BSTArray<RE::BGSSkillPerkTreeNode*> a_tree)
+    {
+        for (auto&& it : a_tree)
+        {
+            if (it != nullptr && it->perk != nullptr)
+            {
+                if (std::find(a_res.begin(),a_res.end(),it->perk) == a_res.end())
+                {
+                    a_res.push_back(it->perk);
+
+                    RE::BGSPerk* loc_nextperk = it->perk->nextPerk;
+                    do
+                    {
+                        if (loc_nextperk != nullptr)
+                        {
+                            a_res.push_back(loc_nextperk);
+                            loc_nextperk = loc_nextperk->nextPerk;
+                        }
+                    }
+                    while(loc_nextperk != nullptr);
+
+                    if (it->children.size() > 0)
+                    {
+                        GetPerksFromTree(a_res,it->children); // Recursion
+                    }
+                }
+            }
+        }
+    }
+
+    Skill SkillManager::GetSkillByName(std::string a_skill)
+    {
+        std::transform(a_skill.begin(), a_skill.end(), a_skill.begin(),[](unsigned char c){ return std::tolower(c); });
+        return g_SkillTable[a_skill].first;
+    }
+
+    RE::ActorValue SkillManager::GetActorValueByName(std::string a_skill)
+    {
+        std::transform(a_skill.begin(), a_skill.end(), a_skill.begin(),[](unsigned char c){ return std::tolower(c); });
+        return g_SkillTable[a_skill].second;
+    }
+    void SkillManager::Setup()
+    {
+        //if (!_init || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
+        {
+            //_init = true;
+            _skills.clear();
+
+            std::string loc_confpath = RelToAbsPath("UD\\Skills");
+            std::regex loc_regex(R"regex(.*\\(.*\.[jJ][sS][oO][nN]))regex");
+            uint32_t loc_id = 0;
+            try
+            {
+                for (const auto & entry : std::filesystem::directory_iterator(loc_confpath))
+                {
+                    std::string loc_path = entry.path().string();
+
+                    if (entry.is_regular_file() && std::regex_match(loc_path,loc_regex)) 
+                    {
+                        const std::string loc_jsonname = std::regex_replace(loc_path,loc_regex,"$1");
+                        std::shared_ptr<boost::property_tree::ptree> loc_json = std::shared_ptr<boost::property_tree::ptree>(new boost::property_tree::ptree);
+                        try
+                        {
+                            boost::property_tree::read_json(loc_path, *loc_json.get());
+                        }
+                        catch(const std::exception& e)
+                        {
+                            ERROR("Error parsing json {} - {}",loc_jsonname,e.what())
+                            continue;
+                        }
+
+                        std::regex loc_regexname(R"regex((.*\\)(.*)(\.[jJ][sS][oO][nN]))regex");
+                        const std::string loc_name = std::regex_replace(loc_path,loc_regexname,"$2");
+
+                        auto loc_config = std::shared_ptr<SkillConfigJson>(new SkillConfigJson{loc_id++,loc_json,ConfigStatus::sOK,"OK"});
+                        if (InitConfig(loc_config))
+                        {
+                            DEBUG("Skill config {} initiated",loc_name)
+                            _skills[loc_name] = loc_config;
+                        }
+                    }
+                }
+            }
+            catch(...)
+            {
+                ERROR("Error reading skill configs")
+            }
+
+            DEBUG("=== Loaded Skill config files ===")
+            for (auto&& [name,file] : _skills)
+            {
+                DEBUG("\t{} - {} / {}",name, file->status, file->error)
+            }
+        }
+    }
+
+    float SkillManager::GetSkillMult(RE::Actor* a_actor, std::string a_skill)
+    {
+        if (a_skill == "" || a_actor == nullptr) return 1.0f;
+
+        float loc_res = 1.0f;
+
+        auto loc_skill = std::find_if(_skills.begin(),_skills.end(),[a_skill](std::pair<string,SkillSetting> skill){return boost::iequals(skill.second->config.name,a_skill) || boost::iequals(skill.second->config.alias,a_skill);});
+        if (loc_skill != _skills.end())
+        {
+            // First calculate total weigth
+            int loc_totalweigth = 0;
+            for (auto [name,weigth] : loc_skill->second->config.skills)
+            {
+                loc_totalweigth += weigth;
+            }
+
+            // Now calculate parts and advance skills
+            for (auto [name,weigth] : loc_skill->second->config.skills)
+            {
+                const float loc_increase = GetSkillValue(a_actor,name)*weigth/loc_totalweigth;
+                loc_res += loc_increase*0.01; //Increase by 1% for every point
+            }
+        }
+        else  ERROR("Cant find skill {}",a_skill)
+        return loc_res;
+    }
+
+    void SkillManager::AdvanceSkillPerc(std::string a_skill, float a_value)
+    {
+        if (a_skill == "") return;
+
+        auto loc_res = std::find_if(_skills.begin(),_skills.end(),[a_skill](std::pair<string,SkillSetting> skill){return boost::iequals(skill.second->config.name,a_skill) || boost::iequals(skill.second->config.alias,a_skill);});
+        if (loc_res != _skills.end())
+        {
+            // First calculate total weigth
+            int loc_totalweigth = 0;
+            for (auto [name,weigth] : loc_res->second->config.skills)
+            {
+                loc_totalweigth += weigth;
+            }
+
+            // Now calculate parts and advance skills
+            for (auto [name,weigth] : loc_res->second->config.skills)
+            {
+                const float loc_increase = a_value*weigth/loc_totalweigth;
+                AdvanceSingleSkillPerc(name,loc_increase);
+            }
+        }
+    }
+
+    void SkillManager::AdvanceSingleSkillPerc(std::string a_skill, float a_value)
     {
         #define GET_SKILL_DATA() loc_player->GetInfoRuntimeData().skills->data
         RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
@@ -87,71 +255,46 @@ namespace UD
         #undef GET_SKILL_DATA
     }
 
-    void GetPerksFromTree(std::vector<RE::BGSPerk*>& a_res,RE::BSTArray<RE::BGSSkillPerkTreeNode*> a_tree)
+    bool SkillManager::InitConfig(SkillSetting a_config)
     {
-        for (auto&& it : a_tree)
+        if (a_config && a_config->json)
         {
-            if (it != nullptr && it->perk != nullptr)
+            try
             {
-                if (std::find(a_res.begin(),a_res.end(),it->perk) == a_res.end())
+                a_config->config.name         = a_config->json->get_optional<std::string>("name").get_value_or("MISSINGNAME");
+                a_config->config.alias        = a_config->json->get_optional<std::string>("alias").get_value_or("MISSINGALIAS");
+                a_config->config.description  = a_config->json->get_optional<std::string>("description").get_value_or("MISSINGDESC");
+                a_config->config.priority     = a_config->json->get_optional<int>("priority").get_value_or(0);
+
+                auto loc_skills = a_config->json->get_child_optional("skills");
+                if (loc_skills)
                 {
-                    a_res.push_back(it->perk);
-
-                    RE::BGSPerk* loc_nextperk = it->perk->nextPerk;
-                    do
+                    a_config->config.skills.clear();
+                    for(auto&& it : loc_skills.get())
                     {
-                        if (loc_nextperk != nullptr)
-                        {
-                            a_res.push_back(loc_nextperk);
-                            loc_nextperk = loc_nextperk->nextPerk;
-                        }
-                    }
-                    while(loc_nextperk != nullptr);
-
-                    if (it->children.size() > 0)
-                    {
-                        GetPerksFromTree(a_res,it->children); // Recursion
+                        SkyrimSkill loc_skill;
+                        loc_skill.name     = it.second.get_optional<string>("name").get_value_or("error");
+                        loc_skill.weight   = it.second.get_optional<int>("weigth").get_value_or(1);
+                        a_config->config.skills.push_back(loc_skill);
                     }
                 }
             }
+            catch(const std::exception& e)
+            {
+                ERROR("Error initiating Hud config from json - {}!",e.what())
+                return false;
+            };
+
+            DEBUG("Skill config [{}] initiated - Number of skyrim skills = {}",a_config->config.name,a_config->config.skills.size())
+            return true;
         }
+        ERROR("Error reading Skill config")
+        return false;
     }
 
-    std::unordered_map<std::string,std::pair<Skill,RE::ActorValue>> g_SkillTable = 
+    int SkillManager::GetSkillValue(RE::Actor* a_actor, string a_skill)
     {
-        {"onehanded"   ,{Skill::kOneHanded  , RE::ActorValue::kOneHanded  }},
-        {"twohanded"   ,{Skill::kTwoHanded  , RE::ActorValue::kTwoHanded  }},
-        {"marksman"    ,{Skill::kArchery    , RE::ActorValue::kArchery    }}, // Why is it called two things ???
-        {"block"       ,{Skill::kBlock      , RE::ActorValue::kBlock      }},
-        {"smithing"    ,{Skill::kSmithing   , RE::ActorValue::kSmithing   }},
-        {"heavyarmor"  ,{Skill::kHeavyArmor , RE::ActorValue::kHeavyArmor }},
-        {"lightarmor"  ,{Skill::kLightArmor , RE::ActorValue::kLightArmor }},
-        {"pickpocket"  ,{Skill::kPickpocket , RE::ActorValue::kPickpocket }},
-        {"lockpicking" ,{Skill::kLockpicking, RE::ActorValue::kLockpicking}},
-        {"sneak"       ,{Skill::kSneak      , RE::ActorValue::kSneak      }},
-        {"alchemy"     ,{Skill::kAlchemy    , RE::ActorValue::kAlchemy    }},
-        {"speechcraft" ,{Skill::kSpeech     , RE::ActorValue::kSpeech     }},
-        {"alteration"  ,{Skill::kAlteration , RE::ActorValue::kAlteration }},
-        {"conjuration" ,{Skill::kConjuration, RE::ActorValue::kConjuration}},
-        {"destruction" ,{Skill::kDestruction, RE::ActorValue::kDestruction}},
-        {"illusion"    ,{Skill::kIllusion   , RE::ActorValue::kIllusion   }},
-        {"restoration" ,{Skill::kRestoration, RE::ActorValue::kRestoration}},
-        {"enchanting"  ,{Skill::kEnchanting , RE::ActorValue::kEnchanting }}
-    };
-
-    Skill GetSkillByName(std::string a_skill)
-    {
-        std::transform(a_skill.begin(), a_skill.end(), a_skill.begin(),[](unsigned char c){ return std::tolower(c); });
-        return g_SkillTable[a_skill].first;
-    }
-
-    RE::ActorValue GetActorValueByName(std::string a_skill)
-    {
-        std::transform(a_skill.begin(), a_skill.end(), a_skill.begin(),[](unsigned char c){ return std::tolower(c); });
-        return g_SkillTable[a_skill].second;
-    }
-    void SkillManager::Setup()
-    {
-
+        float loc_res = a_actor->AsActorValueOwner()->GetActorValue(GetActorValueByName(a_skill));
+        return std::round(loc_res);
     }
 }

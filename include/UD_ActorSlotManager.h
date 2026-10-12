@@ -24,6 +24,10 @@ namespace UD
         ActorStorage* GetActorStorage(RE::Actor* a_actor);
 
         bool RegisterSlotQuest(RE::TESQuest* a_quest);
+
+        RE::BGSBaseAlias* GetSlot(RE::Actor* a_actor);
+
+        void InitSlots();
     private:
         mutable Utils::Spinlock  _lock;
 
@@ -31,6 +35,8 @@ namespace UD
 
         std::unordered_map<RE::Actor*,ActorStorage>* _slots = nullptr;
         std::vector<uint32_t> _closeactors;
+
+        std::unordered_map<RE::BGSBaseAlias*,RE::BSTSmartPointer<RE::BSScript::Object>> _slots2;
 
         bool _installed = false;
 

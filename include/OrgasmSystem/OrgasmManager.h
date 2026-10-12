@@ -8,8 +8,10 @@ namespace ORS
     class OrgasmActorData;
 
     typedef float(* ModifyArousal)(RE::Actor* actorRef, float value, bool sendevent);
+    typedef float(* GetArousal)(RE::Actor* actorRef);
 
-    extern ModifyArousal OSLAModifyArousal;
+    extern ModifyArousal    OSLAModifyArousal;
+    extern GetArousal       OSLAGetArousal;
 
     #define GETORGCHANGEANDVALIDATE(var,arg)        \
     OrgasmActorData& var = _actors[arg->GetHandle().native_handle()];            \
@@ -66,7 +68,7 @@ namespace ORS
 
         void    RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm);
 
-        void    OnGameLoaded(SKSE::SerializationInterface*);
+        void    OnGameLoaded(SKSE::SerializationInterface* serde,uint32_t a_type, uint32_t a_size, uint32_t a_version);
         void    OnGameSaved(SKSE::SerializationInterface*);
         void    OnRevert(SKSE::SerializationInterface*);
     private:

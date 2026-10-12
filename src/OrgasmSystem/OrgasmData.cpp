@@ -257,6 +257,8 @@ float ORS::OrgasmActorData::GetOrgasmVariable(OrgasmVariable a_variable)
         case vArousalRate:      return _RDATA.ArousalRatePersist;
         case vArousalRateMult:  return CalculateArousalRateMult();
         case vHornyLevel:       return _PDATA.HornyLevel;
+        case vOrgasmProgress:   return GetOrgasmProgress(0);
+        case vOrgasmProgress2:  return GetOrgasmProgress(1);
         default:                return 0.0f;
     };
 }
@@ -423,6 +425,17 @@ void ORS::OrgasmActorData::UpdateArousal(const float& a_delta)
         if (OSLAModifyArousal != nullptr)
         {
             _RDATA.Arousal = OSLAModifyArousal(_RDATA.Actor,loc_da,loc_sendarousalevent);
+        }
+        else
+        {
+            //Not compatible mod. Use fallback
+        }
+    }
+    else
+    {
+        if (OSLAGetArousal != nullptr)
+        {
+            _RDATA.Arousal = OSLAGetArousal(_RDATA.Actor);
         }
         else
         {

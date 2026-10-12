@@ -16,11 +16,17 @@
 #include <UD_MessageBox.h>
 #include <UD_SLPP.h>
 #include <UD_ModuleManager.h>
+#include <UD_MinigameManager.h>
+#include <UD_DeviceManager.h>
+#include <UD_DeviceMenu.h>
+#include <UD_HUD.h>
+#include <UD_SaveManager.h>
 #include <OrgasmSystem/OrgasmManager.h>
 
 namespace UD
 {
     #define REGISTERPAPYRUSFUNC(name,unhook) vm->RegisterFunction(#name, "UD_Native", UD::name,unhook);
+    #define REGISTERPAPYRUSFUNCVAR(name,unhook,rettype) UD::RegisterFunctionVar(#name, "UD_Native", UD::name,unhook,rettype);
 
     bool RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm) {
         REGISTERPAPYRUSFUNC(StartMinigameEffect,true)
@@ -62,6 +68,8 @@ namespace UD
         REGISTERPAPYRUSFUNC(GetRandomDevice,true)
         REGISTERPAPYRUSFUNC(IsConcentrationSpell,true)
         REGISTERPAPYRUSFUNC(IsConcentrationEnch,true)
+        REGISTERPAPYRUSFUNC(GetJsonValue,true)
+        REGISTERPAPYRUSFUNC(SetJsonValue,true)
 
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
@@ -84,6 +92,8 @@ namespace UD
 
         REGISTERPAPYRUSFUNC(ToggleAllMeters,true)
         REGISTERPAPYRUSFUNC(RemoveAllMeterEntries,true)
+
+        REGISTERPAPYRUSFUNC(ReloadHudConfigs,true)
 
         //Inventory
         REGISTERPAPYRUSFUNC(GetInventoryDevices,true)
@@ -129,6 +139,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(SetBitMapData,true)
         REGISTERPAPYRUSFUNC(UpdateVMHandles,true)
         REGISTERPAPYRUSFUNC(GetDeviceScript,true)
+        REGISTERPAPYRUSFUNCVAR(GetDeviceScript2,true,PapyrusDelegate::GetTypeByName("ObjectReference"))
         REGISTERPAPYRUSFUNC(GetInventoryDeviceScript,true)
 
         //materials
@@ -182,6 +193,27 @@ namespace UD
         REGISTERPAPYRUSFUNC(ResetAllModules     ,true)
         REGISTERPAPYRUSFUNC(GetModulesByScript  ,true)
         REGISTERPAPYRUSFUNC(GetModulesAliasesByScript ,true)
+
+        //DeviceMenu
+        REGISTERPAPYRUSFUNC(ShowDeviceMenu ,true)
+        REGISTERPAPYRUSFUNC(ShowDeviceMenuSingle ,true)
+        REGISTERPAPYRUSFUNC(IsDeviceMenuOpen ,true)
+
+        //MinigameManager
+        REGISTERPAPYRUSFUNC(GetListOfMinigames ,true)
+        REGISTERPAPYRUSFUNC(StopMinigame ,true)
+        REGISTERPAPYRUSFUNC(GetMinigameConfigs ,true)
+        REGISTERPAPYRUSFUNC(GetMinigameExports ,true)
+        REGISTERPAPYRUSFUNC(SetMinigameVariable ,true)
+        REGISTERPAPYRUSFUNC(GetMinigameVariable ,true)
+        REGISTERPAPYRUSFUNC(ReloadMinigameConfigs ,true)
+
+        //Device manager
+        REGISTERPAPYRUSFUNC(GetDeviceAccessibility ,true)
+
+        //SaveManager
+        REGISTERPAPYRUSFUNC(SetSave ,true)
+        REGISTERPAPYRUSFUNC(GetSave ,true)
 
         ORS::OrgasmManager::GetSingleton()->RegisterPapyrusFunctions(vm);
 

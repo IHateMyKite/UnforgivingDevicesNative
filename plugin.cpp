@@ -31,6 +31,7 @@ void InitializeSerialization() {
     serde->SetSaveCallback(UD::OnGameSaved);
     serde->SetRevertCallback(UD::OnRevert);
     serde->SetLoadCallback(UD::OnGameLoaded);
+
     LOG("Cosave serialization initialized.");
 }
 

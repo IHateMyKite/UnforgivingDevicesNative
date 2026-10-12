@@ -4,11 +4,6 @@
 
 namespace UD
 {
-    using InternalVM = RE::BSScript::Internal::VirtualMachine;
-    using Script = RE::BSTTuple<const RE::VMHandle, RE::BSTSmallSharedArray<RE::BSScript::Internal::AttachedScript>>;
-    using Object = RE::BSTSmartPointer<RE::BSScript::Object>;
-    using Variable = RE::BSScript::Variable;
-
     struct Device
     {
         RE::BSTSmartPointer<RE::BSScript::Object> object = nullptr;
@@ -87,6 +82,9 @@ namespace UD
         void UpdateVMHandles() const;
         Device GetDeviceScript(int a_handle1,int a_handle2,RE::TESObjectARMO* a_device);
         Device GetCachedDevice(RE::VMHandle,RE::Actor* a_actor, RE::TESObjectARMO* a_device);
+        std::vector<DeviceObj> FindAllDeviceScripts(RE::Actor* a_actor);
+        DeviceObj FindDeviceScriptID(RE::Actor* a_actor, RE::TESObjectARMO* a_id);
+        DeviceObj FindDeviceScriptRD(RE::Actor* a_actor, RE::TESObjectARMO* a_rd);
 
         const std::map<RE::VMHandle,Modifier>& GetModifiers() const;
         std::vector<Modifier> GetModifiers(RE::VMHandle a_handle, RE::TESObjectARMO* a_device);
@@ -101,6 +99,11 @@ namespace UD
         bool GetScriptVariableBool(std::string a_script,std::string a_variable,bool a_property);
 
         bool GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable);
+        Object GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_id, RE::TESObjectARMO* a_rd);
+        RE::BSScript::Variable GetDeviceVariable(Object a_device);
+
+        static RE::BSScript::TypeInfo::RawType GetTypeByName(string a_name);
+
         bool GetInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device, std::string a_script, std::string a_variable);
 
         void Lock();
@@ -118,9 +121,7 @@ namespace UD
         void ResetCache();
 
         Object FindDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device);
-        Object FindInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device);
-        std::vector<Object> FindAllDeviceScripts(RE::Actor* a_actor);
-
+        DeviceObj FindInventoryDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_device);
     private:
         bool _installed = false;
         RE::BGSKeyword* _udrdkw;
@@ -139,7 +140,7 @@ namespace UD
         {
             {{"UDCustomDeviceMain","UnforgivingDevices.esp",0x15E73C},{}},
             {{"UnforgivingDevicesMain","UnforgivingDevices.esp",0x005901},{}},
-            {{"UD_Config","UnforgivingDevices.esp",0x005901},{}}
+            {{"UD_Config","UnforgivingDevices.esp",0x0150F4},{}}
         };
     };
 
@@ -187,6 +188,15 @@ namespace UD
     {
         PapyrusDelegate::GetSingleton()->Lock();
         bool loc_res = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_actor,a_device,a_script,a_variable);
+        PapyrusDelegate::GetSingleton()->Unlock();
+        return loc_res;
+    }
+
+    inline RE::BSScript::Variable GetDeviceScript2(PAPYRUSFUNCHANDLE, RE::Actor* a_actor, RE::TESObjectARMO* a_id, RE::TESObjectARMO* a_rd)
+    {
+        PapyrusDelegate::GetSingleton()->Lock();
+        Object loc_obj = PapyrusDelegate::GetSingleton()->GetDeviceScript(a_actor,a_id,a_rd);
+        RE::BSScript::Variable loc_res = PapyrusDelegate::GetSingleton()->GetDeviceVariable(loc_obj);
         PapyrusDelegate::GetSingleton()->Unlock();
         return loc_res;
     }
