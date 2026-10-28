@@ -74,6 +74,8 @@ namespace Lua
     lua_State* OpenScript(std::string a_path,const std::vector<string>& a_includes);
     lua_State* OpenScriptCode(std::string a_code);
 
+    bool CallLuaFunction(lua_State* L, string a_name, int a_arg, int a_ret, std::function<void(lua_State* L)> a_load);
+
     bool IncludeScripts(lua_State* a_script);
 
     void RegisterHostFunctions(lua_State* L);

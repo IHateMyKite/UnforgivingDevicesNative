@@ -49,7 +49,7 @@ namespace UD
 
         void CreateValueDetail(std::string& a_input, bool a_sep, std::string a_name, std::string a_value, std::string a_id);
 
-        static PRISMA_UI_API::IVPrismaUI1* PrismaUI;
+        static PRISMA_UI_API::IVPrismaUI2* PrismaUI;
         static bool ViewReady;
         static bool ViewReadySingle;
         PrismaView      _view = 0x0UL;

@@ -30,6 +30,7 @@ lua_State* Lua::OpenScript(std::string a_path)
         lua_close(loc_res);
         return nullptr;
     }
+
     return loc_res;
 }
 
@@ -97,6 +98,36 @@ lua_State* Lua::OpenScriptCode(std::string a_code)
         loc_res = nullptr;
     }
     return loc_res;
+}
+
+bool Lua::CallLuaFunction(lua_State* L, string a_name, int a_arg, int a_ret, std::function<void(lua_State* L)> a_load)
+{
+    if (!L) return false;
+
+    if (lua_getglobal(L,a_name.c_str()) == LUA_TNIL)
+    {
+        ERROR("CallLuaFunction({},{},{}) - Cant find function",a_name,a_arg,a_ret)
+        return false;
+    }
+
+    if (a_arg > 0)
+    {
+        a_load(L);
+    }
+
+    auto loc_luares = lua_pcall(L,a_arg,a_ret,0);
+    if (loc_luares != LUA_OK)
+    {
+        ERROR("CallLuaFunction - Runtime error for function {} => {}",a_name,lua_tostring(L,-1))
+        lua_pop(L,1);
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+
+    return false;
 }
 
 bool Lua::IncludeScripts(lua_State* a_script)
@@ -699,7 +730,7 @@ int Lua::HostFunctions::lua_StopMinigame(lua_State* L)
         return 0;
     }
 
-    DEBUG("lua_StopMinigame({})",lua_tointeger(L,1))
+    //DEBUG("lua_StopMinigame({})",lua_tointeger(L,1))
     UD::MinigameManager::GetSingleton()->StopMinigame(lua_tointeger(L,1));
     return 0;
 }
@@ -711,7 +742,7 @@ int Lua::HostFunctions::lua_OpenMinigameUI(lua_State* L)
         ERROR("lua_OpenMinigameUI - Incorrect variables passed!")
         return 0;
     }
-    DEBUG("lua_OpenMinigameUI({},{})",lua_tointeger(L,1),lua_tostring(L,2))
+    //DEBUG("lua_OpenMinigameUI({},{})",lua_tointeger(L,1),lua_tostring(L,2))
     UD::MinigameManager::GetSingleton()->OpenMinigameUI(lua_tointeger(L,1),lua_tostring(L,2));
     return 0;
 }
@@ -723,7 +754,7 @@ int Lua::HostFunctions::lua_CloseMinigameUI(lua_State* L)
         ERROR("lua_CloseMinigameUI - Incorrect variables passed!")
         return 0;
     }
-    DEBUG("lua_CloseMinigameUI({})",lua_tointeger(L,1))
+    //DEBUG("lua_CloseMinigameUI({})",lua_tointeger(L,1))
     UD::MinigameManager::GetSingleton()->CloseMinigameUI(lua_tointeger(L,1));
     return 0;
 }

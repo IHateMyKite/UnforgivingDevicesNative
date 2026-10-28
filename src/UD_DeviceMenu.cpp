@@ -7,7 +7,7 @@
 
 SINGLETONBODY(UD::DeviceMenu)
 
-PRISMA_UI_API::IVPrismaUI1* UD::DeviceMenu::PrismaUI = nullptr;
+PRISMA_UI_API::IVPrismaUI2* UD::DeviceMenu::PrismaUI = nullptr;
 bool UD::DeviceMenu::ViewReady = false;
 bool UD::DeviceMenu::ViewReadySingle = false;
 
@@ -19,7 +19,7 @@ namespace UD
         ViewReady = false;
         ViewReadySingle = false;
         auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
+        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
         if (_view && PrismaUI)
         {
             PrismaUI->Destroy(_view);
@@ -99,6 +99,7 @@ namespace UD
 
                     _view = PrismaUI->CreateView("UD/DeviceMenu/DeviceMenu.html",[](PrismaView view) -> void
                     {
+                        PrismaUI->RegisterConsoleCallback(view,ConsoleCallback);
                         PrismaUI->Hide(view);
                         PrismaUI->RegisterJSListener(view, "ExitMenu", loc_exit);
                         PrismaUI->RegisterJSListener(view, "SendCallback", loc_sendcallback);
@@ -109,6 +110,7 @@ namespace UD
 
                     _viewSingle = PrismaUI->CreateView("UD/DeviceMenu/DeviceMenuSingle.html",[](PrismaView view) -> void
                     {
+                        PrismaUI->RegisterConsoleCallback(view,ConsoleCallback);
                         PrismaUI->Hide(view);
                         PrismaUI->RegisterJSListener(view, "ExitMenu", loc_exit);
                         PrismaUI->RegisterJSListener(view, "SendCallback", loc_sendcallback);
@@ -334,9 +336,9 @@ namespace UD
         {
             std::string loc_arg = "{";
 
-            loc_arg += "name: \"" + std::string(loc_id->GetName()) + "\",";
+            loc_arg += "name: \"" + std::string(loc_id->GetName()) + "\"";
 
-            loc_arg += "values: [";
+            loc_arg += ",values: [";
                     
             const float loc_acc = DeviceManager::GetSingleton()->GetDeviceAccessibility(a_rd,loc_obj.get(),a_wearer,a_helper,true);
             CreateValueDetail(loc_arg, true,"Accessibility",std::format("{}%",Utility::Round(loc_acc*100.0f)),"");
@@ -360,15 +362,13 @@ namespace UD
                 }
             }
 
-            loc_arg += "],";
+            loc_arg += "]";
 
             RE::BSString loc_str = "";
             loc_id->GetDescription(loc_str,loc_id);
-            loc_arg += "desc: \"" + std::string(loc_str) + "\",";
+            loc_arg += ",desc: \"" + std::string(loc_str) + "\"";
 
             auto loc_mods = Utility::GetPropertyObjectArrayRaw(loc_obj,"UD_ModifiersRef",false);
-
-                    
             std::vector<std::string> loc_modlist;
             for (auto&& mod : loc_mods)
             {
@@ -381,8 +381,8 @@ namespace UD
                     loc_modlist.push_back(loc_modclass);
                 }
             }
-            std::string loc_modstr = "[" + boost::join(loc_modlist,",") + "],";
-            loc_arg += "mods: " + loc_modstr;
+            std::string loc_modstr = ",mods: [" + boost::join(loc_modlist,",") + "]";
+            loc_arg += loc_modstr;
 
             std::vector<std::string> loc_minigamelist;
             auto loc_minigames = MinigameManager::GetSingleton()->GetListOfMinigames(a_wearer,a_helper,loc_id);
@@ -396,6 +396,20 @@ namespace UD
                     string      loc_context = MinigameManager::GetSingleton()->GetMinigameContexts(a_wearer,a_helper,loc_id,min);
                     if (loc_context != "")
                     {
+                        auto loc_options = Utility::DeserializeJson(std::format("{}",loc_context));
+                        bool loc_optionavailable = false;
+                        for(auto&& [key,val] : loc_options)
+                        {
+                            int loc_optionstate = val.get_optional<int>("state").get_value_or(0);
+                            if (loc_optionstate > 0)
+                            {
+                                loc_optionavailable = true;
+                                break;
+                            }
+                        }
+
+                        if (!loc_optionavailable) loc_state = 0;
+
                         std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {},context: {}}}",loc_minname,loc_mindesc,loc_state,min->id,loc_context);
                         loc_minigamelist.push_back(loc_minclass);
                     }
@@ -406,8 +420,12 @@ namespace UD
                     }
                 }
             }
-            std::string loc_minstr = "[" + boost::join(loc_minigamelist,",") + "]";
-            loc_arg += "minigames: " + loc_minstr;
+            std::string loc_minstr = ",minigames: [" + boost::join(loc_minigamelist,",") + "]";
+            loc_arg += loc_minstr;
+
+            const auto loc_locksjson = GetVariableValue(loc_obj.get(),"thisdevice::UD_LocksJson()");
+            std::string loc_locks = ",locks: " + loc_locksjson.Value;
+            loc_arg += loc_locks;
 
             loc_arg += "}";
 

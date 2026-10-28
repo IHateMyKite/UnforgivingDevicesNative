@@ -811,6 +811,8 @@ bool UD::PapyrusDelegate::GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO*
 
 Object UD::PapyrusDelegate::GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARMO* a_id, RE::TESObjectARMO* a_rd)
 {
+    if (!a_id && !a_rd) return nullptr;
+
     Object loc_device = nullptr;
     if (a_id)
     {
@@ -820,6 +822,47 @@ Object UD::PapyrusDelegate::GetDeviceScript(RE::Actor* a_actor, RE::TESObjectARM
     {
         loc_device = FindDeviceScriptRD(a_actor,a_rd).second;
     }
+    if (!loc_device)
+    {
+        // Try to find it in detached scripts deviced
+        const auto loc_vm = InternalVM::GetSingleton();
+        loc_vm->attachedScriptsLock.Lock();
+        auto loc_found = std::find_if(loc_vm->objectsAwaitingCleanup.begin(),loc_vm->objectsAwaitingCleanup.end(),[&](RE::BSTSmartPointer<RE::BSScript::Object>& a_script) -> bool
+        {
+            if (!a_script->IsValid() || !a_script->IsConstructed()) {
+                ERROR("GetDeviceScript Invalid Devices found invalid script")
+                return false;
+            }
+            if (!a_script->GetTypeInfo()) {
+                return false;
+            }
+            auto loc_type = HaveScriptBase(a_script->GetTypeInfo(),"ud_customdevice_renderscript");
+            if (loc_type != nullptr)
+            {
+                static size_t loc_cnt = 0;
+                RE::VMHandle loc_handle = a_script->handle;
+                RE::BSTSmartPointer<RE::BSScript::Object> loc_object = a_script;
+        
+                if (loc_object != nullptr)
+                {
+                    auto loc_id = GetScriptProperty<RE::TESObjectARMO>(loc_object,"DeviceInventory",RE::FormType::Armor);
+                    auto loc_rd = GetScriptProperty<RE::TESObjectARMO>(loc_object,"_DeviceRendered",RE::FormType::Armor);
+
+                    if ((loc_id && loc_id == a_id) || (loc_rd && loc_rd == a_rd))
+                    {
+                        DEBUG("GetDeviceScript - Device found in cleanups")
+                        loc_device = a_script;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        });
+
+        if (loc_found != loc_vm->objectsAwaitingCleanup.end()) loc_device = *loc_found;
+        loc_vm->attachedScriptsLock.Unlock();
+    }
+
     return loc_device;
 }
 

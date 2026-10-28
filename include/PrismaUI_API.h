@@ -163,3 +163,11 @@ namespace PRISMA_UI_API {
         return static_cast<T*>(RequestPluginAPI(InterfaceVersionMap<T>::version));
     }
 }
+
+namespace UD
+{
+    inline void ConsoleCallback(PrismaView view, PRISMA_UI_API::ConsoleMessageLevel level, const char* message)
+    {
+        DEBUG("JS[ {} ]",message)
+    }
+}

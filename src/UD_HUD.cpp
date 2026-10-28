@@ -306,7 +306,7 @@ void UD::HudManager::CheckShowElements(float a_delta)
 
         bool loc_cond = false;
 
-        if (lua_getglobal(L,"Condition") != LUA_TNIL)
+        if (Lua::CallLuaFunction(L,"Condition",1,1,[&](lua_State* L)
         {
             Lua::PushTable(L,
             {
@@ -315,20 +315,12 @@ void UD::HudManager::CheckShowElements(float a_delta)
                 {"ConfigId",(lua_Integer)setting->id}
             });
 
-            auto loc_luares = lua_pcall(L,1,1,0);
-            if (loc_luares != LUA_OK)
-            {
-                ERROR("Error running function Condition - {}",loc_luares)
-                continue;
-            }
+        }))
+        {
             loc_cond = lua_toboolean(L,-1);
             lua_pop(L,1);
         }
-        else
-        {
-            ERROR("Can't find function Condition on Element {}",setting->config.name)
-        }
-
+        
         if (loc_cond)
         {
             HudElementData* loc_data = new HudElementData();
@@ -340,16 +332,10 @@ void UD::HudManager::CheckShowElements(float a_delta)
             HudElementDataPtr loc_dataPtr = HudElementDataPtr(loc_data);
             _elements.push_back(loc_dataPtr);
 
-            if (lua_getglobal(L,"Show") != LUA_TNIL)
+            Lua::CallLuaFunction(L,"Show",1,0,[&](lua_State* L)
             {
                 PushHudData(L,*loc_data);
-
-                auto loc_luares = lua_pcall(L,1,0,0);
-                if (loc_luares != LUA_OK)
-                {
-                    ERROR("Error running function Show - {}",loc_luares)
-                }
-            }
+            });
         }
     }
 }
@@ -368,29 +354,19 @@ void UD::HudManager::CheckHideElements(float a_delta)
 
         bool loc_cond = false;
 
-        if (lua_getglobal(L,"Condition") != LUA_TNIL)
+        if (Lua::CallLuaFunction(L,"Condition",1,1,[&](lua_State* L)
         {
             PushHudData(L,*it);
 
-            auto loc_luares = lua_pcall(L,1,1,0);
-            if (loc_luares != LUA_OK)
-            {
-                ERROR("Error running function Condition - {}",loc_luares)
-                continue;
-            }
-
-            loc_cond = lua_toboolean(L,-1);
-
-            lua_pop(L,1);
-
-            if (!loc_cond)
-            {
-                loc_toremove.push_back(it);
-            }
-        }
-        else
+        }))
         {
-            ERROR("Can't find function Condition on Element {}",it->Setting->config.name)
+            loc_cond = lua_toboolean(L,-1);
+            lua_pop(L,1);
+        }
+
+        if (!loc_cond)
+        {
+            loc_toremove.push_back(it);
         }
 
     }
@@ -401,16 +377,11 @@ void UD::HudManager::CheckHideElements(float a_delta)
 
         lua_State* L = GetElementScript(it->Setting);
 
-        if (lua_getglobal(L,"Hide") != LUA_TNIL)
+        Lua::CallLuaFunction(L,"Hide",1,0,[&](lua_State* L)
         {
             PushHudData(L,*it);
+        });
 
-            auto loc_luares = lua_pcall(L,1,0,0);
-            if (loc_luares != LUA_OK)
-            {
-                ERROR("Error running function Hide - {}",loc_luares)
-            }
-        }
         _elements.erase(loc_el);
     }
 }
@@ -421,17 +392,11 @@ void UD::HudManager::UpdateElements(float a_delta)
     {
         lua_State* L = GetElementScript(it->Setting);
 
-        if (lua_getglobal(L,"Update") != LUA_TNIL)
+        Lua::CallLuaFunction(L,"Update",2,0,[&](lua_State* L)
         {
             PushHudData(L,*it);
             lua_pushnumber(L,a_delta);
-
-            auto loc_luares = lua_pcall(L,2,0,0);
-            if (loc_luares != LUA_OK)
-            {
-                ERROR("Error running function Update - {}",loc_luares)
-            }
-        }
+        });
     }
 }
 

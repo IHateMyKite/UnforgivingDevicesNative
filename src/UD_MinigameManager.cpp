@@ -130,10 +130,9 @@ std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Act
             auto L = _scripts[config->config.script];
             if (!L) continue;
     
-            bool loc_precond = false;
-            if (lua_getglobal(L,"Precondition") != LUA_TNIL)
+            
+            bool loc_callres = Lua::CallLuaFunction(L,"Precondition",1,1,[&](lua_State* L)
             {
-                //DEBUG("Precond {} - loc_device = 0x{:016X}",config->config.name,(uintptr_t)&loc_device)
                 Lua::PushTable(L,
                 {
                     {"Wearer",a_actor},
@@ -144,19 +143,15 @@ std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Act
                     {"Json",config->json.get()},
                     {"ConfigId",(lua_Integer)config->id}
                 });
-                auto loc_luares = lua_pcall(L,1,1,0);
-                if (loc_luares != LUA_OK)
-                {
-                    ERROR("Error running function Precondition - {}",loc_luares)
-                }
+            });
+
+            bool loc_precond = false;
+            if (loc_callres)
+            {
                 loc_precond = lua_toboolean(L,-1);
                 lua_pop(L,1);
             }
-            else
-            {
-                ERROR("Error getting Precondition")
-            }
-            
+
             if (loc_precond)
             {
                 loc_res.push_back(config);
@@ -182,8 +177,8 @@ bool UD::MinigameManager::GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_
     if (!L) return false;
     
     DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
-    bool loc_cond = false;
-    if (lua_getglobal(L,"Condition") != LUA_TNIL)
+    
+    bool loc_callres = Lua::CallLuaFunction(L,"Condition",1,1,[&](lua_State* L)
     {
         Lua::PushTable(L,
         {
@@ -195,15 +190,15 @@ bool UD::MinigameManager::GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_
             {"Json",a_setting->json.get()},
             {"ConfigId",(lua_Integer)a_setting->id}
         });
-        auto loc_luares = lua_pcall(L,1,1,0);
-        if (loc_luares != LUA_OK)
-        {
-            ERROR("Error running function Condition - {}",loc_luares)
-        }
+    });
+    
+    bool loc_cond = false;
+    if (loc_callres)
+    {
         loc_cond = lua_toboolean(L,-1);
         lua_pop(L,1);
     }
-
+    
     return loc_cond;
 }
 
@@ -215,7 +210,8 @@ string UD::MinigameManager::GetMinigameContexts(RE::Actor* a_actor, RE::Actor* a
     if (!L) return loc_res;
     
     DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
-    if (lua_getglobal(L,"GetContext") != LUA_TNIL)
+
+    bool loc_callres = Lua::CallLuaFunction(L,"GetContext",1,1,[&](lua_State* L)
     {
         Lua::PushTable(L,
         {
@@ -227,12 +223,10 @@ string UD::MinigameManager::GetMinigameContexts(RE::Actor* a_actor, RE::Actor* a
             {"Json",a_setting->json.get()},
             {"ConfigId",(lua_Integer)a_setting->id}
         });
-        auto loc_luares = lua_pcall(L,1,1,0);
-        if (loc_luares != LUA_OK)
-        {
-            ERROR("Error running function Condition - {}",loc_luares)
-        }
-
+    });
+    
+    if (loc_callres)
+    {
         if (lua_isstring(L,-1))
         {
             loc_res = lua_tostring(L,-1);
@@ -272,18 +266,14 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
 
     auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
     PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
-        
-    if (lua_getglobal(L,"OnStart") != LUA_TNIL)
+    
+
+    bool loc_callres = Lua::CallLuaFunction(L,"OnStart",1,0,[&](lua_State* L)
     {
         PushMinigameData(L,loc_data);
-        auto loc_luares = lua_pcall(L,1,0,0);
-        if (loc_luares != LUA_OK)
-        {
-            ERROR("Error running function OnStart - {}",loc_luares)
-        }
-    }
-
-    return true;
+    });
+    
+    return loc_callres;
 }
 
 bool UD::MinigameManager::GetMinigameById(uint32_t a_id,UD::MinigameSetting& a_output)
@@ -379,15 +369,10 @@ void UD::MinigameManager::StopMinigame(int a_id)
             auto L = GetMinigameScript(data->Setting);
             if (L)
             {
-                if (lua_getglobal(L,"OnStop") != LUA_TNIL)
+                Lua::CallLuaFunction(L,"OnStop",1,0,[&](lua_State* L)
                 {
                     PushMinigameData(L,*data);
-                    auto loc_luares = lua_pcall(L,1,0,0);
-                    if (loc_luares != LUA_OK)
-                    {
-                        ERROR("Error running function OnStop - {}",loc_luares)
-                    }
-                }
+                });
             }
             return true;
         }
@@ -471,14 +456,11 @@ void UD::MinigameManager::CheckActionCallback(uint32_t a_dxcode,RE::ButtonEvent*
 
                 //DEBUG("Calling callback")
                 auto L = _scripts[it1->Setting->config.script];
-                lua_getglobal(L,it2.callback.c_str());
-                PushMinigameData(L,*it1);
-                lua_pushinteger(L,loc_type);
-                auto loc_luares = lua_pcall(L,2,0,0);
-                if (loc_luares != LUA_OK)
+                Lua::CallLuaFunction(L,it2.callback,2,0,[&](lua_State* L)
                 {
-                    ERROR("Error running function {} - {}",it2.callback,loc_luares)
-                }
+                    PushMinigameData(L,*it1);
+                    lua_pushinteger(L,loc_type);
+                });
             }
             /* TODO: Gamepad support*/
         }
@@ -528,13 +510,11 @@ void UD::MinigameManager::SendOpenMinigameUICallback()
         auto loc_data = GetMinigameDataById(_focusedMinigameId);
         auto L = GetMinigameScriptById(_focusedMinigameId);
         if (!L) return;
-        lua_getglobal(L,_callback.c_str());
-        PushMinigameData(L,*loc_data);
-        auto loc_luares = lua_pcall(L,1,0,0);
-        if (loc_luares != LUA_OK)
+
+        Lua::CallLuaFunction(L,_callback,1,0,[&](lua_State* L)
         {
-            ERROR("Error running function {} - {}",_callback,loc_luares)
-        }
+            PushMinigameData(L,*loc_data);
+        });
     }
 }
 
@@ -543,17 +523,20 @@ void UD::MinigameManager::SendPapCallback(int a_id, std::string a_callback, Vari
     auto loc_data = GetMinigameDataById(a_id);
     auto L = GetMinigameScriptById(a_id);
     if (!L) return;
-    lua_getglobal(L,a_callback.c_str());
-    PushMinigameData(L,*loc_data);
     if (a_var.Type != VariableType::kNone && a_var.Type != VariableType::kNoneArray)
     {
-        DEBUG("Added result to argument - {} = {}",a_var.Type,a_var.Value)
-        Lua::PushVariableResult(L,a_var);
-        lua_pcall(L,2,0,0);
+        Lua::CallLuaFunction(L,a_callback,2,0,[&](lua_State* L)
+        {
+            PushMinigameData(L,*loc_data);
+            Lua::PushVariableResult(L,a_var);
+        });
     }
     else
     {
-        lua_pcall(L,1,0,0);
+        Lua::CallLuaFunction(L,a_callback,1,0,[&](lua_State* L)
+        {
+            PushMinigameData(L,*loc_data);
+        });
     }
 }
 
@@ -842,61 +825,55 @@ void UD::MinigameManager::OnGameSaved(SKSE::SerializationInterface* serde)
         
         if (L)
         {
-            if (lua_getglobal(L,"SaveData") != LUA_TNIL)
+            if (Lua::CallLuaFunction(L,"SaveData",1,1,[&](lua_State* L)
             {
                 PushMinigameData(L,*it);
-                auto loc_luares = lua_pcall(L,1,1,0);
-                if (loc_luares != LUA_OK)
+            }))
+            {
+                // Parse result
+                if (lua_isstring(L,-1))
                 {
-                    ERROR("Error running function SaveData - {}",loc_luares)
-                }
-                else
-                {
-                    // Parse result
-                    if (lua_isstring(L,-1))
+                    string loc_res = lua_tostring(L,-1);
+                    auto loc_data = MinigamePersData();
+                    loc_data.id = it->id;
+                    loc_data.Wearer = it->Wearer->GetHandle().native_handle();
+                    loc_data.Helper = it->Helper ? it->Helper->GetHandle().native_handle() : 0;
+                    loc_data.DeviceHandle = it->Device.obj->GetHandle();
+                    //loc_data.MinigameName = it->Setting->config.name;
+                    if (it->Setting->config.name.size() <= 32)
                     {
-                        string loc_res = lua_tostring(L,-1);
-                        auto loc_data = MinigamePersData();
-                        loc_data.id = it->id;
-                        loc_data.Wearer = it->Wearer->GetHandle().native_handle();
-                        loc_data.Helper = it->Helper ? it->Helper->GetHandle().native_handle() : 0;
-                        loc_data.DeviceHandle = it->Device.obj->GetHandle();
-                        //loc_data.MinigameName = it->Setting->config.name;
-                        if (it->Setting->config.name.size() <= 32)
-                        {
-                            strcpy_s<32>(loc_data.MinigameName,it->Setting->config.name.c_str());
-                        }
-                        else
-                        {
-                            ERROR("Minigame name {} is too long to be stored!",it->Setting->config.name)
-                            continue;
-                        }
-                        loc_data.State = it->State;
-
-                        if (it->Context.size() <= 16)
-                        {
-                            strcpy_s<16>(loc_data.Context,it->Context.c_str());
-                        }
-                        else
-                        {
-                            ERROR("Minigame Context {} is too long to be stored!",it->Setting->config.name)
-                            continue;
-                        }
-                        
-                        loc_data.DataSize = loc_res.size();
-
-
-                        serde->WriteRecordData(&loc_data,sizeof(loc_data));
-                        serde->WriteRecordData(loc_res.c_str(),loc_res.size());
-
-                        DEBUG("Minigame {}({}) saved, Base Data -> {}",it->Setting->config.name,it->Wearer->GetName(),Utility::MemoryToString(&loc_data,sizeof(loc_data)))
-                        DEBUG("Minigame {}({}) saved, Minigame Runtime Data -> {}",it->Setting->config.name,it->Wearer->GetName(),loc_res)
+                        strcpy_s<32>(loc_data.MinigameName,it->Setting->config.name.c_str());
                     }
                     else
                     {
-                        ERROR("Error getting save data for minigame")
+                        ERROR("Minigame name {} is too long to be stored!",it->Setting->config.name)
                         continue;
                     }
+                    loc_data.State = it->State;
+
+                    if (it->Context.size() <= 16)
+                    {
+                        strcpy_s<16>(loc_data.Context,it->Context.c_str());
+                    }
+                    else
+                    {
+                        ERROR("Minigame Context {} is too long to be stored!",it->Setting->config.name)
+                        continue;
+                    }
+                        
+                    loc_data.DataSize = loc_res.size();
+
+
+                    serde->WriteRecordData(&loc_data,sizeof(loc_data));
+                    serde->WriteRecordData(loc_res.c_str(),loc_res.size());
+
+                    DEBUG("Minigame {}({}) saved, Base Data -> {}",it->Setting->config.name,it->Wearer->GetName(),Utility::MemoryToString(&loc_data,sizeof(loc_data)))
+                    DEBUG("Minigame {}({}) saved, Minigame Runtime Data -> {}",it->Setting->config.name,it->Wearer->GetName(),loc_res)
+                }
+                else
+                {
+                    ERROR("Error getting save data for minigame")
+                    continue;
                 }
             }
         }
@@ -1053,16 +1030,12 @@ void UD::MinigameManager::UpdateMinigame(MinigameData& a_data, float a_delta)
     //DEBUG("UpdateMinigame called")
     auto L = GetMinigameScript(a_data.Setting);
     if (!L) return;
-    if (lua_getglobal(L,"OnUpdate") != LUA_TNIL)
+
+    Lua::CallLuaFunction(L,"OnUpdate",2,0,[&](lua_State* L)
     {
         PushMinigameData(L,a_data);
         lua_pushnumber(L,a_delta);
-        auto loc_luares = lua_pcall(L,2,0,0);
-        if (loc_luares != LUA_OK)
-        {
-            ERROR("Error running function OnUpdate - {}",loc_luares)
-        }
-    }
+    });
 }
 
 void UD::MinigameManager::PushMinigameData(lua_State* L, MinigameData& a_data)
@@ -1295,32 +1268,18 @@ void UD::MinigameManager::LoadSavedMinigames()
         MinigameDataPtr loc_res = MinigameDataPtr(new MinigameData(loc_data));
         _minigames.push_back(loc_res);
 
-        bool loc_failed = false;
         auto L = GetMinigameScript(loc_res->Setting);
-        
-        if (L && lua_getglobal(L,"LoadData") != LUA_TNIL)
+        if (Lua::CallLuaFunction(L,"LoadData",2,0,[&](lua_State* L)
         {
             PushMinigameData(L,*loc_res);
             lua_pushstring(L,it.RuntimeData.c_str());
-
-            auto loc_luares = lua_pcall(L,2,0,0);
-            if (loc_luares != LUA_OK)
-            {
-                ERROR("Error running function LoadData - {}",loc_luares)
-                loc_failed = true;
-            }
+        }))
+        {
+            DEBUG("Minigame {} loaded",loc_res->Setting->config.name)
         }
         else
         {
-            ERROR("Error getting script instance or LoadData for {}",loc_res->Setting->config.script)
-            loc_failed = true;
-        }
-
-        if (loc_failed)
-        {
             _minigames.pop_back();
         }
-        
-        DEBUG("Minigame {} loaded",loc_res->Setting->config.name)
     }
 }

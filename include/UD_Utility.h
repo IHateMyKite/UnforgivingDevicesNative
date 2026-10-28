@@ -177,17 +177,42 @@ namespace UD
     {
         if (a_serdata == "") return a_def;
         //DEBUG("GetJsonValue({},{},{}) called",a_serdata,a_key,a_def)
-        iptree loc_pt = Utility::DeserializeJson(a_serdata);
-        return loc_pt.get_optional<string>(a_key).get_value_or(a_def);
+        try
+        {
+            iptree loc_pt = Utility::DeserializeJson(a_serdata);
+            return loc_pt.get_optional<string>(a_key).get_value_or(a_def);
+        }
+        catch(const std::exception& e)
+        {
+            ERROR("GetJsonValue({},{},{}) - Error getting the json value -> {}",a_serdata,a_key,a_def,e.what())
+            return "";
+        }
     }
 
     inline string SetJsonValue(PAPYRUSFUNCHANDLE, string a_serdata, string a_key, string a_val)
     {
         if (a_serdata == "") return "{}";
         //DEBUG("SetJsonValue({},{},{}) called",a_serdata,a_key,a_val)
-        iptree loc_pt = Utility::DeserializeJson(a_serdata);
-        loc_pt.put(a_key,a_val);
-        return Utility::SerializeJson(loc_pt);
+        try
+        {
+            iptree loc_pt = Utility::DeserializeJson(a_serdata);
+
+            if (a_val.starts_with('{') && a_val.ends_with('}'))
+            {
+                iptree loc_val = Utility::DeserializeJson(a_val);
+                loc_pt.put_child(a_key,loc_val);
+            }
+            else
+            {
+                loc_pt.put(a_key,a_val);
+            }
+            return Utility::SerializeJson(loc_pt);
+        }
+        catch(const std::exception& e)
+        {
+            ERROR("SetJsonValue({},{},{}) - Error setting the json value -> {}",a_serdata,a_key,a_val,e.what())
+            return a_serdata;
+        }
     }
 
     std::string FormatFloat(PAPYRUSFUNCHANDLE,float a_value,int a_floatpoints);

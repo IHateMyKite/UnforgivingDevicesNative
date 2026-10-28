@@ -141,11 +141,6 @@ namespace UD
 
     typedef std::shared_ptr<MinigameData> MinigameDataPtr;
 
-    inline void ConsoleCallback(PrismaView view, PRISMA_UI_API::ConsoleMessageLevel level, const char* message)
-    {
-        DEBUG("JS[ {} ]",message)
-    }
-
     class MinigameManager
     {
         SINGLETONHEADER(MinigameManager)

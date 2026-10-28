@@ -196,7 +196,7 @@ float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectP
         lua_State* L = loc_config.luaScript;
         if (L)
         {
-            if (lua_getglobal(L,"GetAccessibility") != LUA_TNIL)
+            if (Lua::CallLuaFunction(L,"GetAccessibility",2,1,[&](lua_State* L)
             {
                 DeviceData loc_data;
                 loc_data.config = loc_config;
@@ -205,19 +205,12 @@ float UD::DeviceManager::GetDeviceAccessibility(RE::TESObjectARMO* a_rd, ObjectP
                 loc_data.device = a_device;
                 loc_data.wearer = a_actor;
                 loc_data.helper = a_helper;
-
                 PushDeviceData(L,loc_data);
                 lua_pushboolean(L,a_checkHB);
-                auto loc_luares = lua_pcall(L,2,1,0);
-                if (loc_luares != LUA_OK)
-                {
-                    ERROR("Error running function GetAccessibility - {}",loc_luares)
-                }
-                else
-                {
-                    loc_res = lua_tonumber(L,-1);
-                    lua_pop(L,1);
-                }
+            }))
+            {
+                loc_res = lua_tonumber(L,-1);
+                lua_pop(L,1);
             }
         }
         else ERROR("Cant run GetAccessibility for {}, as script is not running",loc_config.name)
@@ -245,26 +238,19 @@ string UD::DeviceManager::GetTags(RE::TESObjectARMO* a_rd, ObjectPtr* a_device)
         lua_State* L = loc_config.luaScript;
         if (L)
         {
-            if (lua_getglobal(L,"GetTags") != LUA_TNIL)
+            if (Lua::CallLuaFunction(L,"GetTags",1,1,[&](lua_State* L)
             {
                 DeviceData loc_data;
                 loc_data.config = loc_config;
                 loc_data.rd = a_rd;
                 if (DeviousDevicesAPI::g_API) loc_data.id = DeviousDevicesAPI::g_API->GetDeviceInventory(a_rd);
                 loc_data.device = a_device;
-
                 PushDeviceData(L,loc_data);
 
-                auto loc_luares = lua_pcall(L,1,1,0);
-                if (loc_luares != LUA_OK)
-                {
-                    ERROR("Error running function GetTags - {}",loc_luares)
-                }
-                else
-                {
-                    loc_res = lua_tostring(L,-1);
-                    lua_pop(L,1);
-                }
+            }))
+            {
+                loc_res = lua_tostring(L,-1);
+                lua_pop(L,1);
             }
         }
         else ERROR("Cant run GetTags for {}, as script is not running",loc_config.name)
