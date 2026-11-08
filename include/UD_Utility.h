@@ -115,6 +115,11 @@ namespace UD
         static string SerializeJson(iptree& a_tree);
         static iptree DeserializeJson(string a_serdata);
         static void ToLower(string& a_in);
+
+        static string EncodeBase64(string a_in);
+        static string DecodeBase64(string a_in);
+
+        static string DecompressString(string a_in);
     private:
 
     };
@@ -213,6 +218,13 @@ namespace UD
             ERROR("SetJsonValue({},{},{}) - Error setting the json value -> {}",a_serdata,a_key,a_val,e.what())
             return a_serdata;
         }
+    }
+
+    inline string DecompressString(PAPYRUSFUNCHANDLE, string a_in)
+    {
+        if (a_in == "") return "";
+        //DEBUG("SetJsonValue({},{},{}) called",a_serdata,a_key,a_val)
+        return Utility::DecompressString(a_in);
     }
 
     std::string FormatFloat(PAPYRUSFUNCHANDLE,float a_value,int a_floatpoints);

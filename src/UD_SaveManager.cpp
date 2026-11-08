@@ -24,15 +24,7 @@ void UD::SaveManager::SetSave(string a_serdata,bool a_decode)
 {
     if (a_decode)
     {
-        typedef transform_width<binary_from_base64<const char *>,8,6> base64_dec;
-
-        std::stringstream os;
-        std::copy(
-            base64_dec(a_serdata.c_str()),
-            base64_dec(a_serdata.c_str() + a_serdata.size()),
-            ostream_iterator<char>(os)
-        );
-        a_serdata = os.str();
+        a_serdata = Utility::DecodeBase64(a_serdata);
     }
 
     _save = Utility::DeserializeJson(a_serdata);
@@ -48,16 +40,7 @@ string UD::SaveManager::GetSaveString(bool a_encode)
     if (a_encode)
     {
 
-        typedef base64_from_binary<transform_width<const char *,6,8>> base64_enc;
-
-        string loc_raw = loc_res;
-        std::stringstream os;
-        std::copy(
-            base64_enc(loc_raw.c_str()),
-            base64_enc(loc_raw.c_str() + loc_raw.size()),
-            ostream_iterator<char>(os)
-        );
-        return os.str();
+        return Utility::EncodeBase64(loc_res);
     }
 
     return loc_res;

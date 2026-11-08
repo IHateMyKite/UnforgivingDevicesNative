@@ -518,6 +518,71 @@ namespace UD
         boost::to_lower(a_in);
     }
 
+    string Utility::EncodeBase64(string a_in)
+    {
+        typedef base64_from_binary<transform_width<const char *,6,8>> base64_enc;
+
+        string loc_raw = a_in;
+        std::stringstream os;
+        std::copy(
+            base64_enc(loc_raw.c_str()),
+            base64_enc(loc_raw.c_str() + loc_raw.size()),
+            ostream_iterator<char>(os)
+        );
+
+        string loc_res = os.str();
+
+        size_t num_pad_chars((4 - loc_res.size() % 4) % 4);
+        loc_res.append(num_pad_chars, '=');
+
+        return loc_res;
+    }
+
+    string Utility::DecodeBase64(string a_in)
+    {
+        size_t pad_chars(std::count(a_in.begin(), a_in.end(), '='));
+        a_in.erase(a_in.end() - pad_chars, a_in.end());
+
+        typedef transform_width<binary_from_base64<const char *>,8,6> base64_dec;
+
+        std::stringstream os;
+        std::copy(
+            base64_dec(a_in.c_str()),
+            base64_dec(a_in.c_str() + a_in.size()),
+            ostream_iterator<char>(os)
+        );
+        return os.str();
+    }
+
+    string Utility::DecompressString(string a_in)
+    {
+        //DEBUG("DecompressString({})",a_in)
+
+        // First convert from base64 to ASCII/byte array
+        string loc_compressed = DecodeBase64(a_in);
+
+        std::stringstream loc_out;
+        std::stringstream loc_in(loc_compressed);
+
+        try
+        {
+            //DEBUG("DecompressString({}) - Decoded = {}",a_in,loc_compressed)
+            
+            boost::iostreams::filtering_istreambuf loc_filter;
+            loc_filter.push(boost::iostreams::gzip_decompressor());
+            loc_filter.push(loc_in);
+            boost::iostreams::copy(loc_filter, loc_out);
+            
+            //DEBUG("DecompressString({}) - Result = {}",a_in,loc_out.str())
+        }
+        catch(boost::iostreams::gzip_error & e)
+        {
+            ERROR("DecompressString({}) - Error decompressing string -> {},{},{},{}",a_in,e.what(),e.code().message(),e.error(),e.zlib_error_code())
+        }
+
+        return loc_out.str();
+    }
+
     template<class T>
     T GetStringParam(const std::string& a_param, int a_Index, T a_DefaultValue)
     {

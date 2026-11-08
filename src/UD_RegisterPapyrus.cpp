@@ -70,6 +70,7 @@ namespace UD
         REGISTERPAPYRUSFUNC(IsConcentrationEnch,true)
         REGISTERPAPYRUSFUNC(GetJsonValue,true)
         REGISTERPAPYRUSFUNC(SetJsonValue,true)
+        REGISTERPAPYRUSFUNC(DecompressString,true)
 
         //UI
         REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)

@@ -52,6 +52,8 @@ set(source_files ${source_files}
     src/OrgasmSystem/OrgasmManager.cpp
     src/OrgasmSystem/OrgasmData.cpp
     src/OrgasmSystem/OrgasmConfig.cpp
+    src/Boost/zlib.cpp
+    src/Boost/gzip.cpp
 )
 
 # Setup your SKSE plugin as an SKSE plugin!
@@ -75,6 +77,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 find_package(Lua REQUIRED)
 target_include_directories(${PROJECT_NAME} PRIVATE ${LUA_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LUA_LIBRARIES})
+
+find_package(ZLIB REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE ZLIB::ZLIB)
 
 # Copy localy compiled dll to bin folder
 add_custom_command(TARGET UDNative POST_BUILD
