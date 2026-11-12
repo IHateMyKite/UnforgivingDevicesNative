@@ -3,7 +3,6 @@
 #include <UD_Utility.h>
 #include <UD_Config.h>
 #include <UD_ControlManager.h>
-#include <UD_MinigameEffect.h>
 #include <UD_ActorSlotManager.h>
 #include <UD_PlayerStatus.h>
 #include <UD_ModuleManager.h>
@@ -73,9 +72,6 @@ namespace UD
             std::this_thread::sleep_for(std::chrono::milliseconds(loc_time));
             t4mutex = false;
         }).detach();
-
-        MinigameEffectManager::GetSingleton()->UpdateMinigameEffect(loc_player,a_delta);
-        MinigameEffectManager::GetSingleton()->UpdateMeters(a_delta);
 
         MinigameManager::GetSingleton()->Update(a_delta);
         HudManager::GetSingleton()->Update(a_delta);

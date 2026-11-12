@@ -254,16 +254,6 @@ void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns
             auto loc_param = GetStringParamAllInter<std::string>(a_argStr,",");
             if (loc_param.size() != 2) return nullptr;
             float* loc_res = nullptr;
-            if (loc_param[0] == "0") 
-            {
-                loc_res = new float(MeterManager::GetMeterValueSkyUi(loc_param[1]));
-                MeterManager::SetMeterValueSkyUi(loc_param[1],0.0f);
-            }
-            else if (loc_param[0] == "1") 
-            {
-                loc_res = new float(MeterManager::GetMeterValueIWW(std::stoi(loc_param[1])));
-                MeterManager::SetMeterValueIWW(std::stoi(loc_param[1]),0.0f);
-            }
             return loc_res;
         };
         break;
@@ -454,8 +444,7 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
 {
     if (_Cooldown) return RE::BSEventNotifyControl::kContinue; //on cooldown - return
     if (!eventPtr) return RE::BSEventNotifyControl::kContinue;
-    if (!ControlManager::GetSingleton()->HardcoreMode() && (!ControlManager::GetSingleton()->HaveDeviceCallbacks())) return RE::BSEventNotifyControl::kContinue; //no hardcore mode - return
-    
+
     auto* event = *eventPtr;
     if (!event) return RE::BSEventNotifyControl::kContinue;
 
@@ -465,7 +454,11 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
         const RE::INPUT_DEVICE loc_Device = loc_buttonEvent->GetDevice();
         const uint32_t    loc_dxScanCode  = loc_buttonEvent->GetIDCode();
 
+        //DEBUG("Button pressed = {}",loc_dxScanCode)
+
         MinigameManager::GetSingleton()->CheckActionCallback(loc_dxScanCode,loc_buttonEvent);
+
+        if (!ControlManager::GetSingleton()->HardcoreMode() && (!ControlManager::GetSingleton()->HaveDeviceCallbacks())) return RE::BSEventNotifyControl::kContinue; //no hardcore mode - return
 
         if (loc_buttonEvent->IsRepeating()) return RE::BSEventNotifyControl::kContinue;
 

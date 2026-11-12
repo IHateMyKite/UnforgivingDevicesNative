@@ -1,5 +1,4 @@
 #include <UD_RegisterPapyrus.h>
-#include <UD_MinigameEffect.h>
 #include <UD_Utility.h>
 #include <UD_UI.h>
 #include <UD_Inventory.h>
@@ -29,19 +28,6 @@ namespace UD
     #define REGISTERPAPYRUSFUNCVAR(name,unhook,rettype) UD::RegisterFunctionVar(#name, "UD_Native", UD::name,unhook,rettype);
 
     bool RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine *vm) {
-        REGISTERPAPYRUSFUNC(StartMinigameEffect,true)
-        REGISTERPAPYRUSFUNC(EndMinigameEffect,true)
-        REGISTERPAPYRUSFUNC(IsMinigameEffectOn,true)
-        REGISTERPAPYRUSFUNC(UpdateMinigameEffectMult,true)
-        REGISTERPAPYRUSFUNC(ToggleMinigameEffect,true)
-        REGISTERPAPYRUSFUNC(MinigameStatsCheck,true)
-        REGISTERPAPYRUSFUNC(MinigameEffectSetHealth,true)
-        REGISTERPAPYRUSFUNC(MinigameEffectSetStamina,true)
-        REGISTERPAPYRUSFUNC(MinigameEffectSetMagicka,true)
-        REGISTERPAPYRUSFUNC(MinigameEffectUpdateHealth,true)
-        REGISTERPAPYRUSFUNC(MinigameEffectUpdateStamina,true)
-        REGISTERPAPYRUSFUNC(MinigameEffectUpdateMagicka,true)
-
         //UTILITY
         REGISTERPAPYRUSFUNC(RemoveDuplicateForms,true)
         REGISTERPAPYRUSFUNC(CodeBit,true)
@@ -73,27 +59,6 @@ namespace UD
         REGISTERPAPYRUSFUNC(DecompressString,true)
 
         //UI
-        REGISTERPAPYRUSFUNC(AddMeterEntryIWW,true)
-        REGISTERPAPYRUSFUNC(RemoveMeterEntryIWW,true)
-        REGISTERPAPYRUSFUNC(ToggleMeterIWW,true)
-        REGISTERPAPYRUSFUNC(SetMeterRateIWW,true)
-        REGISTERPAPYRUSFUNC(SetMeterMultIWW,true)
-        REGISTERPAPYRUSFUNC(SetMeterValueIWW,true)
-        REGISTERPAPYRUSFUNC(UpdateMeterValueIWW,true)
-        REGISTERPAPYRUSFUNC(GetMeterValueIWW,true)
-
-        REGISTERPAPYRUSFUNC(AddMeterEntrySkyUi,true)
-        REGISTERPAPYRUSFUNC(RemoveMeterEntrySkyUi,true)
-        REGISTERPAPYRUSFUNC(ToggleMeterSkyUi,true)
-        REGISTERPAPYRUSFUNC(SetMeterRateSkyUi,true)
-        REGISTERPAPYRUSFUNC(SetMeterMultSkyUi,true)
-        REGISTERPAPYRUSFUNC(SetMeterValueSkyUi,true)
-        REGISTERPAPYRUSFUNC(UpdateMeterValueSkyUi,true)
-        REGISTERPAPYRUSFUNC(GetMeterValueSkyUi,true)
-
-        REGISTERPAPYRUSFUNC(ToggleAllMeters,true)
-        REGISTERPAPYRUSFUNC(RemoveAllMeterEntries,true)
-
         REGISTERPAPYRUSFUNC(ReloadHudConfigs,true)
 
         //Inventory

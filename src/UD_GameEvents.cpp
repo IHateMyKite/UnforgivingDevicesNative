@@ -1,6 +1,5 @@
 #include <UD_GameEvents.h>
 #include <UD_Lib.h>
-#include <UD_MinigameEffect.h>
 #include <UD_Utility.h>
 #include <UD_UI.h>
 #include <UD_Inventory.h>
@@ -37,10 +36,10 @@ namespace UD
         UD::ReloadLib();
         SaveManager::GetSingleton()->Reload();
         ModuleManager::GetSingleton()->Reload(a_newGame); // If new game, add delay, so update does not happen during char creation
+        UIManager::GetSingleton()->Reload();
         PapyrusDelegate::GetSingleton()->Setup();
         RandomGenerator::GetSingleton()->Setup();
         PlayerStatus::GetSingleton()->Setup();
-        MeterManager::RemoveAll();
         KeywordManager::Reload();
         InventoryHandler::GetSingleton()->Reload();
         ORS::OrgasmManager::GetSingleton()->Setup();
@@ -59,9 +58,6 @@ namespace UD
         MinigameManager::GetSingleton()->Reload();
         HudManager::GetSingleton()->Reload();
         
-        //remove effect in case that user reloaded the game without exit
-        if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
-
         UpdateManager::GetSingleton()->CreateUpdateThreads();
     }
 

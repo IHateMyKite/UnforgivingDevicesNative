@@ -5,16 +5,12 @@
 #include <UD_PapyrusDelegate.h>
 #include <UD_DDAPI.h>
 #include <UD_SaveManager.h>
+#include <UD_UI.h>
 
 SINGLETONBODY(UD::MinigameManager)
 
-PRISMA_UI_API::IVPrismaUI2* UD::MinigameManager::PrismaUI = nullptr;
-
 void UD::MinigameManager::Reload(bool a_hotreload)
 {
-    auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-    PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
-
     if (a_hotreload)
     {
         // Reloading ingame. Need to stop all minigames first to prevent issue with invalid ids and pointers
@@ -264,10 +260,6 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
 
     _minigames.push_back(MinigameDataPtr(new MinigameData(loc_data)));
 
-    auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-    PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
-    
-
     bool loc_callres = Lua::CallLuaFunction(L,"OnStart",1,0,[&](lua_State* L)
     {
         PushMinigameData(L,loc_data);
@@ -335,12 +327,12 @@ void UD::MinigameManager::Update(float a_delta)
     const bool loc_menuOpen = Utility::IsBlockingMenuOpen();
     if (loc_menuOpen && _UIState == MinigameUIState::eShown)
     {
-        PrismaUI->Hide(_view);
+        UIManager::GetSingleton()->ShowView(_view,false);
         _UIState = MinigameUIState::eHidden;
     }
     else if (!loc_menuOpen && _UIState == MinigameUIState::eHidden)
     {
-        PrismaUI->Show(_view);
+        UIManager::GetSingleton()->ShowView(_view,true);
         _UIState = MinigameUIState::eShown;
     }
 
@@ -386,24 +378,20 @@ void UD::MinigameManager::OpenMinigameUI(int a_id,std::string a_callback)
     auto loc_data = GetMinigameDataById(a_id);
     if (loc_data && loc_data->Setting->config.uiobject != "")
     {
-        auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
-        
-        if (PrismaUI)
+        _focusedMinigameId = a_id;
+        _callback = a_callback;
+        _view = UIManager::GetSingleton()->CreateView(loc_data->Setting->name,loc_data->Setting->config.uiobject.c_str(),[](PrismaView view) -> void
         {
-            _focusedMinigameId = a_id;
-            _callback = a_callback;
-            _view = PrismaUI->CreateView(loc_data->Setting->config.uiobject.c_str(),[](PrismaView view) -> void
+            SKSE::GetTaskInterface()->AddTask([view]
             {
-                SKSE::GetTaskInterface()->AddTask([view]
-                {
-                    DEBUG("Minigame DOM is ready {}", view);
-                    PrismaUI->RegisterConsoleCallback(view,ConsoleCallback);
-                    MinigameManager::GetSingleton()->SetViewReady();
-                    MinigameManager::GetSingleton()->SendOpenMinigameUICallback();
-                });
+                DEBUG("Minigame DOM is ready {}", view);
+                UIManager::GetSingleton()->RegisterConsoleCallback(view,ConsoleCallback);
+                UIManager::GetSingleton()->ShowView(view,true);
+                MinigameManager::GetSingleton()->SetViewReady();
+                MinigameManager::GetSingleton()->SendOpenMinigameUICallback();
             });
-        }
+        },UILayer::Panel);
+
     }
 }
 
@@ -413,16 +401,11 @@ void UD::MinigameManager::CloseMinigameUI(int a_id)
     //auto loc_data = GetMinigameDataById(a_id);
     //if (loc_data)
     {
-        auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
-        
-        if (PrismaUI)
-        {
-            PrismaUI->Destroy(_view);
-            _view = 0;
-            _viewReady = false;
-            _UIState = MinigameUIState::eNotStarted;
-        }
+        UIManager::GetSingleton()->DestroyView(_view);
+        _view = 0;
+        _viewReady = false;
+        _UIState = MinigameUIState::eNotStarted;
+
     }
 }
 
@@ -430,13 +413,13 @@ void UD::MinigameManager::InvokeUI(std::string a_command, bool a_fast)
 {
     if (_viewReady)
     {
-        if (!a_fast) PrismaUI->Invoke(_view,a_command.c_str());
+        if (!a_fast) UIManager::GetSingleton()->Invoke(_view,a_command.c_str());
         else
         {
             std::regex loc_regex(R"regex((.*)\((.*)\))regex");
             const std::string loc_funname = std::regex_replace(a_command,loc_regex,"$1");
             std::string loc_funarg = std::regex_replace(a_command,loc_regex,"$2");
-            PrismaUI->InteropCall(_view,loc_funname.c_str(),loc_funarg.c_str());
+            UIManager::GetSingleton()->InteropCall(_view,loc_funname,loc_funarg);
         }
     }
 }

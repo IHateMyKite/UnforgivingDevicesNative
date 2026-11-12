@@ -3,8 +3,8 @@
 #include <UD_Config.h>
 #include <OrgasmSystem/OrgasmManager.h>
 #include <OrgasmSystem/OrgasmData.h>
-#include <PrismaUI_API.h>
 #include <UD_PapyrusDelegate.h>
+#include <UD_UI.h>
 
 namespace UD 
 {
@@ -49,11 +49,10 @@ namespace UD
 
         void CreateValueDetail(std::string& a_input, bool a_sep, std::string a_name, std::string a_value, std::string a_id);
 
-        static PRISMA_UI_API::IVPrismaUI2* PrismaUI;
         static bool ViewReady;
         static bool ViewReadySingle;
-        PrismaView      _view = 0x0UL;
-        PrismaView      _viewSingle = 0x0UL;
+        ViewId          _view = 0x0UL;
+        ViewId          _viewSingle = 0x0UL;
         UIMenu          _currentMenu = eNone;
         DeviceMenuData  _devMenuData;
     };

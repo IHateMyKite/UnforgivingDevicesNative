@@ -7,7 +7,6 @@
 
 SINGLETONBODY(UD::DeviceMenu)
 
-PRISMA_UI_API::IVPrismaUI2* UD::DeviceMenu::PrismaUI = nullptr;
 bool UD::DeviceMenu::ViewReady = false;
 bool UD::DeviceMenu::ViewReadySingle = false;
 
@@ -18,17 +17,16 @@ namespace UD
         DEBUG("Reload called")
         ViewReady = false;
         ViewReadySingle = false;
-        auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-        PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
-        if (_view && PrismaUI)
+
+        if (_view)
         {
-            PrismaUI->Destroy(_view);
+            UIManager::GetSingleton()->DestroyView(_view);
             _view = 0x0UL;
         }
 
-        if (_viewSingle && PrismaUI)
+        if (_viewSingle)
         {
-            PrismaUI->Destroy(_viewSingle);
+            UIManager::GetSingleton()->DestroyView(_viewSingle);
             _viewSingle = 0x0UL;
         }
 
@@ -37,7 +35,7 @@ namespace UD
             std::this_thread::sleep_for(std::chrono::milliseconds(3000));
             SKSE::GetTaskInterface()->AddTask([this]
             {
-                if (PrismaUI && _view == 0x0UL && _viewSingle == 0x0UL)
+                if (_view == 0x0UL && _viewSingle == 0x0UL)
                 {
                     // Listen for UI events
                     static auto loc_exit = [](const char* a_type)
@@ -97,27 +95,27 @@ namespace UD
                         }
                     };
 
-                    _view = PrismaUI->CreateView("UD/DeviceMenu/DeviceMenu.html",[](PrismaView view) -> void
+                    _view = UIManager::GetSingleton()->CreateView("DeviceMenu","DeviceMenu/DeviceMenu.html",[](ViewId view) -> void
                     {
-                        PrismaUI->RegisterConsoleCallback(view,ConsoleCallback);
-                        PrismaUI->Hide(view);
-                        PrismaUI->RegisterJSListener(view, "ExitMenu", loc_exit);
-                        PrismaUI->RegisterJSListener(view, "SendCallback", loc_sendcallback);
-                        PrismaUI->RegisterJSListener(view, "StartMinigame", loc_startminigame);
+                        UIManager::GetSingleton()->RegisterConsoleCallback(view,ConsoleCallback);
+                        UIManager::GetSingleton()->ShowView(view,false);
+                        UIManager::GetSingleton()->RegisterJSListener(view, "ExitMenu", loc_exit);
+                        UIManager::GetSingleton()->RegisterJSListener(view, "SendCallback", loc_sendcallback);
+                        UIManager::GetSingleton()->RegisterJSListener(view, "StartMinigame", loc_startminigame);
                         ViewReady = true;
                         DEBUG("DeviceMenu ready {}", view);
-                    });
+                    },UILayer::Popup,false);
 
-                    _viewSingle = PrismaUI->CreateView("UD/DeviceMenu/DeviceMenuSingle.html",[](PrismaView view) -> void
+                    _viewSingle = UIManager::GetSingleton()->CreateView("DeviceMenuSingle","DeviceMenu/DeviceMenuSingle.html",[](ViewId view) -> void
                     {
-                        PrismaUI->RegisterConsoleCallback(view,ConsoleCallback);
-                        PrismaUI->Hide(view);
-                        PrismaUI->RegisterJSListener(view, "ExitMenu", loc_exit);
-                        PrismaUI->RegisterJSListener(view, "SendCallback", loc_sendcallback);
-                        PrismaUI->RegisterJSListener(view, "StartMinigame", loc_startminigame);
+                        UIManager::GetSingleton()->RegisterConsoleCallback(view,ConsoleCallback);
+                        UIManager::GetSingleton()->ShowView(view,false);
+                        UIManager::GetSingleton()->RegisterJSListener(view, "ExitMenu", loc_exit);
+                        UIManager::GetSingleton()->RegisterJSListener(view, "SendCallback", loc_sendcallback);
+                        UIManager::GetSingleton()->RegisterJSListener(view, "StartMinigame", loc_startminigame);
                         ViewReadySingle = true;
                         DEBUG("DeviceMenuSingle ready {}", view);
-                    });
+                    },UILayer::Popup,false);
                 }
             });
         }).detach();
@@ -138,8 +136,8 @@ namespace UD
             _devMenuData.Wearer = a_actor;
             _devMenuData.Helper = a_helper;
 
-            PrismaUI->Show(_view);
-            PrismaUI->Focus(_view,true);
+            UIManager::GetSingleton()->ShowView(_view,true);
+            UIManager::GetSingleton()->FocusView(_view,true);
 
             auto loc_Devices = PapyrusDelegate::GetSingleton()->FindAllDeviceScripts(a_actor);
             DEBUG("ShowDeviceMenu() - Showing list of {} devices",loc_Devices.size())
@@ -169,7 +167,7 @@ namespace UD
             loc_arg += "}";
             std::string loc_call = std::format("InitDeviceList({})",loc_arg);
             DEBUG("ShowDeviceMenu() - Sending {}",loc_call)
-            PrismaUI->Invoke(_view,loc_call.c_str());
+            UIManager::GetSingleton()->Invoke(_view,loc_call);
 
             _currentMenu = UIMenu::eDeviceMenu;
             return true;
@@ -187,8 +185,8 @@ namespace UD
             _devMenuData.Wearer = a_actor;
             _devMenuData.Helper = a_helper;
 
-            PrismaUI->Show(_viewSingle);
-            PrismaUI->Focus(_viewSingle,true);
+            UIManager::GetSingleton()->ShowView(_viewSingle,true);
+            UIManager::GetSingleton()->FocusView(_viewSingle,true);
 
             auto loc_Devices = PapyrusDelegate::GetSingleton()->FindAllDeviceScripts(a_actor);
 
@@ -222,7 +220,7 @@ namespace UD
             loc_arg += "}";
             std::string loc_call = std::format("InitDeviceListSingle({})",loc_arg);
             DEBUG("ShowDeviceMenuSingle() - Sending {}",loc_call)
-            PrismaUI->Invoke(_viewSingle,loc_call.c_str());
+            UIManager::GetSingleton()->Invoke(_viewSingle,loc_call);
 
             _currentMenu = UIMenu::eDeviceMenuSingle;
             return true;
@@ -243,14 +241,14 @@ namespace UD
         switch(arg_type)
         {
             case UIMenu::eDeviceMenu:
-                PrismaUI->Unfocus(_view);
-                PrismaUI->Hide(_view);
+                UIManager::GetSingleton()->FocusView(_view,false);
+                UIManager::GetSingleton()->ShowView(_view,false);
                 _devMenuData.List.clear();
                 _devMenuData = DeviceMenuData();
             break;
             case UIMenu::eDeviceMenuSingle:
-                PrismaUI->Unfocus(_viewSingle);
-                PrismaUI->Hide(_viewSingle);
+                UIManager::GetSingleton()->FocusView(_viewSingle,false);
+                UIManager::GetSingleton()->ShowView(_viewSingle,false);
                 _devMenuData.List.clear();
                 _devMenuData = DeviceMenuData();
             break;

@@ -4,13 +4,8 @@
 
 SINGLETONBODY(UD::HudManager)
 
-PRISMA_UI_API::IVPrismaUI1* UD::HudManager::PrismaUI = nullptr;
-
 void UD::HudManager::Reload(bool a_hotreload)
 {
-    auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
-    PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI1*>(loc_apiptr);
-
     _elements.clear();
 
     //if (!_init || a_hotreload || Config::GetSingleton()->GetVariable<bool>("Data.bReloadCache",false))
@@ -23,7 +18,7 @@ void UD::HudManager::Reload(bool a_hotreload)
 
         if (_view)
         {
-            PrismaUI->Destroy(_view);
+            UIManager::GetSingleton()->DestroyView(_view);
             _view = NULL;
             _viewReady = false;
         }
@@ -120,15 +115,13 @@ void UD::HudManager::Reload(bool a_hotreload)
             DEBUG("\t{} - {} / {}",name, file->status, file->error)
         }
 
-        if (PrismaUI)
+        _view = UIManager::GetSingleton()->CreateView("HUD","Hud/Hud.html",[](ViewId view) -> void
         {
-            _view = PrismaUI->CreateView("UD/Hud/Hud.html",[](PrismaView view) -> void
-            {
-                DEBUG("Hud DOM is ready {}", view);
-                HudManager::PrismaUI->Show(view);
-                HudManager::GetSingleton()->SetViewReady();
-            });
-        }
+            DEBUG("Hud DOM is ready {}", view);
+            UIManager::GetSingleton()->ShowView(view,true);
+            HudManager::GetSingleton()->SetViewReady();
+        });
+
     }
 }
 
@@ -142,12 +135,12 @@ void UD::HudManager::Update(float a_delta)
 
     if (loc_menuOpen && _HudState == HudState::eShown)
     {
-        PrismaUI->Hide(_view);
+        UIManager::GetSingleton()->ShowView(_view,false);
         _HudState = HudState::eHidden;
     }
     else if (!loc_menuOpen && _HudState == HudState::eHidden)
     {
-        PrismaUI->Show(_view);
+        UIManager::GetSingleton()->ShowView(_view,true);
         _HudState = HudState::eShown;
     }
 
@@ -416,13 +409,13 @@ void UD::HudManager::InvokeHud(std::string a_message, bool a_fast)
 {
     if (_viewReady)
     {
-        if (!a_fast) PrismaUI->Invoke(_view,a_message.c_str());
+        if (!a_fast) UIManager::GetSingleton()->Invoke(_view,a_message);
         else
         {
             std::regex loc_regex(R"regex((.*)\((.*)\))regex");
             const std::string loc_funname = std::regex_replace(a_message,loc_regex,"$1");
             std::string loc_funarg = std::regex_replace(a_message,loc_regex,"$2");
-            PrismaUI->InteropCall(_view,loc_funname.c_str(),loc_funarg.c_str());
+            UIManager::GetSingleton()->InteropCall(_view,loc_funname,loc_funarg);
         }
     }
 }

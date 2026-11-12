@@ -1,223 +1,223 @@
 #include <UD_UI.h>
-//#include <boost/algorithm/string.hpp>
-#include <UD_ModuleManager.h>
 #include <UD_Utility.h>
-#include <UD_MinigameManager.h>
-#include <UD_DeviceManager.h>
-#include <UD_VariableManager.h>
 
-SINGLETONBODY(UD::MeterManager)
+SINGLETONBODY(UD::UIManager)
 
 namespace UD
 {
+    PRISMA_UI_API::IVPrismaUI2* UIManager::PrismaUI = nullptr;
+    MAGELIGHT_API::MagelightMod* UIManager::Magelight = nullptr;
 
-    //static variables define
-    std::vector<std::unique_ptr<MeterEntryIWW>>    MeterManager::_metersIWW        = std::vector<std::unique_ptr<MeterEntryIWW>>();
-    std::vector<std::unique_ptr<MeterEntrySkyUi>>  MeterManager::_metersSkyUi      = std::vector<std::unique_ptr<MeterEntrySkyUi>>();
-    bool                        MeterManager::updateallowed     = true;
-
-    MeterEntryIWW::MeterEntryIWW(std::string s_path, int i_id,std::string s_name, Formula a_formula, float f_base, float f_rate, bool b_update) :  path(s_path), id(i_id), name(s_name)
+    void UIManager::Reload()
     {
-        value   = f_base;
-        rate    = f_rate;
-        update  = b_update;
-        formula = a_formula;
-        extclass = nullptr;
-    }
-
-    MeterEntrySkyUi::MeterEntrySkyUi(std::string s_path,std::string s_name, Formula a_formula,float f_base, float f_rate, bool b_update) :  MeterEntryIWW(s_path,-1,s_name,a_formula,f_base,f_rate,b_update)
-    {
-    }
-
-    inline MeterEntryIWW& MeterEntryIWW::operator=(const MeterEntryIWW& source)
-    {
-        if (this == &source) return *this;
-        *this = MeterEntryIWW(source.path, source.id, source.name,source.formula, source.value,source.rate,source.update);
-        this->mult = source.mult;
-        return *this;
-    }
-
-    void MeterEntryIWW::Process(const float& f_timemult)
-    {
-        if (newvalueset && frameskip <= 0)
+        if (!_Ready)
         {
-            value = newvalue;
-            newvalueset = false;
-        }
-        if (update)
-        {
-            if (frameskip <= 0)
+            auto loc_apiptr = PRISMA_UI_API::RequestPluginAPI();
+            PrismaUI = reinterpret_cast<PRISMA_UI_API::IVPrismaUI2*>(loc_apiptr);
+            if (PrismaUI) DEBUG("PrismaUI found")
+            else DEBUG("No PrismaUI found")
+
+            auto loc_magelight = new MAGELIGHT_API::MagelightMod();
+            if (loc_magelight->acquire("UnforgivingDevices","UnforgivingDevices",1,8,0))
             {
-                if (extcalc == nullptr || extclass == nullptr)
-                {
-                    switch (formula)
-                    {
-                    case tLin:
-                        value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
-                        if      (value > 100.0f)    value = 100.0f;
-                        else if (value < 0.0f)      value = 0.0f;
-                        break;
-                    case tLinRepeat:
-                        value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
-                        if      (value >=   100.0f) 
-                        {
-                            value       =   100.0f;
-                            frameskip   =   FRAMESKIP_LINREPEAT;
-                        }
-                        else if (value <=   0.0f)
-                        {
-                            value       =   0.0f;
-                            frameskip   =   FRAMESKIP_LINREPEAT;
-                        }
-                        break;
-                    }
-                }
-                else
-                {
-                    value = extcalc(*extclass);
-                }
-            }
-            else 
-            {
-                frameskip--;
-                if (frameskip <= 0)
-                {
-                    switch (formula)
-                    {
-                    case tLinRepeat:
-                        if (value == 100.0f) 
-                        {
-                            value =  0.0f;
-                        }
-                        else if (value == 0.0f)
-                        {
-                            value =  100.0f;
-                        }
-                        break;
-                    }
-                }
-            }
-
-            RE::UI* loc_ui = nullptr;
-            if (loc_ui == nullptr) loc_ui = RE::UI::GetSingleton();
-            if (loc_ui == nullptr) return;
-            //get hud view
-            RE::GPtr<RE::IMenu> loc_hudmenu = nullptr;
-            if (loc_hudmenu.get() == nullptr) loc_hudmenu = loc_ui->menuMap.find("HUD Menu")->second.menu;
-            if (loc_hudmenu.get() == nullptr) return;
-            //get hud movie
-            RE::GPtr<RE::GFxMovieView> loc_uimovie = nullptr;
-            if (loc_uimovie.get() == nullptr) loc_uimovie = loc_hudmenu->uiMovie;
-            if (loc_uimovie.get() == nullptr) return;
-
-            //set path
-            std::string loc_path =  path + ".setMeterPercent";
-
-            //set argument
-            std::string loc_argstr = std::string(std::to_string(id) + "|" + std::to_string(value));
-            RE::GFxValue loc_arg;
-            loc_arg.SetString(loc_argstr);
-
-            loc_ui->processMessagesLock.Lock();
-
-            //invoke action script function
-            loc_uimovie->Invoke(loc_path.c_str(),NULL,&loc_arg,1);
-
-            loc_uimovie->Advance(0.0f);
-
-            loc_ui->processMessagesLock.Unlock();
-        }
-    }
-
-    void MeterEntrySkyUi::Process(const float& f_timemult)
-    {
-        if (newvalueset && frameskip <= 0)
-        {
-            value = newvalue;
-            newvalueset = false;
-        }
-        if (update)
-        {
-            if (frameskip <= 0)
-            {
-                if (extcalc == nullptr || extclass == nullptr)
-                {
-                    switch (formula)
-                    {
-                    case tLin:
-                        value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
-                        if      (value > 100.0f)    value = 100.0f;
-                        else if (value < 0.0f)      value = 0.0f;
-                        break;
-                    case tLinRepeat:
-                        value += UDCONVERTMULT*((rate/60.0f)*mult*f_timemult);
-                        if      (value >=   100.0f) 
-                        {
-                            value       =   100.0f;
-                            frameskip   =   FRAMESKIP_LINREPEAT;
-                        }
-                        else if (value <=   0.0f)
-                        {
-                            value       =   0.0f;
-                            frameskip   =   FRAMESKIP_LINREPEAT;
-                        }
-                        break;
-                    }
-                }
-                else
-                {
-                    value = extcalc(*extclass);
-                }
+                DEBUG("Magelight found")
+                Magelight = loc_magelight;
             }
             else
             {
-                frameskip--;
-                if (frameskip <= 0) //frame skip end
-                {
-                    switch (formula)
-                    {
-                    case tLinRepeat:
-                        if (value == 100.0f) 
-                        {
-                            value =  0.0f;
-                        }
-                        else if (value == 0.0f)
-                        {
-                            value =  100.0f;
-                        }
-                        break;
-                    }
-                }
+                DEBUG("No Magelight found")
+                delete loc_magelight;
+                Magelight = nullptr;
             }
 
-            RE::UI* loc_ui = nullptr;
-            if (loc_ui == nullptr) loc_ui = RE::UI::GetSingleton();
-            if (loc_ui == nullptr) return;
-            //get hud view
-            RE::GPtr<RE::IMenu> loc_hudmenu = nullptr;
-            if (loc_hudmenu.get() == nullptr) loc_hudmenu = loc_ui->menuMap.find("HUD Menu")->second.menu;
-            if (loc_hudmenu.get() == nullptr) return;
-            //get hud movie
-            RE::GPtr<RE::GFxMovieView> loc_uimovie = nullptr;
-            if (loc_uimovie.get() == nullptr) loc_uimovie = loc_hudmenu->uiMovie;
-            if (loc_uimovie.get() == nullptr) return;
-
-            //set path
-            std::string loc_path =  path + ".setPercent";
-
-            //set argument
-            RE::GFxValue loc_arg[2];
-            loc_arg[0].SetNumber(value/100.0f);
-            loc_arg[1].SetNumber(UDSKYUIFORCE);
-
-            loc_ui->processMessagesLock.Lock();
-
-            //invoke action script function
-            loc_uimovie->Invoke(loc_path.c_str(),NULL,loc_arg,2);
-
-            loc_uimovie->Advance(0.0f);
-
-            loc_ui->processMessagesLock.Unlock();
+            DEBUG("Prefered UI mod = {}",Config::GetSingleton()->GetVariable<string>("Ui.sPreferedMod","PrismaUI"))
         }
     }
+
+    ViewId UIManager::CreateView(string a_name, string a_path, OnDomReadyCallback a_callback, UILayer a_layer, bool a_clickthrough)
+    {
+        ViewId loc_res = 0;
+
+        switch(GetUsedUIMod())
+        {
+            case UIMods::PrismaUI:
+            {
+                const string loc_path = "UnforgivingDevices/" + a_path;
+                loc_res = PrismaUI->CreateView(loc_path.c_str(),a_callback);
+            }
+            break;
+            case UIMods::Magelight:
+            {
+                const string loc_path = RelToAbsPath("Magelight/UnforgivingDevices/" + a_path);
+                //const string loc_path = a_path;
+                //boost::replace_all(loc_path,"/","\\");
+                MAGELIGHT_API::MagelightMod::ViewOpts loc_opts;
+                loc_opts.fullscreen = true;
+                loc_opts.onDomReady = a_callback;
+                loc_opts.clickThrough = a_clickthrough;
+                loc_res = Magelight->createView(a_name.c_str(), loc_path.c_str(),(MAGELIGHT_API::Layer)a_layer,loc_opts);
+                DEBUG("Opening view {} using Magelight -> {} / {}",loc_path,loc_res,Magelight->v4()->GetLastErrorMessage(Magelight->id()));
+                DEBUG("Is GPU used = {}",Magelight->v4()->IsGpuAccelerated())
+            }
+            break;
+            default:
+            break;
+        }
+
+        return loc_res;
+    }
+
+    bool UIManager::DestroyView(ViewId a_id)
+    {
+        bool loc_res = true;
+        switch(GetUsedUIMod())
+        {
+            case UIMods::PrismaUI:
+            {
+                PrismaUI->Destroy(a_id);
+            }
+            break;
+            case UIMods::Magelight:
+            {
+                Magelight->v4()->DestroyView(a_id);
+            }
+            break;
+            default:
+            break;
+        }
+
+        return loc_res;
+    }
+
+    void UIManager::RegisterConsoleCallback(ViewId a_id, ConsoleCallbackType a_callback)
+    {
+        switch(GetUsedUIMod())
+        {
+            case UIMods::PrismaUI:
+            {
+                PrismaUI->RegisterConsoleCallback(a_id,reinterpret_cast<PRISMA_UI_API::ConsoleMessageCallback>(a_callback));
+            }
+            break;
+            default:
+            break;
+        }
+    }
+
+    void UIManager::ShowView(ViewId a_id, bool a_show)
+    {
+        switch(GetUsedUIMod())
+        {
+            case UIMods::PrismaUI:
+            {
+                if (a_show) PrismaUI->Show(a_id);
+                else PrismaUI->Hide(a_id);
+            }
+            break;
+            case UIMods::Magelight:
+            {
+                Magelight->v4()->ShowView(a_id,a_show);
+            }
+            break;
+            default:
+            break;
+        }
+    }
+
+    void UIManager::FocusView(ViewId a_id, bool a_focus)
+    {
+        switch(GetUsedUIMod())
+        {
+            case UIMods::PrismaUI:
+            {
+                if (a_focus) PrismaUI->Focus(a_id);
+                else PrismaUI->Unfocus(a_id);
+            }
+            break;
+            case UIMods::Magelight:
+            {
+                if (a_focus) Magelight->v4()->EnterUIModeEx(a_id,true);
+                else Magelight->v4()->ExitUIMode();
+            }
+            break;
+            default:
+            break;
+        }
+    }
+
+    void UIManager::RegisterJSListener(ViewId a_id, string a_name, JsListenerFn a_callback)
+    {
+        switch(GetUsedUIMod())
+        {
+            case UIMods::PrismaUI:
+            {
+                PrismaUI->RegisterJSListener(a_id,a_name.c_str(),a_callback);
+            }
+            break;
+            case UIMods::Magelight:
+            {
+                Magelight->v4()->RegisterJSListener(a_id,a_name.c_str(),a_callback);
+            }
+            break;
+            default:
+            break;
+        }
+    }
+
+    void UIManager::Invoke(ViewId a_id, string a_js)
+    {
+        switch(GetUsedUIMod())
+        {
+            case UIMods::PrismaUI:
+            {
+                PrismaUI->Invoke(a_id,a_js.c_str());
+            }
+            break;
+            case UIMods::Magelight:
+            {
+                Magelight->v4()->InvokeJS(a_id,a_js.c_str());
+            }
+            break;
+            default:
+            break;
+        }
+    }
+
+    void UIManager::InteropCall(ViewId a_id, string a_fun, string a_arg)
+    {
+        switch(GetUsedUIMod())
+        {
+            case UIMods::PrismaUI:
+            {
+                PrismaUI->InteropCall(a_id,a_fun.c_str(),a_arg.c_str());
+            }
+            break;
+            case UIMods::Magelight:
+            {
+                Magelight->v4()->InteropCall(a_id,a_fun.c_str(),a_arg.c_str());
+            }
+            break;
+            default:
+            break;
+        }
+    }
+
+    UIMods UIManager::GetUsedUIMod()
+    {
+        UIMods loc_res;
+        const string loc_pref = Config::GetSingleton()->GetVariable<string>("Ui.sPreferedMod","PrismaUI");
+        if (PrismaUI && boost::iequals(loc_pref,"PrismaUI"))
+        {
+            loc_res = UIMods::PrismaUI;
+        }
+        else if (Magelight && boost::iequals(loc_pref,"Magelight"))
+        {
+            loc_res = UIMods::Magelight;
+        }
+        else
+        {
+            loc_res = UIMods::None;
+        }
+        return loc_res;
+    }
+
 }

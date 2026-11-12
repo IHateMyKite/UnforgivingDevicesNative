@@ -3,7 +3,6 @@
 #include <UD_Config.h>
 #include <UD_Lua.h>
 #include <UD_UI.h>
-#include <PrismaUI_API.h>
 
 namespace UD 
 {
@@ -85,10 +84,8 @@ namespace UD
         void CheckHideElements(float a_delta);
         void UpdateElements(float a_delta);
         HudElementSetting GetConfigById(uint32_t a_id);
-    public:
-        static PRISMA_UI_API::IVPrismaUI1* PrismaUI;
     private:
-        PrismaView  _view = 0x0UL;
+        ViewId      _view = 0x0UL;
         HudState    _HudState = HudState::eNotStarted;
         bool        _viewReady = false;
         bool        _init = false;

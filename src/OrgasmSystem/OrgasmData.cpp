@@ -269,12 +269,6 @@ void ORS::OrgasmActorData::LinkActorToMeter(std::string a_path, MeterWidgetType 
     _RDATA.LinkedWidgetType   = a_type;
     _RDATA.LinkedWidgetId     = a_id; 
     _RDATA.LinkedWidgetUsed   = true;
-
-    switch (a_type)
-    {
-        case tSkyUi : UD::MeterManager::SetExtCalcSkyUi(_RDATA.LinkedWidgetPath,this,&OrgasmActorData::GetOrgasmProgressUI); break;
-        case tIWW   : UD::MeterManager::SetExtCalcIWW(a_id,this,&OrgasmActorData::GetOrgasmProgressUI); break;
-    }
 }
 
 std::string ORS::OrgasmActorData::GetHornyStatus()
@@ -305,13 +299,6 @@ bool ORS::OrgasmActorData::SetOrgasmFlags(int a_flags)
 void ORS::OrgasmActorData::UnlinkActorFromMeter()
 {
      _RDATA.LinkedWidgetUsed  = false;
-
-    switch (_RDATA.LinkedWidgetType)
-    {
-        case tSkyUi : UD::MeterManager::UnsetExtCalcSkyUi(_RDATA.LinkedWidgetPath); break;
-        case tIWW   : UD::MeterManager::UnsetExtCalcIWW(_RDATA.LinkedWidgetId); break;
-    }
-
     _RDATA.LinkedWidgetPath   = "";
     _RDATA.LinkedWidgetType   = tSkyUi;
     _RDATA.LinkedWidgetId     = 0; 

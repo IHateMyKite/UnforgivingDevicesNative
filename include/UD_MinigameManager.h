@@ -1,8 +1,8 @@
 #pragma once
-#include <PrismaUI_API.h>
 #include <lua.hpp>
 #include <UD_Lua.h>
 #include <UD_ControlManager.h>
+#include <UD_UI.h>
 
 #define LUA_CHECK(x,y) \
 {                      \
@@ -205,8 +205,7 @@ namespace UD
 
             void LoadSavedMinigames();
         private:
-            static PRISMA_UI_API::IVPrismaUI2* PrismaUI;
-            PrismaView  _view = 0x0UL;
+            ViewId  _view = 0x0UL;
             bool        _viewReady = false;
             MinigameUIState _UIState = MinigameUIState::eNotStarted;
 
