@@ -205,11 +205,11 @@ namespace UD
     {
         UIMods loc_res;
         const string loc_pref = Config::GetSingleton()->GetVariable<string>("Ui.sPreferedMod","PrismaUI");
-        if (PrismaUI && boost::iequals(loc_pref,"PrismaUI"))
+        if (PrismaUI && (boost::iequals(loc_pref,"PrismaUI") || !Magelight))
         {
             loc_res = UIMods::PrismaUI;
         }
-        else if (Magelight && boost::iequals(loc_pref,"Magelight"))
+        else if (Magelight && (boost::iequals(loc_pref,"Magelight") || !PrismaUI))
         {
             loc_res = UIMods::Magelight;
         }
