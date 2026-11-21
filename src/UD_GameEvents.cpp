@@ -502,7 +502,7 @@ namespace UD
     void OnMessageReceived(SKSE::MessagingInterface::Message* a_msg)
     {
         Config::GetSingleton()->Setup();
-        bool nativeDDNGPatcher=Config::GetSingleton()->GetVariable<bool>("bNativeDDNGPatcher",false);
+        bool nativeDDNGPatcher=Config::GetSingleton()->GetVariable<bool>("General.bNativeDDNGPatcher",false);
         switch(a_msg->type)
         {
             case SKSE::MessagingInterface::kInputLoaded:
