@@ -175,6 +175,10 @@ namespace UD
             case UIMods::Magelight:
             {
                 Magelight->v4()->InvokeJS(a_id,a_js.c_str());
+                //Magelight->v4()->EvalJS(a_id,a_js.c_str(),[](ViewId view, const char* result, const char* exception, void* user)
+                //{
+                //    DEBUG("InteropCall() - Result = {}",result)
+                //},static_cast<MAGELIGHT_API::MagelightMod*>(Magelight));
             }
             break;
             default:
@@ -194,6 +198,10 @@ namespace UD
             case UIMods::Magelight:
             {
                 Magelight->v4()->InteropCall(a_id,a_fun.c_str(),a_arg.c_str());
+                //Magelight->v4()->EvalJS(a_id,std::format("{}({})",a_fun,a_arg).c_str(),[](ViewId view, const char* result, const char* exception, void* user)
+                //{
+                //    DEBUG("InteropCall() - Result = {}",result)
+                //},static_cast<MAGELIGHT_API::MagelightMod*>(Magelight));
             }
             break;
             default:

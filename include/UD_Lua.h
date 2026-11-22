@@ -114,6 +114,14 @@ namespace Lua
         int lua_GetSaveConfig(lua_State* L);
         int lua_GetRegisteredActions(lua_State* L);
         int lua_GetMinigameSkillMult(lua_State* L);
+
+        // ORS
+        int lua_AddOrgasmChange(lua_State* L);
+        int lua_RemoveOrgasmChange(lua_State* L);
+        int lua_UpdateOrgasmChangeVar(lua_State* L);
+        int lua_GetOrgasmChangeVar(lua_State* L);
+        int lua_GetOrgasmProgress(lua_State* L);
+
     }
 
 }

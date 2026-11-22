@@ -56,6 +56,13 @@ namespace UD
         sError          = 3U
     };
 
+    enum class MinigameType : uint8_t
+    {
+        eNone           = 0U,
+        eActor          = 1U,
+        eDevice         = 2U
+    };
+
     struct MinigameExportVar
     {
         string config;
@@ -77,6 +84,7 @@ namespace UD
         bool        abstract;
         std::string skill;
         std::string base;
+        MinigameType type;
         std::vector<std::string> includes;
 
         std::unordered_map<string,string> config_vars;      // Calculated values from parents
@@ -111,25 +119,27 @@ namespace UD
     struct MinigameData
     {
         int id = 0;
-        RE::Actor* Wearer   = nullptr;
-        RE::Actor* Helper   = nullptr;
+        RE::Actor* Actor   = nullptr;
+        RE::Actor* Helper  = nullptr;
         DeviceObj2  Device;
         MinigameSetting Setting;
         MinigameState State = MinigameState::eNotStarted;
         std::vector<MinigameActionCallback> Controls;
         string Context;
+        MinigameType Type = MinigameType::eNone;
     };
 
     struct MinigamePersData
     {
         int id                              = 0;
-        uint32_t Wearer                     = 0;
+        uint32_t Actor                      = 0;
         uint32_t Helper                     = 0;
         RE::VMHandle    DeviceHandle        = 0;
         char            MinigameName[32U]   = {};
         MinigameState   State               = MinigameState::eNotStarted;
         char            Context[16U]        = {};
         uint16_t        DataSize            = 0;
+        MinigameType    Type                = MinigameType::eNone;
     };
     static_assert(sizeof(MinigamePersData) == 80U);
 
@@ -148,11 +158,16 @@ namespace UD
             void Reload(bool a_hotreload = false);
             std::vector<std::string> GetListOfMinigamesStr(RE::Actor* a_actor, RE::TESObjectARMO* a_id);
             std::vector<MinigameSetting> GetListOfMinigames(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_id);
+            std::vector<MinigameSetting> GetListOfMinigames(RE::Actor* a_actor, RE::Actor* a_helper);
 
             bool GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_helper,RE::TESObjectARMO* a_id, MinigameSetting a_setting);
+            bool GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_helper, MinigameSetting a_setting);
+
             string GetMinigameContexts(RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id, MinigameSetting a_setting);
+            string GetMinigameContexts(RE::Actor* a_actor, RE::Actor* a_helper, MinigameSetting a_setting);
 
             bool StartMinigame(MinigameSetting a_minigame,RE::Actor* a_actor, RE::Actor* a_helper, RE::TESObjectARMO* a_id, string a_cntx);
+            bool StartMinigame(MinigameSetting a_minigame,RE::Actor* a_actor, RE::Actor* a_helper, string a_cntx);
             bool GetMinigameById(uint32_t a_id,MinigameSetting& a_output);
             MinigameDataPtr GetMinigameDataById(uint32_t a_id);
             MinigameSetting GetMinigameConfigById(uint32_t a_id);
@@ -188,6 +203,8 @@ namespace UD
             void OnGameLoaded(SKSE::SerializationInterface* serde,uint32_t a_type, uint32_t a_size, uint32_t a_version);
             void OnGameSaved(SKSE::SerializationInterface* serde);
             void OnRevert(SKSE::SerializationInterface* serde);
+        public:
+            static std::unordered_map<string,MinigameType> MinigameTypeMapping;
         private:
             MinigameCallback ParseCallback(std::string a_callback);
             bool InitMinigameConfig(MinigameSetting a_config);
@@ -197,7 +214,6 @@ namespace UD
             void PushMinigameData(lua_State* L,MinigameData& a_data);
             
             MinigameDataPtr GetMinigameByName(string a_name);
-
 
             void SetMinigameBases();
             void SetMinigameUIs();

@@ -9,6 +9,13 @@
 
 SINGLETONBODY(UD::MinigameManager)
 
+std::unordered_map<string,UD::MinigameType> UD::MinigameManager::MinigameTypeMapping = 
+{
+    {"none",MinigameType::eNone},
+    {"device",MinigameType::eDevice},
+    {"actor",MinigameType::eActor}
+};
+
 void UD::MinigameManager::Reload(bool a_hotreload)
 {
     if (a_hotreload)
@@ -120,8 +127,8 @@ std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Act
     {
         for (auto&& [path,config] : _jsoncache)
         {
-            // Minigame is abstract, ignore it
-            if (config->config.abstract) continue;
+            // Minigame is abstract or incorrect type, ignore it
+            if (config->config.abstract || config->config.type != MinigameType::eDevice) continue;
 
             auto L = _scripts[config->config.script];
             if (!L) continue;
@@ -131,11 +138,63 @@ std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Act
             {
                 Lua::PushTable(L,
                 {
-                    {"Wearer",a_actor},
+                    {"Actor",a_actor},
                     {"Helper",a_helper},
                     {"ID",a_id},
                     {"RD",loc_device.first},
                     {"DeviceObj",loc_device.second.get()},
+                    {"Json",config->json.get()},
+                    {"ConfigId",(lua_Integer)config->id}
+                });
+            });
+
+            bool loc_precond = false;
+            if (loc_callres)
+            {
+                loc_precond = lua_toboolean(L,-1);
+                lua_pop(L,1);
+            }
+
+            if (loc_precond)
+            {
+                loc_res.push_back(config);
+            }
+        }
+    }
+
+    // Sort minigames based on priority
+    std::sort(loc_res.begin(),loc_res.end(),[&](MinigameSetting& v1,MinigameSetting& v2) -> bool
+    {
+        auto loc_prio1 = v1.get() ? v1->config.priority : 0;
+        auto loc_prio2 = v2.get() ? v2->config.priority : 0;
+        return loc_prio1 > loc_prio2;
+    });
+
+    return loc_res;
+}
+
+std::vector<UD::MinigameSetting> UD::MinigameManager::GetListOfMinigames(RE::Actor* a_actor, RE::Actor* a_helper)
+{
+    //DEBUG("GetListOfMinigames called")
+    std::vector<MinigameSetting> loc_res;
+
+    if (a_actor)
+    {
+        for (auto&& [path,config] : _jsoncache)
+        {
+            // Minigame is abstract or incorrect type, ignore it
+            if (config->config.abstract || config->config.type != MinigameType::eActor) continue;
+
+            auto L = _scripts[config->config.script];
+            if (!L) continue;
+    
+            
+            bool loc_callres = Lua::CallLuaFunction(L,"Precondition",1,1,[&](lua_State* L)
+            {
+                Lua::PushTable(L,
+                {
+                    {"Actor",a_actor},
+                    {"Helper",a_helper},
                     {"Json",config->json.get()},
                     {"ConfigId",(lua_Integer)config->id}
                 });
@@ -178,11 +237,38 @@ bool UD::MinigameManager::GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_
     {
         Lua::PushTable(L,
         {
-            {"Wearer",a_actor},
+            {"Actor",a_actor},
             {"Helper",a_helper},
             {"ID",a_id},
             {"RD",loc_device.first},
             {"DeviceObj",loc_device.second.get()},
+            {"Json",a_setting->json.get()},
+            {"ConfigId",(lua_Integer)a_setting->id}
+        });
+    });
+    
+    bool loc_cond = false;
+    if (loc_callres)
+    {
+        loc_cond = lua_toboolean(L,-1);
+        lua_pop(L,1);
+    }
+    
+    return loc_cond;
+}
+
+bool UD::MinigameManager::GetMinigameCondition(RE::Actor* a_actor, RE::Actor* a_helper, MinigameSetting a_setting)
+{
+    //DEBUG("GetMinigameCondition called")
+    auto L = GetMinigameScript(a_setting);
+    if (!L) return false;
+
+    bool loc_callres = Lua::CallLuaFunction(L,"Condition",1,1,[&](lua_State* L)
+    {
+        Lua::PushTable(L,
+        {
+            {"Actor",a_actor},
+            {"Helper",a_helper},
             {"Json",a_setting->json.get()},
             {"ConfigId",(lua_Integer)a_setting->id}
         });
@@ -211,11 +297,41 @@ string UD::MinigameManager::GetMinigameContexts(RE::Actor* a_actor, RE::Actor* a
     {
         Lua::PushTable(L,
         {
-            {"Wearer",a_actor},
+            {"Actor",a_actor},
             {"Helper",a_helper},
             {"ID",a_id},
             {"RD",loc_device.first},
             {"DeviceObj",loc_device.second.get()},
+            {"Json",a_setting->json.get()},
+            {"ConfigId",(lua_Integer)a_setting->id}
+        });
+    });
+    
+    if (loc_callres)
+    {
+        if (lua_isstring(L,-1))
+        {
+            loc_res = lua_tostring(L,-1);
+        }
+        lua_pop(L,1);
+    }
+
+    return loc_res;
+}
+
+string UD::MinigameManager::GetMinigameContexts(RE::Actor* a_actor, RE::Actor* a_helper, MinigameSetting a_setting)
+{
+    string loc_res = "";
+    //DEBUG("GetMinigameCondition called")
+    auto L = GetMinigameScript(a_setting);
+    if (!L) return loc_res;
+    
+    bool loc_callres = Lua::CallLuaFunction(L,"GetContext",1,1,[&](lua_State* L)
+    {
+        Lua::PushTable(L,
+        {
+            {"Actor",a_actor},
+            {"Helper",a_helper},
             {"Json",a_setting->json.get()},
             {"ConfigId",(lua_Integer)a_setting->id}
         });
@@ -248,7 +364,7 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
     DeviceObj loc_device = PapyrusDelegate::GetSingleton()->FindDeviceScriptID(a_actor,a_id);
 
     MinigameData loc_data;
-    loc_data.Wearer = a_actor;
+    loc_data.Actor  = a_actor;
     loc_data.Helper = a_helper;
     loc_data.Device.obj = loc_device.second;
     loc_data.Device.id = a_id;
@@ -256,6 +372,7 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
     loc_data.id = _minigameCntr;
     loc_data.Setting = a_setting;
     loc_data.Context = a_cntx;
+    loc_data.Type = a_setting->config.type;
     _minigameCntr++;
 
     _minigames.push_back(MinigameDataPtr(new MinigameData(loc_data)));
@@ -265,6 +382,49 @@ bool UD::MinigameManager::StartMinigame(MinigameSetting a_setting, RE::Actor* a_
         PushMinigameData(L,loc_data);
     });
     
+    if (!loc_callres) // In case of failure, delete the new minigame
+    {
+        ERROR("Error starting minigame {}",a_setting->config.name)
+        _minigames.pop_back();
+    }
+
+    return loc_callres;
+}
+
+bool UD::MinigameManager::StartMinigame(MinigameSetting a_minigame, RE::Actor* a_actor, RE::Actor* a_helper, string a_cntx)
+{
+    if (!a_minigame) return false;
+
+    DEBUG("Starting minigame {} for {}. Context = {}",a_minigame->config.name,a_actor->GetName(),a_cntx)
+    auto L = GetMinigameScript(a_minigame);
+    if (!L)
+    {
+        DEBUG("Error reading script {}. Probably runtime error on init of script",a_minigame->config.script)
+        return false;
+    }
+
+    MinigameData loc_data;
+    loc_data.Actor  = a_actor;
+    loc_data.Helper = a_helper;
+    loc_data.id = _minigameCntr;
+    loc_data.Setting = a_minigame;
+    loc_data.Context = a_cntx;
+    loc_data.Type = a_minigame->config.type;
+    _minigameCntr++;
+
+    _minigames.push_back(MinigameDataPtr(new MinigameData(loc_data)));
+
+    bool loc_callres = Lua::CallLuaFunction(L,"OnStart",1,0,[&](lua_State* L)
+    {
+        PushMinigameData(L,loc_data);
+    });
+    
+    if (!loc_callres) // In case of failure, delete the new minigame
+    {
+        ERROR("Error starting minigame {}",a_minigame->config.name)
+        _minigames.pop_back();
+    }
+
     return loc_callres;
 }
 
@@ -312,7 +472,7 @@ bool UD::MinigameManager::StopMinigame(RE::Actor* a_actor)
 
     for(auto&& it : _minigames)
     {
-        if (it->Wearer == a_actor || it->Helper == a_actor)
+        if (it->Actor == a_actor || it->Helper == a_actor)
         {
             StopMinigame(it->id);
             return true;
@@ -819,10 +979,14 @@ void UD::MinigameManager::OnGameSaved(SKSE::SerializationInterface* serde)
                     string loc_res = lua_tostring(L,-1);
                     auto loc_data = MinigamePersData();
                     loc_data.id = it->id;
-                    loc_data.Wearer = it->Wearer->GetHandle().native_handle();
+                    loc_data.Actor  = it->Actor->GetHandle().native_handle();
                     loc_data.Helper = it->Helper ? it->Helper->GetHandle().native_handle() : 0;
-                    loc_data.DeviceHandle = it->Device.obj->GetHandle();
-                    //loc_data.MinigameName = it->Setting->config.name;
+
+                    if (it->Type == MinigameType::eDevice)
+                    {
+                        loc_data.DeviceHandle = it->Device.obj->GetHandle();
+                    }
+
                     if (it->Setting->config.name.size() <= 32)
                     {
                         strcpy_s<32>(loc_data.MinigameName,it->Setting->config.name.c_str());
@@ -843,15 +1007,15 @@ void UD::MinigameManager::OnGameSaved(SKSE::SerializationInterface* serde)
                         ERROR("Minigame Context {} is too long to be stored!",it->Setting->config.name)
                         continue;
                     }
-                        
+                    
+                    loc_data.Type     = it->Type;
                     loc_data.DataSize = loc_res.size();
-
 
                     serde->WriteRecordData(&loc_data,sizeof(loc_data));
                     serde->WriteRecordData(loc_res.c_str(),loc_res.size());
 
-                    DEBUG("Minigame {}({}) saved, Base Data -> {}",it->Setting->config.name,it->Wearer->GetName(),Utility::MemoryToString(&loc_data,sizeof(loc_data)))
-                    DEBUG("Minigame {}({}) saved, Minigame Runtime Data -> {}",it->Setting->config.name,it->Wearer->GetName(),loc_res)
+                    DEBUG("Minigame {}({}) saved, Base Data -> {}",it->Setting->config.name,it->Actor->GetName(),Utility::MemoryToString(&loc_data,sizeof(loc_data)))
+                    DEBUG("Minigame {}({}) saved, Minigame Runtime Data -> {}",it->Setting->config.name,it->Actor->GetName(),loc_res)
                 }
                 else
                 {
@@ -894,6 +1058,12 @@ bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
             a_config->config.abstract     = a_config->json->get_optional<bool>("abstract").get_value_or(false);
             a_config->config.skill        = a_config->json->get_optional<std::string>("skill").get_value_or("");
             
+            string loc_typeraw = a_config->json->get_optional<std::string>("type").get_value_or("none");
+            Utility::ToLower(loc_typeraw);
+            auto loc_type = MinigameTypeMapping.find(loc_typeraw);
+            if (loc_type == MinigameTypeMapping.end()) a_config->config.type = MinigameType::eNone;
+            else a_config->config.type = loc_type->second;
+
             auto loc_includes = a_config->json->get_child_optional("includes");
             if (loc_includes)
             {
@@ -908,7 +1078,6 @@ bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
                 }
             }
 
-
             auto loc_config = a_config->json->get_child_optional("config");
             if (loc_config.has_value())
             {
@@ -919,7 +1088,6 @@ bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
                     a_config->config.config_vars_def[cfg.first] = loc_val;
                 }
             }
-
 
             auto loc_exports = a_config->json->get_child_optional("export");
             if (loc_exports)
@@ -952,7 +1120,7 @@ bool UD::MinigameManager::InitMinigameConfig(MinigameSetting a_config)
             return false;
         };
 
-        DEBUG("Minigame config [{}] initiated, Script = {}, Ui = {}",a_config->config.name,a_config->config.script,a_config->config.uiobject)
+        DEBUG("Minigame config [{}] initiated, Script = {}, Ui = {}, Type = {}",a_config->config.name,a_config->config.script,a_config->config.uiobject,(uint8_t)a_config->config.type)
         return true;
     }
     ERROR("Error reading minigame config")
@@ -1023,18 +1191,33 @@ void UD::MinigameManager::UpdateMinigame(MinigameData& a_data, float a_delta)
 
 void UD::MinigameManager::PushMinigameData(lua_State* L, MinigameData& a_data)
 {
-    Lua::PushTable(L,
+    if (a_data.Type == MinigameType::eDevice)
     {
-        {"Wearer",a_data.Wearer},
-        {"Helper",a_data.Helper},
-        {"ID",a_data.Device.id},
-        {"RD",a_data.Device.rd},
-        {"DeviceObj",a_data.Device.obj.get()},
-        {"Json",a_data.Setting->json.get()},
-        {"Context",a_data.Context},
-        {"MinigameId",(lua_Integer)a_data.id},
-        {"ConfigId",(lua_Integer)a_data.Setting->id}
-    });
+        Lua::PushTable(L,
+        {
+            {"Actor",a_data.Actor},
+            {"Helper",a_data.Helper},
+            {"ID",a_data.Device.id},
+            {"RD",a_data.Device.rd},
+            {"DeviceObj",a_data.Device.obj.get()},
+            {"Json",a_data.Setting->json.get()},
+            {"Context",a_data.Context},
+            {"MinigameId",(lua_Integer)a_data.id},
+            {"ConfigId",(lua_Integer)a_data.Setting->id}
+        });
+    }
+    else
+    {
+        Lua::PushTable(L,
+        {
+            {"Actor",a_data.Actor},
+            {"Helper",a_data.Helper},
+            {"Json",a_data.Setting->json.get()},
+            {"Context",a_data.Context},
+            {"MinigameId",(lua_Integer)a_data.id},
+            {"ConfigId",(lua_Integer)a_data.Setting->id}
+        });
+    }
 }
 
 UD::MinigameDataPtr UD::MinigameManager::GetMinigameByName(string a_name)
@@ -1068,6 +1251,7 @@ void UD::MinigameManager::SetMinigameBases()
         }
     }
 
+    // Set missing variables from parent
     for(auto [path,setting] : _jsoncache)
     {
         if (setting->config.script == "")
@@ -1087,6 +1271,24 @@ void UD::MinigameManager::SetMinigameBases()
                 DEBUG("[{}] Set script to {}",setting->config.name,setting->config.script)
             }
             else ERROR("[{}] Failed to find any script",setting->config.name)
+        }
+        if (setting->config.type == MinigameType::eNone)
+        {
+            MinigameSetting loc_minigame = setting->base;
+            while(loc_minigame)
+            {
+                if (loc_minigame->config.type != MinigameType::eNone)
+                {
+                    setting->config.type = loc_minigame->config.type;
+                    break;
+                }
+                loc_minigame = loc_minigame->base;
+            }
+            if (setting->config.type != MinigameType::eNone)
+            {
+                DEBUG("[{}] Set type to {}",setting->config.name,(uint8_t)setting->config.type)
+            }
+            else ERROR("[{}] Failed to find any type",setting->config.name)
         }
     }
 }
@@ -1212,7 +1414,7 @@ void UD::MinigameManager::LoadSavedMinigames()
         MinigameData loc_data;
         loc_data.id = it.Header.id;
         
-        loc_data.Wearer = RE::Actor::LookupByHandle(it.Header.Wearer).get();
+        loc_data.Actor  = RE::Actor::LookupByHandle(it.Header.Actor).get();
         loc_data.Helper = RE::Actor::LookupByHandle(it.Header.Helper).get();
         loc_data.Device.obj = Utility::GetObjectByHandle(it.Header.DeviceHandle,"ud_customdevice_renderscript");
         if (loc_data.Device.obj)
@@ -1244,6 +1446,7 @@ void UD::MinigameManager::LoadSavedMinigames()
         }
 
         loc_data.State = it.Header.State;
+        loc_data.Type = it.Header.Type;
 
         loc_data.id = _minigameCntr;
         _minigameCntr++;

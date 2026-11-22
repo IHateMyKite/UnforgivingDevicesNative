@@ -47,6 +47,8 @@ namespace UD
         std::vector<ButtonCallback> ParseCallbacks(std::vector<std::string> a_callbacks);
         void AddDeviceToList(RE::Actor* a_wearer, RE::Actor* a_helper, RE::TESObjectARMO* a_rd, Object a_obj, std::vector<std::string>& a_list);
 
+        void CreateActorMinigames(std::string& a_input, bool a_sep, RE::Actor* a_wearer, RE::Actor* a_helper);
+
         void CreateValueDetail(std::string& a_input, bool a_sep, std::string a_name, std::string a_value, std::string a_id);
 
         static bool ViewReady;

@@ -53,7 +53,7 @@ UD::VariableValue UD::GetVariableRaw(void* a_source, VariableDetails a_var)
 
         loc_res = ParsePapVar(loc_var);
     }
-    else if (a_var.Owner == "wearer" || a_var.Owner == "helper")
+    else if (a_var.Owner == "actor" || a_var.Owner == "helper")
     {
         RE::Actor* loc_actor = reinterpret_cast<RE::Actor*>(a_source);
         const auto loc_av = RE::ActorValueList::GetSingleton()->LookupActorValueByName(a_var.Name.c_str());
@@ -150,7 +150,7 @@ UD::VariableValue UD::SetVariableRaw(void* a_source, VariableDetails a_var, Vari
         }
 
     }
-    else if (a_var.Owner == "wearer" || a_var.Owner == "helper")
+    else if (a_var.Owner == "actor" || a_var.Owner == "helper")
     {
         RE::Actor* loc_actor = reinterpret_cast<RE::Actor*>(a_source);
         auto loc_val = boost::lexical_cast<float>(a_val.Value);

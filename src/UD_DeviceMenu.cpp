@@ -163,6 +163,8 @@ namespace UD
             }
             loc_arg += "callbacks: [" + boost::join(loc_buttonNames,",") + "],";
 
+            CreateActorMinigames(loc_arg,true,a_actor,a_helper);
+
             loc_arg += "devices: " + loc_devicestr;
             loc_arg += "}";
             std::string loc_call = std::format("InitDeviceList({})",loc_arg);
@@ -215,6 +217,8 @@ namespace UD
                 loc_buttonNames[i] = tmp_callback;
             }
             loc_arg += "callbacks: [" + boost::join(loc_buttonNames,",") + "],";
+
+            CreateActorMinigames(loc_arg,true,a_actor,a_helper);
 
             loc_arg += "devices: " + loc_devicestr;
             loc_arg += "}";
@@ -296,11 +300,20 @@ namespace UD
 
     void DeviceMenu::StartMinigame(int a_indxDev, int a_minId, string a_cntx)
     {
-        auto loc_dev = _devMenuData.List[a_indxDev];
+        
         MinigameSetting loc_min;
         if (MinigameManager::GetSingleton()->GetMinigameById(a_minId,loc_min))
         {
-            MinigameManager::GetSingleton()->StartMinigame(loc_min,_devMenuData.Wearer,_devMenuData.Helper,loc_dev.id,a_cntx);
+            if(a_indxDev != -1)
+            {
+                auto loc_dev =  _devMenuData.List[a_indxDev];
+                MinigameManager::GetSingleton()->StartMinigame(loc_min,_devMenuData.Wearer,_devMenuData.Helper,loc_dev.id,a_cntx);
+            }
+            else
+            {
+                MinigameManager::GetSingleton()->StartMinigame(loc_min,_devMenuData.Wearer,_devMenuData.Helper,a_cntx);
+            }
+
         }
         HideMenu(_currentMenu);
     }
@@ -430,6 +443,49 @@ namespace UD
             _devMenuData.List.push_back({a_obj,loc_id,a_rd});
             a_list.push_back(loc_arg);
         }
+    }
+
+    void DeviceMenu::CreateActorMinigames(std::string& a_input, bool a_sep, RE::Actor* a_wearer, RE::Actor* a_helper)
+    {
+        std::vector<std::string> loc_minigamelist;
+        auto loc_minigames = MinigameManager::GetSingleton()->GetListOfMinigames(a_wearer,a_helper);
+        for (auto&& min : loc_minigames)
+        {
+            std::string loc_minname = min->config.name;
+            std::string loc_mindesc = min->config.description;
+            if (loc_minname != "")
+            {
+                uint32_t    loc_state   = MinigameManager::GetSingleton()->GetMinigameCondition(a_wearer,a_helper,min);
+                string      loc_context = MinigameManager::GetSingleton()->GetMinigameContexts(a_wearer,a_helper,min);
+                if (loc_context != "")
+                {
+                    auto loc_options = Utility::DeserializeJson(std::format("{}",loc_context));
+                    bool loc_optionavailable = false;
+                    for(auto&& [key,val] : loc_options)
+                    {
+                        int loc_optionstate = val.get_optional<int>("state").get_value_or(0);
+                        if (loc_optionstate > 0)
+                        {
+                            loc_optionavailable = true;
+                            break;
+                        }
+                    }
+
+                    if (!loc_optionavailable) loc_state = 0;
+
+                    std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {},context: {}}}",loc_minname,loc_mindesc,loc_state,min->id,loc_context);
+                    loc_minigamelist.push_back(loc_minclass);
+                }
+                else
+                {
+                    std::string loc_minclass = std::format("{{name: \"{}\",desc: \"{}\",state: {},id: {}}}",loc_minname,loc_mindesc,loc_state,min->id);
+                    loc_minigamelist.push_back(loc_minclass);
+                }
+            }
+        }
+        std::string loc_minstr = "minigames: [" + boost::join(loc_minigamelist,",") + "]";
+        a_input += loc_minstr;
+        if(a_sep) a_input += ",";
     }
 
     void DeviceMenu::CreateValueDetail(std::string& a_input,bool a_sep,std::string a_name, std::string a_value, std::string a_style)

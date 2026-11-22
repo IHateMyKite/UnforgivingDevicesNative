@@ -178,6 +178,14 @@ void Lua::RegisterHostFunctions(lua_State* L)
     lua_register(L,"Host_GetSaveConfig",HostFunctions::lua_GetSaveConfig);
     lua_register(L,"Host_GetRegisteredActions",HostFunctions::lua_GetRegisteredActions);
     lua_register(L,"Host_GetMinigameSkillMult",HostFunctions::lua_GetMinigameSkillMult);
+
+    // ORS
+    lua_register(L,"Host_AddOrgasmChange",HostFunctions::lua_AddOrgasmChange);
+    lua_register(L,"Host_RemoveOrgasmChange",HostFunctions::lua_RemoveOrgasmChange);
+    lua_register(L,"Host_UpdateOrgasmChangeVar",HostFunctions::lua_UpdateOrgasmChangeVar);
+    lua_register(L,"Host_GetOrgasmChangeVar",HostFunctions::lua_GetOrgasmChangeVar);
+    lua_register(L,"Host_GetOrgasmProgress",HostFunctions::lua_GetOrgasmProgress);
+
 }
 
 bool Lua::PushTable(lua_State* L, std::vector<LuaVariable> vars)
@@ -464,7 +472,7 @@ int Lua::HostFunctions::lua_GetVariableValue(lua_State* L)
     std::string         loc_var     = lua_tostring(L,2);
     UD::VariableDetails loc_det     = UD::ParseVariable(loc_var);
 
-    LuaVariable loc_wearerVar("Wearer",(void*)nullptr);
+    LuaVariable loc_wearerVar("Actor",(void*)nullptr);
     GetTable(L,1,loc_wearerVar);
     LuaVariable loc_helperVar("Helper",(void*)nullptr);
     GetTable(L,1,loc_helperVar);
@@ -479,7 +487,7 @@ int Lua::HostFunctions::lua_GetVariableValue(lua_State* L)
     {
         loc_owner = loc_device;
     }
-    else if (loc_det.Owner == "wearer" && loc_wearer)
+    else if (loc_det.Owner == "actor" && loc_wearer)
     {
         loc_owner = loc_wearer;
     }
@@ -512,13 +520,13 @@ int Lua::HostFunctions::lua_UpdateVariableValue(lua_State* L)
     std::string         loc_var     = lua_tostring(L,2);
     UD::VariableDetails loc_det     = UD::ParseVariable(loc_var);
 
-    LuaVariable loc_wearerVar("Wearer",(void*)nullptr);
-    GetTable(L,1,loc_wearerVar);
+    LuaVariable loc_actorVar("Actor",(void*)nullptr);
+    GetTable(L,1,loc_actorVar);
     LuaVariable loc_helperVar("Helper",(void*)nullptr);
     GetTable(L,1,loc_helperVar);
     LuaVariable loc_deviceVar("DeviceObj",(void*)nullptr);
     GetTable(L,1,loc_deviceVar);
-    RE::Actor*  loc_wearer      = *(RE::Actor**)&loc_wearerVar.Value;
+    RE::Actor*  loc_actor       = *(RE::Actor**)&loc_actorVar.Value;
     RE::Actor*  loc_helper      = *(RE::Actor**)&loc_helperVar.Value;
     ObjectPtr*   loc_device     = *(ObjectPtr**)&loc_deviceVar.Value;
 
@@ -527,9 +535,9 @@ int Lua::HostFunctions::lua_UpdateVariableValue(lua_State* L)
     {
         loc_owner = loc_device;
     }
-    else if (loc_det.Owner == "wearer" && loc_wearer)
+    else if (loc_det.Owner == "actor" && loc_actor)
     {
-        loc_owner = loc_wearer;
+        loc_owner = loc_actor;
     }
     else if (loc_det.Owner == "helper" && loc_helper)
     {
@@ -858,7 +866,7 @@ int Lua::HostFunctions::lua_GetDeviceAccesibility(lua_State* L)
         return 1;
     }
 
-    LuaVariable loc_wearerVar("Wearer",(void*)nullptr);
+    LuaVariable loc_wearerVar("Actor",(void*)nullptr);
     GetTable(L,1,loc_wearerVar);
     LuaVariable loc_helperVar("Helper",(void*)nullptr);
     GetTable(L,1,loc_helperVar);
@@ -1154,8 +1162,121 @@ int Lua::HostFunctions::lua_GetMinigameSkillMult(lua_State* L)
 
     float loc_res = 1.0f;
 
-    loc_res *= UD::SkillManager::GetSingleton()->GetSkillMult(loc_data->Wearer,loc_data->Setting->config.skill);
+    loc_res *= UD::SkillManager::GetSingleton()->GetSkillMult(loc_data->Actor,loc_data->Setting->config.skill);
     loc_res *= UD::SkillManager::GetSingleton()->GetSkillMult(loc_data->Helper,loc_data->Setting->config.skill);
+
+    lua_pushnumber(L,loc_res);
+    return 1;
+}
+
+int Lua::HostFunctions::lua_AddOrgasmChange(lua_State* L)
+{
+    if (!lua_isuserdata(L,1) 
+    ||  !lua_isstring(L,2)
+    ||  !lua_isinteger(L,3)
+    ||  !lua_isinteger(L,4)
+    ||  !lua_isnumber(L,5)
+    ||  !lua_isnumber(L,7)
+    ||  !lua_isnumber(L,8)
+    ||  !lua_isnumber(L,9)
+    ||  !lua_isnumber(L,10))
+    {
+        ERROR("lua_AddOrgasmChange - Incorrect variables passed!")
+        lua_pushboolean(L,false);
+        return 1;
+    }
+
+    RE::Actor* loc_actor = (RE::Actor*)lua_touserdata(L,1);
+    string loc_key = lua_tostring(L,2);
+    int loc_mod = lua_tointeger(L,3);
+    int loc_zones = lua_tointeger(L,4);
+    float loc_or = lua_tonumber(L,5);
+    float loc_orm = lua_tonumber(L,6);
+    float loc_orf = lua_tonumber(L,7);
+    float loc_orc = lua_tonumber(L,8);
+    float loc_orr = lua_tonumber(L,9);
+    float loc_orrm = lua_tonumber(L,10);
+    bool loc_res = ORS::AddOrgasmChange(nullptr,loc_actor,loc_key,loc_mod,loc_zones,loc_or,loc_orm,loc_orf,loc_orc,loc_orr,loc_orrm);
+
+    lua_pushboolean(L,loc_res);
+    return 1;
+}
+
+int Lua::HostFunctions::lua_RemoveOrgasmChange(lua_State* L)
+{
+    if (!lua_isuserdata(L,1) 
+    ||  !lua_isstring(L,2))
+    {
+        ERROR("lua_RemoveOrgasmChange - Incorrect variables passed!")
+        lua_pushboolean(L,false);
+        return 1;
+    }
+
+    RE::Actor* loc_actor = (RE::Actor*)lua_touserdata(L,1);
+    string loc_key = lua_tostring(L,2);
+    bool loc_res = ORS::RemoveOrgasmChange(nullptr,loc_actor,loc_key);
+
+    lua_pushboolean(L,loc_res);
+    return 1;
+}
+
+int Lua::HostFunctions::lua_UpdateOrgasmChangeVar(lua_State* L)
+{
+    if (!lua_isuserdata(L,1) 
+    ||  !lua_isstring(L,2)
+    ||  !lua_isinteger(L,3)
+    ||  !lua_isnumber(L,4)
+    ||  !lua_isinteger(L,5))
+    {
+        ERROR("lua_UpdateOrgasmChangeVar - Incorrect variables passed!")
+        lua_pushboolean(L,false);
+        return 1;
+    }
+
+    RE::Actor* loc_actor = (RE::Actor*)lua_touserdata(L,1);
+    string loc_key = lua_tostring(L,2);
+    int loc_var = lua_tointeger(L,3);
+    float loc_val = lua_tonumber(L,4);
+    int loc_mod = lua_tointeger(L,5);
+    bool loc_res = ORS::UpdateOrgasmChangeVar(nullptr,loc_actor,loc_key,loc_var,loc_val,loc_mod);
+
+    lua_pushboolean(L,loc_res);
+    return 1;
+}
+
+int Lua::HostFunctions::lua_GetOrgasmChangeVar(lua_State* L)
+{
+    if (!lua_isuserdata(L,1) 
+    ||  !lua_isstring(L,2)
+    ||  !lua_isinteger(L,3))
+    {
+        ERROR("lua_GetOrgasmChangeVar - Incorrect variables passed!")
+        lua_pushnumber(L,0.0);
+        return 1;
+    }
+
+    RE::Actor* loc_actor = (RE::Actor*)lua_touserdata(L,1);
+    string loc_key = lua_tostring(L,2);
+    int loc_var = lua_tointeger(L,3);
+    float loc_res = ORS::GetOrgasmChangeVar(nullptr,loc_actor,loc_key,loc_var);
+
+    lua_pushnumber(L,loc_res);
+    return 1;
+}
+
+int Lua::HostFunctions::lua_GetOrgasmProgress(lua_State* L)
+{
+    if (!lua_isuserdata(L,1)
+    ||  !lua_isinteger(L,2))
+    {
+        ERROR("lua_GetOrgasmProgress - Incorrect variables passed!")
+        lua_pushnumber(L,0.0);
+        return 1;
+    }
+
+    RE::Actor* loc_actor = (RE::Actor*)lua_touserdata(L,1);
+    int loc_mod = lua_tointeger(L,2);
+    float loc_res = ORS::GetOrgasmProgress(nullptr,loc_actor,loc_mod);
 
     lua_pushnumber(L,loc_res);
     return 1;

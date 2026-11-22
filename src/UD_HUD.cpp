@@ -23,7 +23,6 @@ void UD::HudManager::Reload(bool a_hotreload)
             _viewReady = false;
         }
 
-
         std::string loc_devconfpath = RelToAbsPath("UD\\Hud");
         std::regex loc_regex(R"regex(.*\\(.*\.[jJ][sS][oO][nN]))regex");
         uint32_t loc_id = 0;
