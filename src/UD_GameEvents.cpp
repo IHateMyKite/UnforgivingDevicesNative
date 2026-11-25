@@ -341,6 +341,7 @@ namespace UD
         auto udpatchnmkw = dataHandler->LookupForm<RE::BGSKeyword>(0x1579be, "UnforgivingDevices.esp");
         auto udmq = dataHandler->LookupForm<RE::TESQuest>(0x15e73c, "UnforgivingDevices.esp");
         if (!zadinvkw || !udinvkw || !udpatchkw || !udkw || !udpatchnmkw || !udmq || !zadlibs) {
+            ERROR("Failed to get all keywords for patcher");
             return RenderPatchInfo{nullptr, 0x0000FFFF00000000};
         }
         
@@ -356,11 +357,11 @@ namespace UD
             RE::VMHandle dkw_handle = 0x0000FFFF00000000;
             auto& props = script.props;
             for (uint32_t p_i = 0; p_i < prop_count; p_i += 1) {
-                if (props[p_i].name == "deviceRendered") {
+                if (props[p_i].name == RE::BSFixedString("deviceRendered")) {
                     render_handle = props[p_i].raw_value;
                     
                 }
-                if (props[p_i].name == "deviceInventory") {
+                if (props[p_i].name == RE::BSFixedString("deviceInventory")) {
                     inv_handle = props[p_i].raw_value;
                 }
                 if (auto render_armor = RE::TESForm::LookupByID<RE::TESObjectARMO>(render_handle & 0xFFFFFFFF)) {
@@ -375,10 +376,10 @@ namespace UD
                         }
                     }
                 }
-                if (props[p_i].name == "libs") {
+                if (props[p_i].name == RE::BSFixedString("libs")) {
                     libs_handle = props[p_i].raw_value;
                 }
-                if (props[p_i].name == "zad_DeviousDevice") {
+                if (props[p_i].name == RE::BSFixedString("zad_DeviousDevice")) {
                     dkw_handle = props[p_i].raw_value;
                 }
             }
@@ -432,6 +433,7 @@ namespace UD
         auto udpatchnmkw = dataHandler->LookupForm<RE::BGSKeyword>(0x1579be, "UnforgivingDevices.esp");
         auto udmq = dataHandler->LookupForm<RE::TESQuest>(0x15e73c, "UnforgivingDevices.esp");
         if (!zadinvkw || !udinvkw || !udpatchkw || !udkw || !udpatchnmkw || !udmq || !zadlibs || !zadquestitem) {
+            ERROR("Failed to get all keywords for patcher");
             return;
         }
         
@@ -480,11 +482,14 @@ namespace UD
             auto scripts=((RE::BSTSmallSharedArray<RawScript*>*)&p.second);
             ERROR("Patcher New Game Handle {:016X} Script Count {}", p.first, scripts->size());
             for (auto &s : *scripts) {
-                if (s->unk_one==1) {
-                    ERROR("Patcher New Game Handle {:016X} Script Name {}", p.first, s->script_name);
-                    patch_results.push_back(PatchInvScript(*s));
-                    
+                //if (s->unk_one==1) {
+                if ((s->unk_one&0xFFFFFFFF) != 1) {
+                    ERROR("Patcher New Game Handle {:016X} Script Name {} unk_one {:08X}", p.first, s->script_name, s->unk_one&0xFFFFFFFF);
                 }
+                ERROR("Patcher New Game Handle {:016X} Script Name {}", p.first, s->script_name);
+                patch_results.push_back(PatchInvScript(*s));
+                    
+                //}
             }
         }
         for (auto &r : patch_results) {
@@ -510,7 +515,7 @@ namespace UD
     void OnMessageReceived(SKSE::MessagingInterface::Message* a_msg)
     {
         Config::GetSingleton()->Setup();
-        bool nativeDDNGPatcher=Config::GetSingleton()->GetVariable<bool>("General.bNativeDDNGPatcher",false);
+        bool nativeDDNGPatcher=Config::GetSingleton()->GetVariable<bool>("General.bNativeDDNGPatcher",true);
         switch(a_msg->type)
         {
             case SKSE::MessagingInterface::kInputLoaded:
