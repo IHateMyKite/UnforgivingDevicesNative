@@ -475,8 +475,8 @@ namespace UD
             ERROR("Patcher New Game Handle {:016X} Script Count {}", p.first, scripts->size());
             for (auto &s : *scripts) {
                 //if (s->unk_one==1) {
-                if (s->unk_one != 1) {
-                    ERROR("Patcher New Game Handle {:016X} Script Name {} unk_one {:08X}", p.first, s->script_name, s->unk_one);
+                if ((s->unk_one&0xFFFFFFFF) != 1) {
+                    ERROR("Patcher New Game Handle {:016X} Script Name {} unk_one {:08X}", p.first, s->script_name, s->unk_one&0xFFFFFFFF);
                 }
                 ERROR("Patcher New Game Handle {:016X} Script Name {}", p.first, s->script_name);
                 patch_results.push_back(PatchInvScript(*s));
