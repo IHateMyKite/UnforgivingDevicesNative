@@ -338,7 +338,7 @@ namespace UD
         }
         
         if (inventoryScriptMap.contains(std::string(script.script_name))) {
-
+            
             uint32_t prop_count = ((script.prop_dword_count&0xFFFFFFFF) / 8);
             auto new_inv_script_name = RE::BSFixedString(inventoryScriptMap[std::string(script.script_name)]);
             auto new_render_script_name = RE::BSFixedString(renderScriptMap[std::string(script.script_name)]);
@@ -441,19 +441,6 @@ namespace UD
             if (ar->HasKeyword(zadinvkw)) {
                 zad_inv_armor_ids.insert(ar->formID);
             }
-            for (auto &kw : ar->GetKeywords()) {
-                if (!kw) {
-                    continue;
-                }
-                if (!kw->GetFile()) {
-                    continue;
-                }
-                if (RE::BSFixedString(kw->GetFile()->GetFilename()) ==
-                    RE::BSFixedString("Devious Devices - Integration.esm")) {
-                    ar->formFlags |= RE::TESForm::RecordFlags::kFormRetainsID;
-                    //ar->InitItemImpl();
-                }
-            }
         }
         if (skip_scripts) {
             return;
@@ -466,7 +453,7 @@ namespace UD
         RE::SkyrimVM::GetSingleton()->GetImpl()->GetObjectBindPolicy()->attachedScriptsLock.Lock();
         std::vector <RenderPatchInfo> patch_results;
         for (auto &p : attached_scripts) {
-
+            
             if (!zad_inv_armor_ids.contains(RE::FormID(p.first & 0xFFFFFFFF))) {
                 continue;
             }
@@ -474,30 +461,25 @@ namespace UD
             auto scripts=((RE::BSTSmallSharedArray<RawScript*>*)&p.second);
             ERROR("Patcher New Game Handle {:016X} Script Count {}", p.first, scripts->size());
             for (auto &s : *scripts) {
-                //if (s->unk_one==1) {
-                if ((s->unk_one&0xFFFFFFFF) != 1) {
-                    ERROR("Patcher New Game Handle {:016X} Script Name {} unk_one {:08X}", p.first, s->script_name, s->unk_one&0xFFFFFFFF);
-                }
                 ERROR("Patcher New Game Handle {:016X} Script Name {}", p.first, s->script_name);
                 patch_results.push_back(PatchInvScript(*s));
-                    
-                //}
             }
         }
         for (auto &r : patch_results) {
             if (r.render_raw_script && r.render_handle != 0x0000FFFF00000000) {
-                auto script_array =
-                    (RE::BSTSmallSharedArray<RawScript *> *)_aligned_malloc(0x20,0x20);
-                memset(script_array, 0, 0x20);
-                (*script_array)[0] = r.render_raw_script;
-                *(unsigned int *)script_array = 0x1;
-                if (attached_scripts.contains(r.render_handle)) {
-                    (attached_scripts.find(r.render_handle))->second = *script_array;
-                } else {
-                    attached_scripts.insert(RE::BSTTuple(r.render_handle, *script_array));
-                    RE::SkyrimVM::GetSingleton()->GetImpl()->GetObjectBindPolicy()->Unk_03(r.render_handle);
+                if (auto ar=RE::TESForm::LookupByID<RE::TESObjectARMO>(r.render_handle & 0xFFFFFFFF)) {
+                    ar->formFlags |= RE::TESForm::RecordFlags::kFormRetainsID;
+                    auto script_array =
+                        (RE::BSTSmallSharedArray<RawScript *> *)_aligned_malloc(0x20,0x20);
+                    memset(script_array, 0, 0x20);
+                    (*script_array)[0] = r.render_raw_script;
+                    *(unsigned int *)script_array = 0x1;
+                    if (attached_scripts.contains(r.render_handle)) {
+                        (attached_scripts.find(r.render_handle))->second = *script_array;
+                    } else {
+                        attached_scripts.insert(RE::BSTTuple(r.render_handle, *script_array));
+                    }
                 }
-
             }
          
         }
@@ -507,14 +489,13 @@ namespace UD
     void OnMessageReceived(SKSE::MessagingInterface::Message* a_msg)
     {
         Config::GetSingleton()->Setup();
-        bool nativeDDNGPatcher=Config::GetSingleton()->GetVariable<bool>("General.bNativeDDNGPatcher",true);
+        bool nativeDDNGPatcher=Config::GetSingleton()->GetVariable<bool>("General.bNativeDDNGPatcher",false);
         switch(a_msg->type)
         {
             case SKSE::MessagingInterface::kInputLoaded:
                 RE::BSInputDeviceManager::GetSingleton()->AddEventSink(KeyEventSink::GetSingleton());
                 break;
             case SKSE::MessagingInterface::kDataLoaded:
-                
                 if (nativeDDNGPatcher) {
                     InitScriptMaps();
                     PatcherNewGame(false);
@@ -522,7 +503,6 @@ namespace UD
                 break;
             case SKSE::MessagingInterface::kPostLoadGame:
                 if (!DeviousDevicesAPI::LoadAPI()) ERROR("Could not load DD API!")
-                // PatcherNewGame();
                 if (nativeDDNGPatcher) {
                     PatcherNewGame(true);
                 }
