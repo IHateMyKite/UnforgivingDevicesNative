@@ -1,12 +1,14 @@
 #include <UD_Updater.h>
 
+#include <UD_Utility.h>
 #include <UD_Config.h>
 #include <UD_ControlManager.h>
-#include <UD_MinigameEffect.h>
 #include <UD_ActorSlotManager.h>
 #include <UD_PlayerStatus.h>
 #include <UD_ModuleManager.h>
 #include <OrgasmSystem/OrgasmManager.h>
+#include <UD_MinigameManager.h>
+#include <UD_HUD.h>
 
 SINGLETONBODY(UD::UpdateManager)
 
@@ -37,6 +39,7 @@ namespace UD
 
     void UpdateManager::Update(float a_delta)
     {
+        //DEBUG("Update called")
         static RE::PlayerCharacter* loc_player = RE::PlayerCharacter::GetSingleton();
 
         PlayerStatus::GetSingleton()->Update();
@@ -70,10 +73,8 @@ namespace UD
             t4mutex = false;
         }).detach();
 
-        MinigameEffectManager::GetSingleton()->UpdateMinigameEffect(loc_player,a_delta);
-        MinigameEffectManager::GetSingleton()->UpdateMeters(a_delta);
-
-        //ControlManager::GetSingleton()->UpdateControl();
+        MinigameManager::GetSingleton()->Update(a_delta);
+        HudManager::GetSingleton()->Update(a_delta);
     }
 
     void UpdateManager::PlayerUpdatePatched(RE::Actor* a_this, float a_delta)

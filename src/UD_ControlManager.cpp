@@ -5,7 +5,7 @@
 #include <UD_UI.h>
 #include <UD_ModEvents.h>
 #include <UD_PapyrusDelegate.h>
-
+#include <UD_MinigameManager.h>
 #include <shared_mutex>
 
 SINGLETONBODY(UD::KeyEventSink)
@@ -41,6 +41,8 @@ void UD::ControlManager::Setup()
         AddToFilter(_freeCamFilter,_disableids);
 
         SKSE::GetCameraEventSource()->AddEventSink(CameraEventSink::GetSingleton());
+
+        ParseControlConfig();
 
         LOG("ControlManager installed")
     }
@@ -252,16 +254,6 @@ void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns
             auto loc_param = GetStringParamAllInter<std::string>(a_argStr,",");
             if (loc_param.size() != 2) return nullptr;
             float* loc_res = nullptr;
-            if (loc_param[0] == "0") 
-            {
-                loc_res = new float(MeterManager::GetMeterValueSkyUi(loc_param[1]));
-                MeterManager::SetMeterValueSkyUi(loc_param[1],0.0f);
-            }
-            else if (loc_param[0] == "1") 
-            {
-                loc_res = new float(MeterManager::GetMeterValueIWW(std::stoi(loc_param[1])));
-                MeterManager::SetMeterValueIWW(std::stoi(loc_param[1]),0.0f);
-            }
             return loc_res;
         };
         break;
@@ -271,6 +263,59 @@ void UD::ControlManager::AddArgument(DeviceCallback* a_callback, CallbackArgFuns
     }
 
     a_callback->args.push_back({a_funtype,loc_atype,a_argStr,a_argForm,loc_fun});
+}
+
+void UD::ControlManager::ParseControlConfig()
+{
+    std::string loc_confpath = RelToAbsPath("UD\\Controls");
+    std::regex loc_regex(R"regex(.*\\(.*\.[jJ][sS][oO][nN]))regex");
+    for (const auto & entry : std::filesystem::directory_iterator(loc_confpath))
+    {
+        std::string loc_path = entry.path().string();
+    
+        if (entry.is_regular_file() && std::regex_match(loc_path,loc_regex)) 
+        {
+            const std::string loc_jsonname = std::regex_replace(loc_path,loc_regex,"$1");
+            std::shared_ptr<boost::property_tree::ptree> loc_json = std::shared_ptr<boost::property_tree::ptree>(new boost::property_tree::ptree);
+            try
+            {
+                boost::property_tree::read_json(loc_path, *loc_json.get());
+            }
+            catch(const std::exception& e)
+            {
+                ERROR("Error parsing json {} - {}",loc_jsonname,e.what())
+                continue;
+            }
+    
+            std::regex loc_regexname(R"regex((.*\\)(.*)(\.[jJ][sS][oO][nN]))regex");
+            const std::string loc_name = std::regex_replace(loc_path,loc_regexname,"$2");
+    
+            _jsoncache[loc_name] = loc_json;
+
+            auto loc_controls = loc_json->get_child("controls");
+            for (auto&& [path,val] : loc_controls)
+            {
+                Control loc_control;
+                InitConfig(val,loc_control);
+                _controls[loc_control.alias] = loc_control;
+            }
+        }
+    }
+    
+    DEBUG("=== Loaded device config files ===")
+    for (auto&& [alias,control] : _controls)
+    {
+        DEBUG("\t{} - {} / {}",alias, control.codekeyboard, control.codegamepad)
+    }
+}
+
+void UD::ControlManager::InitConfig(boost::property_tree::ptree& a_json, Control& a_control)
+{
+    a_control.alias = a_json.get_optional<std::string>("alias").get_value_or("missing");
+    a_control.codekeyboard = a_json.get_optional<int>("codekeyboard").get_value_or(0);
+    a_control.codegamepad = a_json.get_optional<int>("codegamepad").get_value_or(0);
+    a_control.namekeyboard = a_json.get_optional<string>("namekeyboard").get_value_or("MISSING");
+    a_control.namegamepad = a_json.get_optional<string>("namegamepad").get_value_or("MISSING");
 }
 
 void UD::ControlManager::RefreshFilter()
@@ -399,21 +444,25 @@ RE::BSEventNotifyControl UD::KeyEventSink::ProcessEvent(RE::InputEvent* const* e
 {
     if (_Cooldown) return RE::BSEventNotifyControl::kContinue; //on cooldown - return
     if (!eventPtr) return RE::BSEventNotifyControl::kContinue;
-    if (!ControlManager::GetSingleton()->HardcoreMode() && (!ControlManager::GetSingleton()->HaveDeviceCallbacks())) return RE::BSEventNotifyControl::kContinue; //no hardcore mode - return
-    
+
     auto* event = *eventPtr;
     if (!event) return RE::BSEventNotifyControl::kContinue;
 
     if (event->GetEventType() == RE::INPUT_EVENT_TYPE::kButton) 
     {
-        const auto*       loc_buttonEvent = event->AsButtonEvent();
+        auto*       loc_buttonEvent = event->AsButtonEvent();
         const RE::INPUT_DEVICE loc_Device = loc_buttonEvent->GetDevice();
         const uint32_t    loc_dxScanCode  = loc_buttonEvent->GetIDCode();
 
+        //DEBUG("Button pressed = {}",loc_dxScanCode)
+
+        MinigameManager::GetSingleton()->CheckActionCallback(loc_dxScanCode,loc_buttonEvent);
+
+        if (!ControlManager::GetSingleton()->HardcoreMode() && (!ControlManager::GetSingleton()->HaveDeviceCallbacks())) return RE::BSEventNotifyControl::kContinue; //no hardcore mode - return
+
         if (loc_buttonEvent->IsRepeating()) return RE::BSEventNotifyControl::kContinue;
 
-        static auto loc_utility = Utility::GetSingleton();
-        bool loc_ismenuopen = loc_utility->IsBlockingMenuOpen();
+        bool loc_ismenuopen = Utility::IsBlockingMenuOpen();
 
         if (loc_ismenuopen) return RE::BSEventNotifyControl::kContinue;
 

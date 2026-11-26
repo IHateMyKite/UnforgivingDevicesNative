@@ -103,12 +103,33 @@ RE::TESQuest* UD::ModuleManager::GetModuleByAlias(std::string a_alias)
 
     for (auto&& [handle,module] : _modules)
     {
-        std::string loc_alias = module.Alias;
+        std::string loc_alias = module->Alias;
         std::transform(loc_alias.begin(), loc_alias.end(), loc_alias.begin(), ::tolower);
 
         if (loc_alias == a_alias)
         {
-            return module.quest;
+            return module->quest;
+        }
+    }
+    return nullptr;
+}
+
+UD::ModulePtr UD::ModuleManager::GetModuleObjectByAlias(std::string a_alias)
+{
+    if (_WaitingForPapyrus)
+    {
+        return nullptr;
+    }
+    std::transform(a_alias.begin(), a_alias.end(), a_alias.begin(), ::tolower);
+
+    for (auto&& [handle,module] : _modules)
+    {
+        std::string loc_alias = module->Alias;
+        std::transform(loc_alias.begin(), loc_alias.end(), loc_alias.begin(), ::tolower);
+
+        if (loc_alias == a_alias)
+        {
+            return module;
         }
     }
     return nullptr;
@@ -121,11 +142,11 @@ std::vector<RE::TESQuest*> UD::ModuleManager::GetModules()
         return std::vector<RE::TESQuest*>();
     }
 
-    const std::vector<Module*> loc_modulesSorted = GetSortedModuleList();
+    const std::vector<ModulePtr> loc_modulesSorted = GetSortedModuleList();
 
     std::vector<RE::TESQuest*> loc_res;
 
-    std::for_each(loc_modulesSorted.begin(),loc_modulesSorted.end(),[&](Module* a_m){loc_res.push_back(a_m->quest);});
+    std::for_each(loc_modulesSorted.begin(),loc_modulesSorted.end(),[&](ModulePtr a_m){loc_res.push_back(a_m->quest);});
 
     return loc_res;
 }
@@ -137,7 +158,7 @@ std::vector<RE::TESQuest*> UD::ModuleManager::GetModuleDependency(RE::TESQuest* 
         return std::vector<RE::TESQuest*>();
     }
 
-    Module* loc_module = GetModuleByQuest(a_module);
+    ModulePtr loc_module = GetModuleByQuest(a_module);
     return loc_module->Dependency;
 }
 
@@ -150,8 +171,8 @@ std::vector<RE::TESQuest*> UD::ModuleManager::GetDependantModules(RE::TESQuest* 
 
     //Module* loc_module = GetModuleByQuest(a_module);
     std::vector<RE::TESQuest*> loc_res;
-    const std::vector<Module*> loc_modulesSorted = GetSortedModuleList();
-    std::for_each(loc_modulesSorted.begin(),loc_modulesSorted.end(),[&](Module* a_m)
+    const std::vector<ModulePtr> loc_modulesSorted = GetSortedModuleList();
+    std::for_each(loc_modulesSorted.begin(),loc_modulesSorted.end(),[&](ModulePtr a_m)
     {
         if (std::find(a_m->Dependency.begin(),a_m->Dependency.end(),a_module) == a_m->Dependency.end()) loc_res.push_back(a_m->quest);
     });
@@ -161,7 +182,7 @@ std::vector<RE::TESQuest*> UD::ModuleManager::GetDependantModules(RE::TESQuest* 
 
 void UD::ModuleManager::ResetModule(RE::TESQuest* a_module)
 {
-    Module* loc_module = GetModuleByQuest(a_module);
+    ModulePtr loc_module = GetModuleByQuest(a_module);
     loc_module->quest->ResetAndUpdate();
 }
 
@@ -183,11 +204,13 @@ std::vector<RE::TESQuest*> UD::ModuleManager::GetModulesByScript(std::string a_s
     }
     std::vector<RE::TESQuest*> loc_res;
 
+    std::transform(a_script.begin(), a_script.end(), a_script.begin(), ::tolower);
+
     for (auto&& [handle,module] : _modules)
     {
-        if (module.object.get() && PapyrusDelegate::GetSingleton()->HaveScriptBase(module.object->GetTypeInfo(),a_script))
+        if (module->object.get() && PapyrusDelegate::GetSingleton()->HaveScriptBase(module->object->GetTypeInfo(),a_script))
         {
-            loc_res.push_back(module.quest);
+            loc_res.push_back(module->quest);
         }
     }
     return loc_res;
@@ -213,8 +236,8 @@ std::vector<RE::BGSBaseAlias*> UD::ModuleManager::GetModulesAliasesByScript(std:
 
 void UD::ModuleManager::AddModule(RE::VMHandle a_handle, Module a_module)
 {
-    DEBUG("AddModule called")
-    _modules[a_handle] = a_module;
+    //DEBUG("AddModule called")
+    _modules[a_handle] = std::unique_ptr<Module>(new Module(a_module));
 }
 
 void UD::ModuleManager::UpdateModuleVariables()
@@ -222,25 +245,25 @@ void UD::ModuleManager::UpdateModuleVariables()
     //DEBUG("UpdateModuleVariables called")
     for (auto&& [handle,module] : _modules)
     {
-        auto loc_object     = module.object;
+        auto loc_object     = module->object;
         //module.Name         = (loc_object->GetProperty("MODULE_NAME")   != nullptr) ? loc_object->GetProperty("MODULE_NAME")->GetString()  : "NONAME";
-        module.Name         = module.quest->GetName();
-        module.Priority     = (loc_object->GetProperty("MODULE_PRIO")   != nullptr) ? loc_object->GetProperty("MODULE_PRIO")->GetUInt()  : 0x0U;
-        module.Alias        = (loc_object->GetProperty("MODULE_ALIAS")  != nullptr) ? loc_object->GetProperty("MODULE_ALIAS")->GetString()  : "";
-        module.Description  = (loc_object->GetProperty("MODULE_DESC")   != nullptr) ? loc_object->GetProperty("MODULE_DESC")->GetString()  : "";
-        module.SetupCalled  = (loc_object->GetVariable("_SetupCalled")  != nullptr) ? loc_object->GetVariable("_SetupCalled")->GetBool() : false;
-        module.SetupDone    = (loc_object->GetVariable("_SetupDone")    != nullptr) ? loc_object->GetVariable("_SetupDone")->GetBool()   : false;
-        module.ReloadCalled = (loc_object->GetVariable("_ReloadCalled") != nullptr) ? loc_object->GetVariable("_ReloadCalled")->GetBool()  : false;
-        module.ReloadDone   = (loc_object->GetVariable("_ReloadDone")   != nullptr) ? loc_object->GetVariable("_ReloadDone")->GetBool()  : false;
+        module->Name         = module->quest->GetName();
+        module->Priority     = (loc_object->GetProperty("MODULE_PRIO")   != nullptr) ? loc_object->GetProperty("MODULE_PRIO")->GetUInt()  : 0x0U;
+        module->Alias        = (loc_object->GetProperty("MODULE_ALIAS")  != nullptr) ? loc_object->GetProperty("MODULE_ALIAS")->GetString()  : "";
+        module->Description  = (loc_object->GetProperty("MODULE_DESC")   != nullptr) ? loc_object->GetProperty("MODULE_DESC")->GetString()  : "";
+        module->SetupCalled  = (loc_object->GetVariable("_SetupCalled")  != nullptr) ? loc_object->GetVariable("_SetupCalled")->GetBool() : false;
+        module->SetupDone    = (loc_object->GetVariable("_SetupDone")    != nullptr) ? loc_object->GetVariable("_SetupDone")->GetBool()   : false;
+        module->ReloadCalled = (loc_object->GetVariable("_ReloadCalled") != nullptr) ? loc_object->GetVariable("_ReloadCalled")->GetBool()  : false;
+        module->ReloadDone   = (loc_object->GetVariable("_ReloadDone")   != nullptr) ? loc_object->GetVariable("_ReloadDone")->GetBool()  : false;
 
-        module.Dependency.clear();
+        module->Dependency.clear();
         if (loc_object->GetVariable("MODULE_DEP") && loc_object->GetVariable("MODULE_DEP")->GetArray())
         {
             auto loc_array = loc_object->GetVariable("MODULE_DEP")->GetArray();
             for (auto&& it : *loc_array)
             {
                 RE::TESQuest* loc_quest = static_cast<RE::TESQuest*>(it.GetObject()->Resolve((RE::VMTypeID)RE::FormType::Quest));
-                module.Dependency.push_back(loc_quest);
+                module->Dependency.push_back(loc_quest);
             }
         }
     }
@@ -272,7 +295,7 @@ int UD::ModuleManager::CallSetup()
 
     const auto loc_vm = InternalVM::GetSingleton();
 
-    std::vector<Module*> loc_modulesSorted = GetSortedModuleList();
+    std::vector<ModulePtr> loc_modulesSorted = GetSortedModuleList();
 
 
     //DEBUG("Checking {} module(s) for setup",_modulesSorted.size())
@@ -360,7 +383,7 @@ int UD::ModuleManager::CallReload()
 
     const auto loc_vm = InternalVM::GetSingleton();
 
-    std::vector<Module*> loc_modulesSorted = GetSortedModuleList();
+    std::vector<ModulePtr> loc_modulesSorted = GetSortedModuleList();
     //DEBUG("Checking {} module(s) for reload",_modulesSorted.size())
 
     for (auto&& module : loc_modulesSorted)
@@ -369,7 +392,6 @@ int UD::ModuleManager::CallReload()
         //DEBUG("Checking if module {} is running",module->Alias)
         if (!module->ReloadCalled)
         {
-            DEBUG("Flag 0x{:04X}",module->quest->data.flags.underlying())
             auto loc_setupcalled = loc_object->GetVariable("_ReloadCalled");
             if (loc_setupcalled) loc_setupcalled->SetBool(true);
 
@@ -399,27 +421,27 @@ int UD::ModuleManager::CallReload()
     return 2;
 }
 
-std::vector<UD::Module*> UD::ModuleManager::GetSortedModuleList()
+std::vector<UD::ModulePtr> UD::ModuleManager::GetSortedModuleList()
 {
-    std::vector<Module*> loc_modulesSorted;
+    std::vector<ModulePtr> loc_modulesSorted;
     for (auto&& [handle,module] : _modules)
     {
-        loc_modulesSorted.push_back(&module);
+        loc_modulesSorted.push_back(module);
     }
 
     // Order modules by priority
-    std::sort(loc_modulesSorted.begin(),loc_modulesSorted.end(),[&](const Module * const a_m1,const Module * const a_m2) -> bool
+    std::sort(loc_modulesSorted.begin(),loc_modulesSorted.end(),[&](const ModulePtr a_m1,const ModulePtr a_m2) -> bool
     {
         return a_m1->Priority > a_m2->Priority;
     });
     return loc_modulesSorted;
 }
 
-UD::Module* UD::ModuleManager::GetModuleByQuest(RE::TESQuest* a_quest)
+UD::ModulePtr UD::ModuleManager::GetModuleByQuest(RE::TESQuest* a_quest)
 {
     for (auto&& [handle,module] : _modules)
     {
-        if (module.quest == a_quest) return &module;
+        if (module->quest == a_quest) return module;
     }
     return nullptr;
 }
@@ -428,7 +450,7 @@ bool UD::ModuleManager::IsQuestReady(RE::TESQuest* a_quest, bool a_checkreload)
 {
     if (a_quest == nullptr) return false;
     bool loc_ready = false;
-    Module* loc_module = GetModuleByQuest(a_quest);
+    ModulePtr loc_module = GetModuleByQuest(a_quest);
     if (loc_module)
     {
         auto loc_setupdonevar = loc_module->object->GetVariable("_SetupDone");
@@ -448,7 +470,7 @@ bool UD::ModuleManager::AllModulesReady()
     bool loc_res = true;
     for (auto&& [handle,module] : _modules)
     {
-        loc_res = loc_res && module.SetupDone && module.quest->IsRunning() && (module.quest->data.flags.underlying() & 0x0001U);
+        loc_res = loc_res && module->SetupDone && module->quest->IsRunning() && (module->quest->data.flags.underlying() & 0x0001U);
     }
     //DEBUG("AllModulesReady() -> {}",loc_res)
     return loc_res;
@@ -459,7 +481,7 @@ bool UD::ModuleManager::AllModulesReloaded()
     bool loc_res = true;
     for (auto&& [handle,module] : _modules)
     {
-        loc_res = loc_res && module.ReloadDone;
+        loc_res = loc_res && module->ReloadDone;
     }
     //DEBUG("AllModulesReloaded() -> {}",loc_res)
     return loc_res;
@@ -470,16 +492,16 @@ void UD::ModuleManager::ResetReloaded()
     _ReloadMessagePrinted = false;
     for (auto&& [handle,module] : _modules)
     {
-        auto loc_object = module.object;
+        auto loc_object = module->object;
         //DEBUG("Checking if module {} is running",module->Alias)
-        if (module.ReloadDone == true)
+        if (module->ReloadDone == true)
         {
             auto loc_reloadcalled = loc_object->GetVariable("_ReloadCalled");
             if (loc_reloadcalled) loc_reloadcalled->SetBool(false);
 
             auto loc_reloaddone = loc_object->GetVariable("_ReloadDone");
             if (loc_reloaddone) loc_reloaddone->SetBool(false);
-            DEBUG("Resetting reloaded module {}({})",module.Name,module.Alias)
+            DEBUG("Resetting reloaded module {}({})",module->Name,module->Alias)
         }
     }
 }

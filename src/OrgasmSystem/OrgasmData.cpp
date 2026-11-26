@@ -257,6 +257,8 @@ float ORS::OrgasmActorData::GetOrgasmVariable(OrgasmVariable a_variable)
         case vArousalRate:      return _RDATA.ArousalRatePersist;
         case vArousalRateMult:  return CalculateArousalRateMult();
         case vHornyLevel:       return _PDATA.HornyLevel;
+        case vOrgasmProgress:   return GetOrgasmProgress(0);
+        case vOrgasmProgress2:  return GetOrgasmProgress(1);
         default:                return 0.0f;
     };
 }
@@ -267,12 +269,6 @@ void ORS::OrgasmActorData::LinkActorToMeter(std::string a_path, MeterWidgetType 
     _RDATA.LinkedWidgetType   = a_type;
     _RDATA.LinkedWidgetId     = a_id; 
     _RDATA.LinkedWidgetUsed   = true;
-
-    switch (a_type)
-    {
-        case tSkyUi : UD::MeterManager::SetExtCalcSkyUi(_RDATA.LinkedWidgetPath,this,&OrgasmActorData::GetOrgasmProgressUI); break;
-        case tIWW   : UD::MeterManager::SetExtCalcIWW(a_id,this,&OrgasmActorData::GetOrgasmProgressUI); break;
-    }
 }
 
 std::string ORS::OrgasmActorData::GetHornyStatus()
@@ -303,13 +299,6 @@ bool ORS::OrgasmActorData::SetOrgasmFlags(int a_flags)
 void ORS::OrgasmActorData::UnlinkActorFromMeter()
 {
      _RDATA.LinkedWidgetUsed  = false;
-
-    switch (_RDATA.LinkedWidgetType)
-    {
-        case tSkyUi : UD::MeterManager::UnsetExtCalcSkyUi(_RDATA.LinkedWidgetPath); break;
-        case tIWW   : UD::MeterManager::UnsetExtCalcIWW(_RDATA.LinkedWidgetId); break;
-    }
-
     _RDATA.LinkedWidgetPath   = "";
     _RDATA.LinkedWidgetType   = tSkyUi;
     _RDATA.LinkedWidgetId     = 0; 
@@ -423,6 +412,17 @@ void ORS::OrgasmActorData::UpdateArousal(const float& a_delta)
         if (OSLAModifyArousal != nullptr)
         {
             _RDATA.Arousal = OSLAModifyArousal(_RDATA.Actor,loc_da,loc_sendarousalevent);
+        }
+        else
+        {
+            //Not compatible mod. Use fallback
+        }
+    }
+    else
+    {
+        if (OSLAGetArousal != nullptr)
+        {
+            _RDATA.Arousal = OSLAGetArousal(_RDATA.Actor);
         }
         else
         {

@@ -1,9 +1,9 @@
 #pragma once
 #include <map>
 
-#include <boost/algorithm/clamp.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
+//#include <boost/algorithm/clamp.hpp>
+//#include <boost/property_tree/ptree.hpp>
+//#include <boost/property_tree/ini_parser.hpp>
 
 using boost::algorithm::clamp;
 
@@ -37,6 +37,9 @@ namespace ORS
         vEdgeThreshold              = 13,
 
         vHornyLevel                 = 14,
+
+        vOrgasmProgress             = 15,
+        vOrgasmProgress2            = 16,
 
         vLast
     };

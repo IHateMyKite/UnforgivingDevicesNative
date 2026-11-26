@@ -1,7 +1,6 @@
 #include <SKSE/Interfaces.h>
 #include <UD_GameEvents.h>
 #include <UD_Lib.h>
-#include <UD_MinigameEffect.h>
 #include <UD_Utility.h>
 #include <UD_UI.h>
 #include <UD_Inventory.h>
@@ -24,17 +23,25 @@
 #include <UD_DDAPI.h>
 #include <UD_Macros.h>
 #include <UD_ModuleManager.h>
+#include <UD_DeviceManager.h>
+#include <UD_DeviceMenu.h>
+#include <UD_HUD.h>
+#include <UD_MinigameManager.h>
+#include <UD_SaveManager.h>
 #include <stdlib.h>
+
 namespace UD
 {
     inline void _OnGameLoad(bool a_newGame)
     {
+        DEBUG("Game loaded -> Calling reloads")
         UD::ReloadLib();
+        SaveManager::GetSingleton()->Reload();
         ModuleManager::GetSingleton()->Reload(a_newGame); // If new game, add delay, so update does not happen during char creation
+        UIManager::GetSingleton()->Reload();
         PapyrusDelegate::GetSingleton()->Setup();
         RandomGenerator::GetSingleton()->Setup();
         PlayerStatus::GetSingleton()->Setup();
-        MeterManager::RemoveAll();
         KeywordManager::Reload();
         InventoryHandler::GetSingleton()->Reload();
         ORS::OrgasmManager::GetSingleton()->Setup();
@@ -48,10 +55,11 @@ namespace UD
         ModifierManager::GetSingleton()->Setup();
         MessageboxManager::GetSingleton()->Setup();
         SkillManager::GetSingleton()->Setup();
-
-        //remove effect in case that user reloaded the game without exit
-        if (MinigameEffectManager::GetSingleton()->started) MinigameEffectManager::GetSingleton()->RemoveAll();
-
+        DeviceMenu::GetSingleton()->Reload();
+        DeviceManager::GetSingleton()->Reload();
+        MinigameManager::GetSingleton()->Reload();
+        HudManager::GetSingleton()->Reload();
+        
         UpdateManager::GetSingleton()->CreateUpdateThreads();
     }
 

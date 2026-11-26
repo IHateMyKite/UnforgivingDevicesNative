@@ -1,4 +1,5 @@
 #include <UD_PlayerStatus.h>
+#include <UD_Utility.h>
 
 SINGLETONBODY(UD::PlayerStatus)
 
