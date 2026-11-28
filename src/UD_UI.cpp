@@ -17,19 +17,21 @@ namespace UD
             if (PrismaUI) DEBUG("PrismaUI found")
             else DEBUG("No PrismaUI found")
 
-            auto loc_magelight = new MAGELIGHT_API::MagelightMod();
-            if (loc_magelight->acquire("UnforgivingDevices","UnforgivingDevices",1,8,0))
+            if (!Magelight)
             {
-                DEBUG("Magelight found")
-                Magelight = loc_magelight;
+                auto loc_magelight = new MAGELIGHT_API::MagelightMod();
+                if (loc_magelight->acquire("UnforgivingDevices","UnforgivingDevices",1,8,0))
+                {
+                    DEBUG("Magelight found")
+                    Magelight = loc_magelight;
+                }
+                else
+                {
+                    DEBUG("No Magelight found")
+                    delete loc_magelight;
+                    Magelight = nullptr;
+                }
             }
-            else
-            {
-                DEBUG("No Magelight found")
-                delete loc_magelight;
-                Magelight = nullptr;
-            }
-
             DEBUG("Prefered UI mod = {}",Config::GetSingleton()->GetVariable<string>("Ui.sPreferedMod","PrismaUI"))
         }
     }

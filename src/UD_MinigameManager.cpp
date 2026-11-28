@@ -99,12 +99,7 @@ void UD::MinigameManager::Reload(bool a_hotreload)
             DEBUG("\t{} - {} / {}",name, file->status, file->error)
         }
     }
-
-    if (_MinigameSaves.size() > 0)
-    {
-        DEBUG("Loading {} minigame saves",_MinigameSaves.size())
-        LoadSavedMinigames();
-    }
+    LoadSavedMinigames();
 }
 
 std::vector<std::string> UD::MinigameManager::GetListOfMinigamesStr(RE::Actor* a_actor, RE::TESObjectARMO* a_id)
@@ -483,6 +478,8 @@ bool UD::MinigameManager::StopMinigame(RE::Actor* a_actor)
 
 void UD::MinigameManager::Update(float a_delta)
 {
+    LoadSavedMinigames();
+
     // Hide UI if menu is open
     const bool loc_menuOpen = Utility::IsBlockingMenuOpen();
     if (loc_menuOpen && _UIState == MinigameUIState::eShown)
@@ -1409,63 +1406,67 @@ void UD::MinigameManager::SetMinigameConfigVars()
 
 void UD::MinigameManager::LoadSavedMinigames()
 {
-    for(auto&& it : _MinigameSaves)
+    if (_MinigameSaves.size() > 0 && ModuleManager::GetSingleton()->IsReady(true))
     {
-        MinigameData loc_data;
-        loc_data.id = it.Header.id;
+        for(auto&& it : _MinigameSaves)
+        {
+            MinigameData loc_data;
+            loc_data.id = it.Header.id;
         
-        loc_data.Actor  = RE::Actor::LookupByHandle(it.Header.Actor).get();
-        loc_data.Helper = RE::Actor::LookupByHandle(it.Header.Helper).get();
-        loc_data.Device.obj = Utility::GetObjectByHandle(it.Header.DeviceHandle,"ud_customdevice_renderscript");
-        if (loc_data.Device.obj)
-        {
-            loc_data.Device.id = (RE::TESObjectARMO*)Utility::GetPropertyObject(loc_data.Device.obj,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE);
-            loc_data.Device.rd = DeviousDevicesAPI::g_API ? DeviousDevicesAPI::g_API->GetDeviceRender(loc_data.Device.id) : nullptr;
-        }
-        else
-        {
-            ERROR("Error reading device using vm handle 0x{:0X16}",it.Header.DeviceHandle)
-            continue;
-        }
-
-        loc_data.Context = it.Header.Context;
-
-        for(auto&& it2 : _jsoncache)
-        {
-            if (it2.second->config.name == string(it.Header.MinigameName))
+            loc_data.Actor  = RE::Actor::LookupByHandle(it.Header.Actor).get();
+            loc_data.Helper = RE::Actor::LookupByHandle(it.Header.Helper).get();
+            loc_data.Device.obj = Utility::GetObjectByHandle(it.Header.DeviceHandle,"ud_customdevice_renderscript");
+            if (loc_data.Device.obj)
             {
-                loc_data.Setting = it2.second;
-                break;
+                loc_data.Device.id = (RE::TESObjectARMO*)Utility::GetPropertyObject(loc_data.Device.obj,"DeviceInventory",false,RE::TESObjectARMO::FORMTYPE);
+                loc_data.Device.rd = DeviousDevicesAPI::g_API ? DeviousDevicesAPI::g_API->GetDeviceRender(loc_data.Device.id) : nullptr;
+            }
+            else
+            {
+                ERROR("Error reading device using vm handle 0x{:0X16}",it.Header.DeviceHandle)
+                continue;
+            }
+
+            loc_data.Context = it.Header.Context;
+
+            for(auto&& it2 : _jsoncache)
+            {
+                if (it2.second->config.name == string(it.Header.MinigameName))
+                {
+                    loc_data.Setting = it2.second;
+                    break;
+                }
+            }
+
+            if (!loc_data.Setting)
+            {
+                ERROR("Failed to find minigame config for {}",it.Header.MinigameName)
+                continue;
+            }
+
+            loc_data.State = it.Header.State;
+            loc_data.Type = it.Header.Type;
+
+            loc_data.id = _minigameCntr;
+            _minigameCntr++;
+
+            MinigameDataPtr loc_res = MinigameDataPtr(new MinigameData(loc_data));
+            _minigames.push_back(loc_res);
+
+            auto L = GetMinigameScript(loc_res->Setting);
+            if (Lua::CallLuaFunction(L,"LoadData",2,0,[&](lua_State* L)
+            {
+                PushMinigameData(L,*loc_res);
+                lua_pushstring(L,it.RuntimeData.c_str());
+            }))
+            {
+                DEBUG("Minigame {} loaded",loc_res->Setting->config.name)
+            }
+            else
+            {
+                _minigames.pop_back();
             }
         }
-
-        if (!loc_data.Setting)
-        {
-            ERROR("Failed to find minigame config for {}",it.Header.MinigameName)
-            continue;
-        }
-
-        loc_data.State = it.Header.State;
-        loc_data.Type = it.Header.Type;
-
-        loc_data.id = _minigameCntr;
-        _minigameCntr++;
-
-        MinigameDataPtr loc_res = MinigameDataPtr(new MinigameData(loc_data));
-        _minigames.push_back(loc_res);
-
-        auto L = GetMinigameScript(loc_res->Setting);
-        if (Lua::CallLuaFunction(L,"LoadData",2,0,[&](lua_State* L)
-        {
-            PushMinigameData(L,*loc_res);
-            lua_pushstring(L,it.RuntimeData.c_str());
-        }))
-        {
-            DEBUG("Minigame {} loaded",loc_res->Setting->config.name)
-        }
-        else
-        {
-            _minigames.pop_back();
-        }
+        _MinigameSaves.clear();
     }
 }

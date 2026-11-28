@@ -57,9 +57,9 @@ namespace UD
         SkillManager::GetSingleton()->Setup();
         DeviceMenu::GetSingleton()->Reload();
         DeviceManager::GetSingleton()->Reload();
-        MinigameManager::GetSingleton()->Reload();
         HudManager::GetSingleton()->Reload();
-        
+        MinigameManager::GetSingleton()->Reload();
+
         UpdateManager::GetSingleton()->CreateUpdateThreads();
     }
 
